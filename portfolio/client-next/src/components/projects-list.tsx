@@ -23,6 +23,11 @@ interface ProjectLanguage {
   inProgress?: boolean;
 }
 
+interface ApiResponse {
+  status: string;
+  data: ProjectLanguage[];
+}
+
 export function ProjectsList() {
   const [projects, setProjects] = useState<ProjectLanguage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +37,9 @@ export function ProjectsList() {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5175/api/projects");
+        const response = await axios.get<ApiResponse>(
+          process.env.NEXT_PUBLIC_API_URL + "/api/projects"
+        );
 
         if (response.data.status === "success") {
           setProjects(response.data.data);

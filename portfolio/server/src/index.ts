@@ -12,7 +12,7 @@ const app = express();
 const port = 5175;
 
 // CORS configuration
-const allowedOrigins = ["https://eduardkakosyan.netlify.app/"];
+const allowedOrigins = ["https://eduardkakosyan.netlify.app"];
 
 app.use(
   cors({

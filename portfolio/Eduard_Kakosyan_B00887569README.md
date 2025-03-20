@@ -2,8 +2,8 @@
 
 ## Links
 
-* [Lab 7 Gitlab](https://git.cs.dal.ca/kakosyan/csci3172/-/tree/main/labs/lab6)
-* [Lab 7 Netlify](https://csci3172-lab6-seven.vercel.app/)
+* [Lab 7 Gitlab](https://git.cs.dal.ca/kakosyan/csci3172/-/tree/main/labs/lab7)
+* [Lab 7 Netlify](https://eduardkakosyan.netlify.app/)
 
 * *Date Created*: March 20 2025
 * *Last Modification Date*: March 20 2025

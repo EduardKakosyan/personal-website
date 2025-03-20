@@ -7,7 +7,8 @@ const router = express.Router();
 // Get all projects
 router.get("/", (req, res) => {
   try {
-    const projectsPath = path.join(__dirname, "../data/projects.json");
+    // Use process.cwd() to get the current working directory
+    const projectsPath = path.join(process.cwd(), "dist", "data", "projects.json");
     const projectsData = fs.readFileSync(projectsPath, "utf-8");
     const projects = JSON.parse(projectsData);
 
@@ -20,10 +21,7 @@ router.get("/", (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Failed to fetch projects",
-      error:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : undefined,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
@@ -31,7 +29,8 @@ router.get("/", (req, res) => {
 // Get a single project by ID
 router.get("/:id", (req, res) => {
   try {
-    const projectsPath = path.join(__dirname, "../data/projects.json");
+    // Use process.cwd() to get the current working directory
+    const projectsPath = path.join(process.cwd(), "dist", "data", "projects.json");
     const projectsData = fs.readFileSync(projectsPath, "utf-8");
     const projects = JSON.parse(projectsData);
 
@@ -53,10 +52,7 @@ router.get("/:id", (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Failed to fetch project",
-      error:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : undefined,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });

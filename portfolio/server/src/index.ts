@@ -13,7 +13,6 @@ const port = 5175;
 
 // CORS configuration
 const allowedOrigins = [
-  "http://localhost:3000",
   "https://your-netlify-app.netlify.app", // You'll update this with your actual Netlify URL
 ];
 

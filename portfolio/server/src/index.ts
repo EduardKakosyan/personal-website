@@ -2,9 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-// Import the JavaScript file with require() instead of import
 const projectRoutes = require(path.join(__dirname, "./routes/projects.js"));
-
+const weatherRoutes = require(path.join(__dirname, "./routes/weather.js")); 
 // Load environment variables
 dotenv.config();
 
@@ -35,13 +34,12 @@ app.use(express.json());
 
 // Routes
 app.use("/api/projects", projectRoutes);
+app.use("/api/weather", weatherRoutes);
 
-// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "healthy" });
 });
 
-// Error handling middleware
 app.use(
   (
     err: Error,
@@ -66,7 +64,6 @@ app.use((req, res) => {
   });
 });
 
-// Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

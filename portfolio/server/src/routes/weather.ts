@@ -22,7 +22,12 @@ router.get("/", async (req, res) => {
     };
 
     const url = "https://api.open-meteo.com/v1/forecast";
+    console.log("Fetching weather data from:", url, "with params:", params);
+
     const responses = await fetchWeatherApi(url, params);
+    if (!responses || responses.length === 0) {
+      throw new Error("No weather data received from API");
+    }
 
     // Helper function to form time ranges
     const range = (start: number, stop: number, step: number) =>
@@ -67,12 +72,21 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching weather data:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     res.status(500).json({
       status: "error",
       message: "Failed to fetch weather data",
       error:
         process.env.NODE_ENV === "development"
-          ? (error as Error).message
+          ? errorMessage
+          : "Weather service temporarily unavailable",
+      details:
+        process.env.NODE_ENV === "development"
+          ? {
+              name: error instanceof Error ? error.name : "Unknown",
+              stack: error instanceof Error ? error.stack : undefined,
+            }
           : undefined,
     });
   }

@@ -10,15 +10,41 @@ import weatherRoutes from "./routes/weather";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5175;
 
-// Middleware
-app.use(cors());
+// CORS configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://your-netlify-app.netlify.app", // You'll update this with your actual Netlify URL
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Routes
 app.use("/api/projects", projectRoutes);
 app.use("/api/weather", weatherRoutes);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "healthy" });
+});
 
 // Error handling middleware
 app.use(
@@ -47,7 +73,7 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
 
 export default app;

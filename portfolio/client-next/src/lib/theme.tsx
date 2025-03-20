@@ -29,9 +29,6 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "portfolio-theme",
-  attribute = "class",
-  enableSystem = true,
-  disableTransitionOnChange = true,
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);

@@ -1,5 +1,4 @@
 import { WeatherWidget } from "@/components/weather-widget";
-import { SkillsList } from "@/components/skills-list";
 import {
   Card,
   CardContent,
@@ -63,15 +62,6 @@ export default function Home() {
           <div className="md:w-[350px] lg:w-[400px]">
             <WeatherWidget />
           </div>
-        </div>
-      </section>
-
-      <section className="space-y-6">
-        <div className="container mx-auto max-w-screen-xl">
-          <h2 className="text-2xl font-bold leading-tight tracking-tighter md:text-3xl mb-6">
-            My Skills
-          </h2>
-          <SkillsList />
         </div>
       </section>
     </div>

@@ -15,12 +15,15 @@ If what is being submitted is an individual Lab or Assignment, you may simply in
 * [Eduard Kakosyan](kakosyaneduard@dal.ca) - (Student)
 
 ## Technologies Used
+Render for API hosting - I seperated back-end from front end using folder structure. This way if the back-end goes down, the front-end is still able to load. 
+Netlify - Front-end is hosted on Netlify, I used NextJS for the front-end build since it has better routing and middleware abilities.
+
 
 ## Pages
 
 - **Home**: Landing page with a brief introduction and skills overview
 - **About**: Detailed information about education, experience, and technical skills
-- **Skills**: A list of skill
+- **Skills**: A list of skills
 - **Projects**: Showcase of projects with descriptions and technologies used
 - **404**: Custom error page for handling unknown routes
 

@@ -1,9 +1,10 @@
 [build]
   command = "next build"
   publish = ".next"
+  base = "/portfolio/client-next"
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://your-backend-url.com"
+  NEXT_PUBLIC_API_URL = "https://portfolio-api-nfy3.onrender.com"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

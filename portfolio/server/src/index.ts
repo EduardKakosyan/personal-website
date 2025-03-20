@@ -1,16 +1,15 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 // Import the JavaScript file with require() instead of import
-// @ts-ignore
-const projectRoutes = require("./routes/projects.js");
-import weatherRoutes from "./routes/weather";
+const projectRoutes = require(path.join(__dirname, "./routes/projects.js"));
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5175;
+const port = 5175;
 
 // CORS configuration
 const allowedOrigins = [
@@ -39,7 +38,6 @@ app.use(express.json());
 
 // Routes
 app.use("/api/projects", projectRoutes);
-app.use("/api/weather", weatherRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -72,8 +70,8 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
 export default app;

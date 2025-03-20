@@ -1,5 +1,5 @@
 [build]
-  command = "next build"
+  command = "npm install -g yarn && yarn install && npm run build"
   publish = ".next"
   base = "/portfolio/client-next"
 

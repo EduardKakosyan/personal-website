@@ -3,7 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 const projectRoutes = require(path.join(__dirname, "./routes/projects.js"));
-const weatherRoutes = require(path.join(__dirname, "./routes/weather.js")); 
+const weatherRoutes = require(path.join(__dirname, "./routes/weather.js"));
+
 // Load environment variables
 dotenv.config();
 

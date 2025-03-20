@@ -32,7 +32,7 @@ export function WeatherWidget() {
     const fetchWeather = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5175/api/weather");
+        const response = await axios.get("https://portfolio-api-nfy3.onrender.com/api/weather");
 
         if (response.data.status === "success") {
           setWeather(response.data.data);

@@ -24,7 +24,8 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const project = await getProjectBySlug(params.slug)
+  const resolvedParams = await params
+  const project = await getProjectBySlug(resolvedParams.slug)
 
   if (!project) {
     return {
@@ -39,7 +40,8 @@ export async function generateMetadata(
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
-  const project = await getProjectBySlug(params.slug)
+  const resolvedParams = await params
+  const project = await getProjectBySlug(resolvedParams.slug)
 
   if (!project) {
     notFound() // Triggers 404 page

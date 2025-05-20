@@ -40,7 +40,7 @@ const allProjects: Project[] = [
     imageUrl: '',
     repoUrl: 'https://github.com/EduardKakosyan/volta_hackathon',
     placement: 'Second Place',
-    featured: true
+    featured: false
   },
   {
     slug: 'cargrep',

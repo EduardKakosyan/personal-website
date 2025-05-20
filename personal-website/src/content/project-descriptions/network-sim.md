@@ -1,5 +1,3 @@
-# Network Routing Optimization with Q-Learning
-
 A comparative study of reinforcement learning-based routing (Q-routing) against traditional routing algorithms (Dijkstra and OSPF) in dynamic network environments. This project implements and evaluates these routing strategies across various network topologies and traffic patterns using a custom simulator.
 
 ## Authors

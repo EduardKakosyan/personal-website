@@ -10,17 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-
-export type Project = {
-  slug: string
-  title: string
-  description: string
-  longDescription?: string // For the detail page
-  imageUrl?: string
-  tags: string[]
-  repoUrl?: string
-  liveUrl?: string
-}
+import { type Project } from '@/content/projects'
 
 type ProjectCardProps = {
   project: Project
@@ -41,6 +31,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         )}
         <CardTitle>{project.title}</CardTitle>
+        {project.placement && (
+          <div className="mt-2 mb-2">
+            <Badge variant="destructive">{project.placement}</Badge>
+          </div>
+        )}
         <CardDescription className='line-clamp-3'>{project.description}</CardDescription>
       </CardHeader>
       <CardContent className='flex-grow'>
@@ -63,7 +58,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </a>
           </Button>
         )}
-        {/* Add repo link if available */}
+        {project.repoUrl && (
+          <Button asChild variant='outline'>
+            <a href={project.repoUrl} target='_blank' rel='noopener noreferrer'>
+              View Code
+            </a>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   )

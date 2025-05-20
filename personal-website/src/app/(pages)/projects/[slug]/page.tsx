@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 export async function generateStaticParams() {
-  const allProjects = getAllProjects()
+  const allProjects = await getAllProjects()
   
   return allProjects.map((project) => ({
     slug: project.slug,
@@ -24,7 +24,7 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const project = getProjectBySlug(params.slug)
+  const project = await getProjectBySlug(params.slug)
 
   if (!project) {
     return {
@@ -39,7 +39,7 @@ export async function generateMetadata(
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
-  const project = getProjectBySlug(params.slug)
+  const project = await getProjectBySlug(params.slug)
 
   if (!project) {
     notFound() // Triggers 404 page

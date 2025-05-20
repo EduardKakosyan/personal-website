@@ -65,17 +65,17 @@ const allProjects: Project[] = [
 ]
 
 // Get all projects
-export function getAllProjects(): Project[] {
+export async function getAllProjects(): Promise<Project[]> {
   return allProjects
 }
 
 // Get a project by slug
-export function getProjectBySlug(slug: string): Project | undefined {
+export async function getProjectBySlug(slug: string): Promise<Project | undefined> {
   return allProjects.find((project) => project.slug === slug)
 }
 
 // Get featured projects (for homepage highlights)
-export function getFeaturedProjects(limit?: number): Project[] {
+export async function getFeaturedProjects(limit?: number): Promise<Project[]> {
   const featured = allProjects.filter(project => project.featured)
   return limit ? featured.slice(0, limit) : featured
 }

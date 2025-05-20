@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: 'Explore a collection of AI and web development projects I have worked on.',
 }
 
-export default function ProjectsPage() {
-  const allProjects = getAllProjects()
+export default async function ProjectsPage() {
+  const allProjects = await getAllProjects()
 
   return (
     <div className='container py-12 md:py-16'>

@@ -4,8 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { getFeaturedProjects } from '@/content/projects'
 
-export function ProjectHighlights() {
-  const highlightedProjects = getFeaturedProjects(3)
+export async function ProjectHighlights() {
+  const highlightedProjects = await getFeaturedProjects(3)
 
   return (
     <section className='py-12 md:py-24 w-full'>

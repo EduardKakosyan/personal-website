@@ -1,7 +1,7 @@
 import { HeroSection } from '@/components/features/hero-section'
 import { ProjectHighlights } from '@/components/features/project-highlights'
 
-export default function HomePage() {
+export default async function HomePage() {
   return (
     <>
       <HeroSection />

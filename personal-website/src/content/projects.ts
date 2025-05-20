@@ -1,3 +1,5 @@
+import { getMarkdownContent } from '../lib/markdown'
+
 export interface Project {
   slug: string
   title: string
@@ -11,13 +13,17 @@ export interface Project {
   featured?: boolean
 }
 
+// Get the markdown content for a project
+const getProjectMarkdown = (slug: string): string => {
+  return getMarkdownContent(`src/content/project-descriptions/${slug}.md`)
+}
+
 const allProjects: Project[] = [
   {
     slug: 'healthbyte',
     title: 'HealthByte - Atlantic AI Summit 2025',
     description: 'AI-driven agents to simulate public reactions to healthcare content and combat misinformation',
-    longDescription: 'Developed a novel two-agent, reinforcement-style workflow in 60 hours; a Persona Agent, powered by the o4-mini model, loaded diverse profiles to simulate individual reactions (acceptance rate, sentiment, reasoning) to healthcare articles.' +
-      'Implemented an Editor Agent that received the Persona Agent\'s feedback, iteratively editing original articles (up to 15 cycles in a reinforcement loop) to improve persuasiveness for specific personas and counter misinformation.',
+    longDescription: getProjectMarkdown('healthbyte'),
     tags: ['Python', 'OpenAI SDK', 'Azure OpenAI'],
     imageUrl: '',
     liveUrl: 'https://healthbyte-dashboard.vercel.app/',
@@ -29,7 +35,7 @@ const allProjects: Project[] = [
     slug: 'second-brain',
     title: 'Second Brain - Volta Hackathon',
     description: 'Time management agents to empower university students',
-    longDescription: "Developed a no-code AI productivity agent in under 10 hours, leveraging Pinecone's vector database to store and query thousands of academic documents, enabling students to ask questions and receive actionable insights about coursework. Integrated calendar and email functionalities, allowing the agent to summarize upcoming events, schedule new ones, and automate due-date tracking by analyzing syllabi and emails",
+    longDescription: getProjectMarkdown('second-brain'),
     tags: ['N8N'],
     imageUrl: '',
     repoUrl: 'https://github.com/EduardKakosyan/volta_hackathon',
@@ -40,12 +46,22 @@ const allProjects: Project[] = [
     slug: 'cargrep',
     title: 'CarGrep',
     description: 'AI-powered car recommendation platform - ShiftKey Build',
-    longDescription: "Built secure user management and real‑time data sync using Clerk and Supabase. Integrated Crawl4AI and Azure OpenAI (via Vercel AI SDK) to power an AI assistant that delivers personalized car recommendations. Implemented Stripe payment billing, and deployed on Vercel",
+    longDescription: getProjectMarkdown('cargrep'),
     tags: ['Vercel AI SDK', 'NextJS', 'Supabase'],
     imageUrl: '',
     liveUrl: 'https://www.cargrep.com',
     featured: true
-  }
+  },
+  {
+    slug: 'network-sim',
+    title: 'Q Learning Network Simulator',
+    description: 'A comparative study of reinforcement learning-based routing (Q-routing) against traditional routing algorithms (Dijkstra and OSPF) in dynamic network environments',
+    longDescription: getProjectMarkdown('network-sim'),
+    tags: ['Python', 'SimPy', 'NetworkX', 'Q-Learning'],
+    imageUrl: '',
+    repoUrl: 'https://github.com/EduardKakosyan/network-sim',
+    featured: true
+  },
 ]
 
 // Get all projects

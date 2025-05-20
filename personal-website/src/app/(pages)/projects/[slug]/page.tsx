@@ -1,4 +1,5 @@
 import { getProjectBySlug, getAllProjects, type Project } from '@/content/projects'
+import { markdownToHtml } from '@/lib/markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from 'lucide-react'
@@ -37,12 +38,15 @@ export async function generateMetadata(
   }
 }
 
-export default function ProjectDetailPage({ params }: Props) {
+export default async function ProjectDetailPage({ params }: Props) {
   const project = getProjectBySlug(params.slug)
 
   if (!project) {
     notFound() // Triggers 404 page
   }
+  
+  // Convert markdown to HTML
+  const contentHtml = await markdownToHtml(project.longDescription)
 
   return (
     <article className='container py-12 md:py-16'>
@@ -85,9 +89,24 @@ export default function ProjectDetailPage({ params }: Props) {
           />
         </div>
       )}
-      <div className='prose prose-zinc mx-auto max-w-3xl dark:prose-invert lg:prose-lg xl:prose-xl'>
-        <p>{project.longDescription}</p>
-      </div>
+      <div 
+        className='prose prose-zinc max-w-3xl mx-auto
+          prose-headings:my-4 prose-headings:font-bold prose-headings:tracking-tighter
+          prose-h1:text-4xl prose-h1:mb-6 prose-h1:mt-0
+          prose-h2:text-3xl prose-h2:border-b prose-h2:pb-2
+          prose-h3:text-2xl
+          prose-p:my-4
+          prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+          prose-strong:text-primary/90 prose-em:italic
+          prose-pre:my-6 prose-pre:overflow-auto prose-pre:rounded-lg
+          prose-code:bg-muted prose-code:p-1 prose-code:rounded-md prose-code:text-sm
+          prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-4
+          prose-ul:my-4 prose-ul:list-disc prose-ul:pl-6
+          prose-ol:my-4 prose-ol:list-decimal prose-ol:pl-6
+          prose-li:my-2 prose-li:marker:text-primary
+          dark:prose-invert lg:prose-lg'
+        dangerouslySetInnerHTML={{ __html: contentHtml }}
+      />
       {(project.liveUrl || project.repoUrl) && (
         <div className='mt-12 flex flex-col gap-4 sm:flex-row sm:justify-center'>
           {project.liveUrl && (

@@ -1,5 +1,13 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Base !! IMPORTANT !!
+- NextJS
+- TailwindCSS
+- RadixUI
+- ShadCN 
+
+# Database (if needed)
+- Supabase

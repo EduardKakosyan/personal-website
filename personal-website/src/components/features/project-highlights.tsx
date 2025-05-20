@@ -1,29 +1,17 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-
-// Sample data - replace with actual data fetching later
-const highlightedProjects = [
-  {
-    slug: 'project-alpha',
-    title: 'AI-Powered Data Analyzer',
-    description: 'A cutting-edge tool that leverages machine learning to provide deep insights from complex datasets.',
-    tech: ['Python', 'TensorFlow', 'Next.js'],
-  },
-  {
-    slug: 'project-beta',
-    title: 'Intelligent Chatbot Solution',
-    description: 'A conversational AI developed to enhance customer support and engagement with natural language processing.',
-    tech: ['Dialogflow', 'Node.js', 'React'],
-  },
-]
+import { getFeaturedProjects } from '@/content/projects'
 
 export function ProjectHighlights() {
+  const highlightedProjects = getFeaturedProjects(3)
+
   return (
     <section className='py-12 md:py-24 w-full'>
       <div className='container mx-auto px-4 max-w-6xl'>
         <h2 className='mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl'>
-          Featured Projects
+          Projects and Hackathons
         </h2>
         <div className='flex justify-center'>
           <div className='grid gap-6 md:grid-cols-2 lg:gap-8 w-full'>
@@ -31,11 +19,16 @@ export function ProjectHighlights() {
               <Card key={project.slug}>
                 <CardHeader>
                   <CardTitle>{project.title}</CardTitle>
+                  {project.placement && (
+                    <div className="mt-2 mb-2">
+                      <Badge variant="destructive">{project.placement}</Badge>
+                    </div>
+                  )}
                   <CardDescription className='line-clamp-3'>{project.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className='mb-4 flex flex-wrap gap-2'>
-                    {project.tech.map((tag) => (
+                    {project.tags.map((tag) => (
                       <span key={tag} className='rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground'>
                         {tag}
                       </span>

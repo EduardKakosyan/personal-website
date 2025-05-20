@@ -84,12 +84,14 @@ export default async function ProjectDetailPage({ params }: Props) {
   return (
     <article className='container py-12 md:py-16'>
       <div className='mb-8'>
-        <Link href='/projects' className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground'>
+        <Link
+          href='/projects'
+          className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground'
+          legacyBehavior>
           <ArrowLeftIcon className='mr-2 h-4 w-4' />
           Back to Projects
         </Link>
       </div>
-
       <header className='mb-8 md:mb-12'>
         <h1 className='mb-3 text-4xl font-bold tracking-tighter sm:text-5xl lg:text-6xl'>
           {project.title}
@@ -102,7 +104,6 @@ export default async function ProjectDetailPage({ params }: Props) {
           ))}
         </div>
       </header>
-
       {project.imageUrl && (
         <div className='mb-8 aspect-video w-full overflow-hidden rounded-lg md:mb-12'>
           <Image
@@ -115,12 +116,10 @@ export default async function ProjectDetailPage({ params }: Props) {
           />
         </div>
       )}
-
       <div className='prose prose-zinc mx-auto max-w-3xl dark:prose-invert lg:prose-lg xl:prose-xl'>
         {/* Using a simple paragraph for long description. For Markdown, use a library like react-markdown or mdx. */}
         <p>{project.longDescription}</p>
       </div>
-
       {(project.liveUrl || project.repoUrl) && (
         <div className='mt-12 flex flex-col gap-4 sm:flex-row sm:justify-center'>
           {project.liveUrl && (
@@ -140,5 +139,5 @@ export default async function ProjectDetailPage({ params }: Props) {
         </div>
       )}
     </article>
-  )
+  );
 } 

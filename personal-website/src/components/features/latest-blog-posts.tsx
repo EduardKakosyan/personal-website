@@ -25,23 +25,25 @@ export function LatestBlogPosts() {
         <h2 className='mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl'>
           From the Blog
         </h2>
-        <div className='grid gap-6 md:grid-cols-2 lg:gap-8'>
-          {latestPosts.map((post) => (
-            <Card key={post.slug}>
-              <CardHeader>
-                <CardTitle>{post.title}</CardTitle>
-                <CardDescription className='text-sm text-muted-foreground'>
-                  {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className='mb-4 line-clamp-3 text-sm leading-relaxed'>{post.excerpt}</p>
-                <Button asChild variant='outline'>
-                  <Link href={`/blog/${post.slug}`}>Read More</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        <div className='flex justify-center'>
+          <div className='grid gap-6 md:grid-cols-2 lg:gap-8'>
+            {latestPosts.map((post) => (
+              <Card key={post.slug}>
+                <CardHeader>
+                  <CardTitle>{post.title}</CardTitle>
+                  <CardDescription className='text-sm text-muted-foreground'>
+                    {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className='mb-4 line-clamp-3 text-sm leading-relaxed'>{post.excerpt}</p>
+                  <Button asChild variant='outline'>
+                    <Link href={`/blog/${post.slug}`}>Read More</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
         <div className='mt-12 text-center'>
           <Button asChild size='lg'>

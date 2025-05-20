@@ -13,7 +13,10 @@ export function BlogPostItem({ post }: BlogPostItemProps) {
     <Card className='flex h-full flex-col'>
       <CardHeader>
         {post.image && (
-          <Link href={`/blog/${post.slug}`} className='mb-4 block aspect-video w-full overflow-hidden rounded-t-lg relative'>
+          <Link
+            href={`/blog/${post.slug}`}
+            className='mb-4 block aspect-video w-full overflow-hidden rounded-t-lg relative'
+            legacyBehavior>
             <Image
               src={post.image}
               alt={post.title}
@@ -23,7 +26,10 @@ export function BlogPostItem({ post }: BlogPostItemProps) {
           </Link>
         )}
         <CardTitle className='text-xl lg:text-2xl'>
-          <Link href={`/blog/${post.slug}`} className='hover:text-primary transition-colors'>
+          <Link
+            href={`/blog/${post.slug}`}
+            className='hover:text-primary transition-colors'
+            legacyBehavior>
             {post.title}
           </Link>
         </CardTitle>
@@ -52,5 +58,5 @@ export function BlogPostItem({ post }: BlogPostItemProps) {
         </Link>
       </CardFooter>
     </Card>
-  )
+  );
 } 

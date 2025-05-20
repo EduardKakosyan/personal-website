@@ -54,12 +54,14 @@ export default async function BlogPostPage({ params }: Props) {
   return (
     <article className='container py-12 md:py-16'>
       <div className='mb-8'>
-        <Link href='/blog' className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground'>
+        <Link
+          href='/blog'
+          className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground'
+          legacyBehavior>
           <ArrowLeftIcon className='mr-2 h-4 w-4' />
           Back to Blog
         </Link>
       </div>
-
       <header className='mb-8 md:mb-12 text-center'>
         <h1 className='mb-3 text-4xl font-bold tracking-tighter sm:text-5xl lg:text-6xl'>
           {post.title}
@@ -80,7 +82,6 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         )}
       </header>
-
       {post.image && (
         <div className='mb-8 aspect-video w-full max-w-4xl mx-auto overflow-hidden rounded-lg md:mb-12'>
           <Image
@@ -93,7 +94,6 @@ export default async function BlogPostPage({ params }: Props) {
           />
         </div>
       )}
-
       <div
         className={cn(
           'prose prose-zinc mx-auto max-w-3xl dark:prose-invert lg:prose-lg xl:prose-xl',
@@ -105,8 +105,7 @@ export default async function BlogPostPage({ params }: Props) {
         )}
         dangerouslySetInnerHTML={{ __html: post.contentHtml }}
       />
-
       {/* Optional: Add discussion/comments section here */}
     </article>
-  )
+  );
 } 

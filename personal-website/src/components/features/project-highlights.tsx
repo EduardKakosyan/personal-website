@@ -25,27 +25,29 @@ export function ProjectHighlights() {
         <h2 className='mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl'>
           Featured Projects
         </h2>
-        <div className='grid gap-6 md:grid-cols-2 lg:gap-8'>
-          {highlightedProjects.map((project) => (
-            <Card key={project.slug}>
-              <CardHeader>
-                <CardTitle>{project.title}</CardTitle>
-                <CardDescription className='line-clamp-3'>{project.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className='mb-4 flex flex-wrap gap-2'>
-                  {project.tech.map((tag) => (
-                    <span key={tag} className='rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground'>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <Button asChild variant='outline'>
-                  <Link href={`/projects/${project.slug}`}>View Details</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        <div className='flex justify-center'>
+          <div className='grid gap-6 md:grid-cols-2 lg:gap-8'>
+            {highlightedProjects.map((project) => (
+              <Card key={project.slug}>
+                <CardHeader>
+                  <CardTitle>{project.title}</CardTitle>
+                  <CardDescription className='line-clamp-3'>{project.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className='mb-4 flex flex-wrap gap-2'>
+                    {project.tech.map((tag) => (
+                      <span key={tag} className='rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground'>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <Button asChild variant='outline'>
+                    <Link href={`/projects/${project.slug}`}>View Details</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
         <div className='mt-12 text-center'>
           <Button asChild size='lg'>

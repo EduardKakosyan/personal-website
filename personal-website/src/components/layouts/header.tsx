@@ -21,8 +21,8 @@ const navLinks = [
 export function Header() {
   return (
     <header className='sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
-      <div className='container flex h-14 max-w-screen-2xl items-center'>
-        <Link href='/' className='mr-6 flex items-center space-x-2'>
+      <div className='container flex h-14 max-w-screen-2xl items-center justify-between'>
+        <Link href='/' className='flex items-center space-x-2'>
           {/* <Icons.logo className="h-6 w-6" /> Need to define an Icon component or use text */}
           <span className='font-bold sm:inline-block'>AI Dev</span>
         </Link>
@@ -30,7 +30,7 @@ export function Header() {
           <NavigationMenuList>
             {navLinks.map((link) => (
               <NavigationMenuItem key={link.href}>
-                <Link href={link.href} legacyBehavior passHref>
+                <Link href={link.href} asChild>
                   <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-sm')}>
                     {link.label}
                   </NavigationMenuLink>
@@ -47,5 +47,5 @@ export function Header() {
         {/* <button className="md:hidden">Menu</button> */}
       </div>
     </header>
-  )
+  );
 } 

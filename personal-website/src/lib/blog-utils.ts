@@ -106,6 +106,6 @@ export function getAllPostSlugs() {
         params: {
           slug: fileName.replace(/\.(mdx|md)$/, ''),
         },
-      }
-    })
+      };
+    });
 } 

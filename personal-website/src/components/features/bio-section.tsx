@@ -2,8 +2,8 @@ import Image from 'next/image' // Assuming an image might be used here
 
 export function BioSection() {
   return (
-    <section className='py-12 md:py-24'>
-      <div className='container'>
+    <section className='py-12 md:py-24 w-full'>
+      <div className='container mx-auto px-4 max-w-6xl'>
         <div className='grid items-center gap-8 lg:grid-cols-2 lg:gap-12'>
           <div className='space-y-4'>
             <h2 className='text-3xl font-bold tracking-tighter sm:text-4xl'>

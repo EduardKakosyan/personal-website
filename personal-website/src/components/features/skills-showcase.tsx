@@ -22,8 +22,8 @@ const skillCategories = [
 
 export function SkillsShowcase() {
   return (
-    <section className='py-12 md:py-24 bg-muted/40'>
-      <div className='container'>
+    <section className='py-12 md:py-24 bg-muted/40 w-full'>
+      <div className='container mx-auto px-4 max-w-6xl'>
         <h2 className='mb-12 text-center text-3xl font-bold tracking-tighter sm:text-4xl'>
           My Technical Expertise
         </h2>

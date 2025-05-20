@@ -1,0 +1,58 @@
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+
+// Sample data - replace with actual data fetching later
+const highlightedProjects = [
+  {
+    slug: 'project-alpha',
+    title: 'AI-Powered Data Analyzer',
+    description: 'A cutting-edge tool that leverages machine learning to provide deep insights from complex datasets.',
+    tech: ['Python', 'TensorFlow', 'Next.js'],
+  },
+  {
+    slug: 'project-beta',
+    title: 'Intelligent Chatbot Solution',
+    description: 'A conversational AI developed to enhance customer support and engagement with natural language processing.',
+    tech: ['Dialogflow', 'Node.js', 'React'],
+  },
+]
+
+export function ProjectHighlights() {
+  return (
+    <section className='py-12 md:py-24'>
+      <div className='container'>
+        <h2 className='mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl'>
+          Featured Projects
+        </h2>
+        <div className='grid gap-6 md:grid-cols-2 lg:gap-8'>
+          {highlightedProjects.map((project) => (
+            <Card key={project.slug}>
+              <CardHeader>
+                <CardTitle>{project.title}</CardTitle>
+                <CardDescription className='line-clamp-3'>{project.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className='mb-4 flex flex-wrap gap-2'>
+                  {project.tech.map((tag) => (
+                    <span key={tag} className='rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground'>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <Button asChild variant='outline'>
+                  <Link href={`/projects/${project.slug}`}>View Details</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className='mt-12 text-center'>
+          <Button asChild size='lg'>
+            <Link href='/projects'>Explore All Projects</Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+} 

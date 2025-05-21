@@ -1,9 +1,9 @@
-import { getProjectBySlug, getAllProjects, type Project } from '@/content/projects'
+import { getProjectBySlug, getAllProjects } from '@/content/projects'
 import { markdownToHtml } from '@/lib/markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from 'lucide-react'
-import type { Metadata, ResolvingMetadata } from 'next'
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -17,15 +17,16 @@ export async function generateStaticParams() {
 }
 
 type Props = {
-  params: { slug: string }
+  params: {
+    slug: string
+  }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
+  { params }: Props
 ): Promise<Metadata> {
-  const resolvedParams = await params
-  const project = await getProjectBySlug(resolvedParams.slug)
+  const project = await getProjectBySlug(params.slug)
 
   if (!project) {
     return {
@@ -40,8 +41,7 @@ export async function generateMetadata(
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
-  const resolvedParams = await params
-  const project = await getProjectBySlug(resolvedParams.slug)
+  const project = await getProjectBySlug(params.slug)
 
   if (!project) {
     notFound() // Triggers 404 page

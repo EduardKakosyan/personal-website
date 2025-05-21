@@ -6,7 +6,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layouts/header";
 import { Footer } from "@/components/layouts/footer";
 
-// Re-initialize Geist fonts as per original Next.js setup
 const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",

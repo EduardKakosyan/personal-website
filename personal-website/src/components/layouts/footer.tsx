@@ -10,7 +10,7 @@ export function Footer() {
         <div className='flex items-center gap-4'>
           {/* Placeholder for social media icons/links */}
           <a
-            href='https://github.com'
+            href='https://github.com/eduardkakosyan'
             target='_blank'
             rel='noreferrer'
             className='font-medium underline underline-offset-4'
@@ -18,7 +18,7 @@ export function Footer() {
             GitHub
           </a>
           <a
-            href='https://linkedin.com'
+            href='https://linkedin.com/in/eduard-kakosyan'
             target='_blank'
             rel='noreferrer'
             className='font-medium underline underline-offset-4'

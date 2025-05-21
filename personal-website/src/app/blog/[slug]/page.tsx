@@ -22,7 +22,8 @@ export async function generateStaticParams() {
 export async function generateMetadata(
   { params }: Props
 ): Promise<Metadata> {
-  const post = await getPostData(params.slug)
+  const resolvedParams = await params
+  const post = await getPostData(resolvedParams.slug)
 
   if (!post) {
     return {
@@ -47,7 +48,8 @@ export async function generateMetadata(
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const post = await getPostData(params.slug)
+  const resolvedParams = await params
+  const post = await getPostData(resolvedParams.slug)
 
   if (!post || !post.contentHtml) {
     notFound() // Triggers 404 page if post or content is missing

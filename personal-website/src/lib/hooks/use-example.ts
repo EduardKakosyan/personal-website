@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // Example custom hook
-export function useExampleHook(initialValue: any) {
+export function useExampleHook<T>(initialValue: T) {
   const [value, setValue] = useState(initialValue);
   useEffect(() => {
     // Some effect

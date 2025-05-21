@@ -1,5 +1,5 @@
 import { ProjectCard } from '@/components/features/project-card'
-import { getAllProjects, type Project } from '@/content/projects'
+import { getAllProjects } from '@/content/projects'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {

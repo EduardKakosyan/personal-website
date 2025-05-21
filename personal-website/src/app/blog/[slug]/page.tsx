@@ -1,14 +1,17 @@
-import { getAllPostSlugs, getPostData, type BlogPostData } from '@/lib/blog-utils'
+import { getAllPostSlugs, getPostData } from '@/lib/blog-utils'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeftIcon } from 'lucide-react'
-import type { Metadata, ResolvingMetadata } from 'next'
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 type Props = {
-  params: { slug: string }
+  params: {
+    slug: string
+  }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 export async function generateStaticParams() {
@@ -17,8 +20,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
+  { params }: Props
 ): Promise<Metadata> {
   const post = await getPostData(params.slug)
 

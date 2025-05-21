@@ -1,29 +1,28 @@
-import { ContactForm } from '@/components/features/contact-form'
-import { Mail, Linkedin, Github } from 'lucide-react' // Using lucide-react icons
+import { Mail, Linkedin, Github } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Contact Me | AI Developer',
+  title: 'Contact Me | Eduard Kakosyan',
   description: 'Get in touch with me. Send a message or find me on other platforms.',
 }
 
 const contactDetails = [
   {
     icon: Mail,
-    text: 'your-email@example.com', // Replace with actual email
-    href: 'mailto:your-email@example.com', // Replace with actual email
+    text: 'eduard@ai-first.ca',
+    href: 'mailto:eduard@ai-first.ca',
     label: 'Email',
   },
   {
     icon: Linkedin,
-    text: 'linkedin.com/in/yourprofile', // Replace with actual LinkedIn profile
-    href: 'https://linkedin.com/in/yourprofile', // Replace with actual LinkedIn profile
+    text: 'linkedin.com/in/eduard-kakosyan',
+    href: 'https://linkedin.com/in/eduard-kakosyan',
     label: 'LinkedIn',
   },
   {
     icon: Github,
-    text: 'github.com/yourusername', // Replace with actual GitHub username
-    href: 'https://github.com/yourusername', // Replace with actual GitHub username
+    text: 'github.com/eduardkakosyan',
+    href: 'https://github.com/eduardkakosyan',
     label: 'GitHub',
   },
 ]
@@ -61,10 +60,6 @@ export default function ContactPage() {
               </li>
             ))}
           </ul>
-        </div>
-
-        <div>
-          <ContactForm />
         </div>
       </div>
     </div>

@@ -95,7 +95,7 @@ export function getAllPostSlugs() {
   let fileNames: string[] = []
   try {
     fileNames = fs.readdirSync(postsDirectory)
-  } catch (error) {
+  } catch {
     return []
   }
   

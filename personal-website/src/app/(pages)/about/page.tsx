@@ -1,10 +1,11 @@
 import { BioSection } from '@/components/features/bio-section'
 import { SkillsShowcase } from '@/components/features/skills-showcase'
+import { TestimonialsSection } from '@/components/features/testimonials-section'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'About Me | AI Developer',
-  description: 'Learn more about my journey, skills, and philosophy as an AI Developer based in Halifax, Nova Scotia.',
+  description: 'Learn about my experience, skills, and background as an AI Developer based in Halifax, Nova Scotia.',
 }
 
 export default function AboutPage() {
@@ -12,7 +13,7 @@ export default function AboutPage() {
     <>
       <BioSection />
       <SkillsShowcase />
-      {/* You can add more sections here, e.g., Experience, Education, Testimonials */}
+      <TestimonialsSection />
     </>
   )
 } 

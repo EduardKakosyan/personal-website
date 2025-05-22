@@ -1,18 +1,25 @@
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
-const skillCategories = [
+interface SkillCategory {
+  title: string
+  skills: string[]
+  description?: string
+}
+
+const skillCategories: SkillCategory[] = [
   {
     title: 'Programming Languages',
     skills: ['Python', 'Java', 'C', 'Rust', 'SQL'],
   },
   {
     title: 'AI & Machine Learning',
-    skills: ['LangGraph', 'OpenAI SDK', 'Ollama'],
+    skills: ['LangGraph', 'OpenAI SDK', 'Ollama', 'Azure OpenAI', 'LangChain', 'SimPy', 'NetworkX'],
+    description: 'My expertise spans various cutting-edge tools and frameworks, allowing me to build robust and intelligent systems.',
   },
   {
     title: 'Tools & Platforms',
-    skills: ['Git', 'GitHub', 'AWS', 'Docker', 'Linux', 'MacOS', 'Windows', 'Cursor', 'NVIM'],
+    skills: ['Git', 'GitHub', 'AWS', 'Docker', 'Linux', 'MacOS', 'Windows', 'Cursor', 'NVIM', 'OrbStack', 'Tmux'],
   },
 ]
 
@@ -28,6 +35,9 @@ export function SkillsShowcase() {
             <Card key={category.title}>
               <CardHeader>
                 <CardTitle>{category.title}</CardTitle>
+                {category.description && (
+                  <CardDescription>{category.description}</CardDescription>
+                )}
               </CardHeader>
               <CardContent className='flex flex-wrap gap-2'>
                 {category.skills.map((skill) => (

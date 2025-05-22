@@ -11,14 +11,15 @@ export function HeroSection() {
           <div className='flex flex-col justify-center space-y-4'>
             <div className='space-y-2'>
               <h1 className='text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none'>
-                Hey, I am <span className='text-primary'>Eduard</span>
+                <span className='text-primary'>Eduard Kakosyan</span> | AI Developer
               </h1>
               <p className='max-w-[600px] text-muted-foreground md:text-xl'>
-                I am based out of Halifax, Nova Scotia, tinkering with all sorts of exciting AI and software projects.
-                I currently work as an AI Developer at <Link href='https://www.ai-first.ca/' className='text-primary font-semibold hover:underline'>AI-First Consulting</Link>.
-                <br />
-                <br />
-                As you can tell from the UI, I am not a professional designer, but I do my best.
+                Developing AI solutions for real-world applications
+              </p>
+              <p className='max-w-[700px] text-muted-foreground md:text-lg/relaxed mt-4'>
+                Based in Halifax, Nova Scotia, I work as an AI Developer at <Link href='https://www.ai-first.ca/' className='text-primary font-semibold hover:underline'>AI-First Consulting</Link>. 
+                I focus on practical AI implementations, host local language models on my MacBook, 
+                and build applications that leverage current AI capabilities effectively.
               </p>
             </div>
             <div className='flex flex-col gap-2 min-[400px]:flex-row'>

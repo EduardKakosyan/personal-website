@@ -11,7 +11,7 @@ export async function ProjectHighlights() {
     <section className='py-12 md:py-24 w-full'>
       <div className='container mx-auto px-4 max-w-6xl'>
         <h2 className='mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl'>
-          Projects and Hackathons
+          Projects
         </h2>
         <div className='flex justify-center'>
           <div className='grid gap-6 md:grid-cols-2 lg:gap-8 w-full'>

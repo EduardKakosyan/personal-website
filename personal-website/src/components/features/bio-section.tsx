@@ -10,16 +10,24 @@ export function BioSection() {
               About Me
             </h2>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-             My name is Eduard Kakosyan, I am a recent graduate of Dalhousie University, where I studied Bachelor of Computer Science. I have a passion for building AI applications and driving technological advancements.
+              As an AI Developer, I focus on building practical AI applications that solve real problems. 
+              My work involves developing robust, scalable solutions from initial concept through deployment.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-             I also love competing in hackathons, and I have won a few of them. If you have any hackathon ideas, I am all ears. 
+              I recently graduated from Dalhousie University with a Bachelor of Computer Science, where I built a solid foundation in software engineering and machine learning. 
+              I actively participate in hackathons, taking first place at the Atlantic AI Summit 2025 and second place at the Volta Hackathon.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              In addition to my love of technology, I also love all things nature and photography. I love hiking, camping, and fishing.
+              <strong>Current Focus:</strong> I work extensively with local language models, using tools like Ollama on my M4-Pro MacBook Pro to run AI models offline. 
+              This approach is particularly useful for privacy-focused applications and rapid prototyping.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              If you have any questions, feel free to reach out to me. I am always looking to learn and grow.
+              <strong>Knowledge Sharing:</strong> I regularly conduct workshops on AI topics, 
+              covering everything from basic concepts to advanced model deployment techniques.
+            </p>
+            <p className='text-muted-foreground md:text-lg/relaxed'>
+              Outside of work, I enjoy hiking, camping, and photography. 
+              These activities help me maintain perspective and often lead to creative problem-solving approaches in technical work.
             </p>
           </div>
           <div className='flex justify-center'>

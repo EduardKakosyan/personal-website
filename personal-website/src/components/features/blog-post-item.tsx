@@ -15,8 +15,7 @@ export function BlogPostItem({ post }: BlogPostItemProps) {
         {post.image && (
           <Link
             href={`/blog/${post.slug}`}
-            className='mb-4 block aspect-video w-full overflow-hidden rounded-t-lg relative'
-            legacyBehavior>
+            className='mb-4 block aspect-video w-full overflow-hidden rounded-t-lg relative'>
             <Image
               src={post.image}
               alt={post.title}
@@ -28,8 +27,7 @@ export function BlogPostItem({ post }: BlogPostItemProps) {
         <CardTitle className='text-xl lg:text-2xl'>
           <Link
             href={`/blog/${post.slug}`}
-            className='hover:text-primary transition-colors'
-            legacyBehavior>
+            className='hover:text-primary transition-colors'>
             {post.title}
           </Link>
         </CardTitle>

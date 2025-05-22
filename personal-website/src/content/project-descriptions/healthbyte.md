@@ -1,59 +1,96 @@
-# Atlantic AI Summit 2025 Code Challenge
+# HealthByte - Atlantic AI Summit 2025
 
-**Position:** 1st Place  
-**Team:** _[HealthByte]_  
-- **Member 1:** Huy Huynh, huy.huynh@dal.ca, [GitHub](https://github.com/GHuyHuynh) 
-- **Member 2:** Hao Tang, hao.tang@dal.ca, [GitHub](https://github.com/haotangphuoc) 
-- **Member 3:** Tobi Onibudo, tobi.onibudo@dal.ca, [GitHub](https://github.com/TobiOnibudo)
-- **Member 4:** Eduard Kakosyan, kakosyaneduard@dal.ca
+**🏆 First Place Winner** | **AI-Driven Healthcare Misinformation Combat Platform**
+
+**Team HealthByte:**
+- **Eduard Kakosyan** (Lead AI Developer), kakosyaneduard@dal.ca
+- **Huy Huynh**, huy.huynh@dal.ca, [GitHub](https://github.com/GHuyHuynh) 
+- **Hao Tang**, hao.tang@dal.ca, [GitHub](https://github.com/haotangphuoc) 
+- **Tobi Onibudo**, tobi.onibudo@dal.ca, [GitHub](https://github.com/TobiOnibudo)
+
 ---
 
-## Overview
+## 🚀 Project Overview
 
-On May 2, our team participated in the **AI in Healthcare Challenge** at the Atlantic AI Summit 2025. Twenty university student teams from across Atlantic Canada gathered to address one of public health's greatest challenges: understanding how healthcare information—including misinformation—shapes medical decision-making. Over the course of just 60 hours, we designed and implemented a novel, AI-driven solution to simulate and influence public reactions to healthcare content.
+HealthByte represents a breakthrough in combating healthcare misinformation through AI-driven simulation and content optimization. This platform anticipates public reactions to healthcare content and actively helps communicators craft more effective, trustworthy messaging.
 
-## The Challenge
+**The Problem:** Healthcare misinformation spreads faster than factual information, leading to poor medical decisions and public health crises. Traditional approaches to combat this are reactive rather than proactive.
 
-Participants were tasked with creating an ethical, scalable approach to generate behavioral insights and counter misinformation in public health messaging. Teams used Large Language Model (LLM)-based agents to model how individuals with diverse backgrounds respond to both real and fabricated healthcare articles.
+**Our Innovation:** An AI-powered simulation platform that models diverse public reactions to healthcare content, enabling proactive optimization of messaging before publication.
 
-## Our Solution
+## 🏆 Results & Impact
 
-We developed a two-agent, reinforcement-style workflow:
+- **🥇 First Place** at the Atlantic AI Summit 2025 among 20 university teams from across Atlantic Canada
+- **Novel Approach:** Pioneered proactive misinformation detection and public sentiment analysis
+- **Real-World Application:** Designed for Nova Scotia healthcare communicators, writers, and reporters
+- **Scalable Solution:** Built to handle diverse audiences and content types efficiently
 
-1. **Persona Agent**  
-   - Loads persona profiles from a JSON object, each profile capturing demographics, beliefs, and prior attitudes.
-   - Reads one of five base articles, then reacts with:
-     - An **Acceptance Rate** (numeric score)  
-     - A **Sentiment Reaction** (positive or negative)  
-     - A **Reasoning Summary**  
-   - Powered by the reasoning-capable **o4-mini** model.
+## 🔬 Technical Innovation
 
-2. **Editor Agent**  
-   - Receives the persona agent's reaction and score.  
-   - Edits the original article to improve its persuasiveness for that persona.  
-   - Outputs a revised article that the persona agent evaluates in the next iteration.
+### Architecture Overview
+Our solution employs a sophisticated two-agent reinforcement learning system:
 
-3. **Reinforcement Loop**  
-   - Repeats the read–react–edit cycle until either a target rating is reached or a maximum of 15 iterations completes.  
-   - Each iteration refines the article, boosting its impact on public sentiment.
+**🤖 Persona Agent (Powered by OpenAI o4-mini)**
+- Processes diverse demographic and belief profiles from structured JSON data
+- Analyzes healthcare articles with advanced reasoning capabilities
+- Generates three-dimensional responses:
+  - **Acceptance Rate**: Quantitative trust score (0-100)
+  - **Sentiment Analysis**: Emotional reaction classification
+  - **Reasoning Summary**: Detailed psychological rationale
 
-This pipeline helps Nova Scotia writers, reporters, and healthcare communicators optimize messaging for different audiences and combat misinformation effectively.
+**✏️ Editor Agent (Content Optimization Engine)**
+- Receives persona feedback and sentiment data
+- Iteratively refines article content using advanced NLP techniques
+- Optimizes messaging for specific audience segments
+- Maintains factual accuracy while improving persuasiveness
 
-## Dashboard
+**🔄 Reinforcement Learning Loop**
+- Implements adaptive optimization with up to 15 iterations
+- Converges on optimal content for target demographics
+- Tracks improvement metrics throughout the optimization process
 
-To visualize our results and interact with simulated personas, we built a companion dashboard:
+### Technology Stack
+- **Backend**: Python with advanced prompt engineering and state management
+- **AI Models**: OpenAI SDK with o4-mini for complex reasoning tasks
+- **Cloud Infrastructure**: Azure OpenAI for scalable deployment and enterprise-grade security
+- **Data Management**: Structured JSON for persona profiles and content versioning
+- **Visualization**: Custom dashboard built with modern web technologies
 
-🔗 https://healthbyte-dashboard.vercel.app/  
+## 🌐 Interactive Dashboard
 
-Features include:
-- Real-time persona rating trajectories  
-- Comparison of baseline vs. edited articles  
-- Interactive persona queries
+Experience our AI simulation platform: **[HealthByte Dashboard](https://healthbyte-dashboard.vercel.app/)**
 
-## Acknowledgments
+### Key Features:
+- **Real-time Persona Modeling**: Watch AI agents react to healthcare content in real-time
+- **Content Evolution Tracking**: Visualize how articles improve through iterative optimization
+- **Comparative Analysis**: Side-by-side comparison of original vs. AI-optimized content
+- **Interactive Queries**: Engage directly with simulated personas to understand their reasoning
+- **Performance Metrics**: Track acceptance rates and sentiment changes across demographics
 
-- Atlantic AI Summit 2025 organizing committee and mentors  
-- Industry and government judges
+## 🎯 Use Cases & Applications
+
+1. **Public Health Campaigns**: Optimize vaccine information for diverse communities
+2. **Medical Communications**: Improve patient education materials
+3. **News Media**: Help healthcare journalists craft more effective articles
+4. **Policy Communications**: Enhance government health messaging
+5. **Research**: Study information acceptance patterns across populations
+
+## 🔬 Future Enhancements
+
+- **Multi-language Support**: Expand to serve diverse linguistic communities
+- **Real-time Fact-checking**: Integrate automated fact verification
+- **Advanced Demographics**: Include more nuanced social and cultural factors
+- **Behavioral Prediction**: Extend beyond sentiment to predict actual behavior changes
+
+## 🙏 Acknowledgments
+
+Special thanks to the Atlantic AI Summit 2025 organizing committee, our industry mentors, and the government and industry judges who recognized the potential of our innovative approach to combating healthcare misinformation.
+
 ---
 
-_Thank you for exploring our project!_
+**Links:**
+- 🌐 [Live Demo](https://healthbyte-dashboard.vercel.app/)
+- 📁 [GitHub Repository](https://github.com/EduardKakosyan/atlantic-ai-conference-hackathon)
+- 🏆 [Atlantic AI Summit 2025](https://atlanticaisummit.com/)
+
+*This project demonstrates the power of AI to proactively address one of public health's most pressing challenges: the spread of misinformation.*

@@ -60,8 +60,7 @@ export default async function BlogPostPage({ params }: Props) {
       <div className='mb-8'>
         <Link
           href='/blog'
-          className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground'
-          legacyBehavior>
+          className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground'>
           <ArrowLeftIcon className='mr-2 h-4 w-4' />
           Back to Blog
         </Link>

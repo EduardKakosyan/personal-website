@@ -17,8 +17,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Developer Portfolio",
-  description: "Personal website of an AI Developer from Halifax, Nova Scotia.",
+  title: "Eduard Kakosyan | AI Developer & Machine Learning Engineer",
+  description: "AI Developer specializing in LLMs, local model deployment, and intelligent systems. Winner of Atlantic AI Summit 2025. Based in Halifax, Nova Scotia.",
+  keywords: ["AI Developer", "Machine Learning", "LLM", "OpenAI", "Ollama", "Halifax", "Nova Scotia", "Hackathon Winner"],
+  authors: [{ name: "Eduard Kakosyan" }],
+  creator: "Eduard Kakosyan",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://eduardkakosyan.com",
+    title: "Eduard Kakosyan | AI Developer & Machine Learning Engineer",
+    description: "AI Developer specializing in LLMs, local model deployment, and intelligent systems. Winner of Atlantic AI Summit 2025.",
+    siteName: "Eduard Kakosyan Portfolio",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Eduard Kakosyan | AI Developer & Machine Learning Engineer",
+    description: "AI Developer specializing in LLMs, local model deployment, and intelligent systems.",
+  },
 };
 
 export default function RootLayout({

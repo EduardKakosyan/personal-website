@@ -23,7 +23,7 @@ export function ContactForm() {
     if (name && email && message) {
       const subject = encodeURIComponent(`Contact Form Submission from ${name}`)
       const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`)
-      window.location.href = `mailto:your-email@example.com?subject=${subject}&body=${body}` // Replace with actual email
+      window.location.href = `mailto:eduard@ai-first.ca?subject=${subject}&body=${body}`
       setStatus('Your message has been prepared. Please send it through your email client.')
       // Optionally, reset the form:
       // (event.target as HTMLFormElement).reset();

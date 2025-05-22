@@ -1,5 +1,4 @@
 import { Mail, Linkedin, Github, MapPin, Calendar, Coffee } from 'lucide-react'
-import { ContactForm } from '@/components/features/contact-form'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import type { Metadata } from 'next'
 
@@ -62,7 +61,7 @@ const collaborationOptions = [
 
 export default function ContactPage() {
   return (
-    <div className='container py-12 md:py-16 max-w-6xl'>
+    <div className='container py-12 md:py-16 max-w-4xl mx-auto'>
       <div className='mb-12 text-center'>
         <h1 className='text-4xl font-bold tracking-tighter sm:text-5xl'>
           Contact & Collaboration
@@ -73,17 +72,12 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <div className='grid gap-12 lg:grid-cols-2'>
-        {/* Contact Form */}
-        <div className='space-y-6'>
-          <ContactForm />
-        </div>
-
+      <div className='space-y-12'>
         {/* Contact Information */}
         <div className='space-y-8'>
-          <div>
+          <div className='text-center'>
             <h2 className='text-2xl font-semibold mb-6'>Get in Touch</h2>
-            <div className='grid gap-4'>
+            <div className='grid gap-4 md:grid-cols-2 max-w-2xl mx-auto'>
               {contactDetails.map((item) => (
                 <Card key={item.label} className='p-4'>
                   <div className='flex items-start gap-4'>
@@ -105,21 +99,23 @@ export default function ContactPage() {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Collaboration Options */}
-          <div>
+        {/* Collaboration Options */}
+        <div className='space-y-8'>
+          <div className='text-center'>
             <h2 className='text-2xl font-semibold mb-6'>Collaboration Areas</h2>
-            <div className='space-y-4'>
+            <div className='grid gap-4 md:grid-cols-1 lg:grid-cols-3 max-w-4xl mx-auto'>
               {collaborationOptions.map((option, index) => (
                 <Card key={index}>
                   <CardHeader className='pb-3'>
-                    <div className='flex items-center gap-3'>
+                    <div className='flex items-center gap-3 justify-center md:justify-start'>
                       <option.icon className='h-5 w-5 text-primary' />
                       <CardTitle className='text-lg'>{option.title}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className='pt-0'>
-                    <CardDescription className='text-sm leading-relaxed'>
+                    <CardDescription className='text-sm leading-relaxed text-center md:text-left'>
                       {option.description}
                     </CardDescription>
                   </CardContent>

@@ -1,5 +1,4 @@
 import { HeroSection } from '@/components/features/hero-section'
-import { SkillsShowcase } from '@/components/features/skills-showcase'
 import { AIExpertiseSection } from '@/components/features/ai-expertise-section'
 import { AIAssistantSection } from '@/components/features/ai-assistant-section'
 import { AchievementsSection } from '@/components/features/achievements-section'
@@ -16,7 +15,6 @@ export default function HomePage() {
     <>
       <HeroSection />
       <AIAssistantSection />
-      <SkillsShowcase />
       <AIExpertiseSection />
       <AchievementsSection />
       <CTASection />

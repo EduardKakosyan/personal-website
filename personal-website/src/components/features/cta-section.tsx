@@ -12,8 +12,8 @@ export function CTASection() {
               Let&apos;s Connect
             </h2>
             <p className='text-muted-foreground md:text-lg mb-8 max-w-2xl mx-auto leading-relaxed'>
-              Whether you need AI integration for your business, consultation on machine learning projects, 
-              or want to collaborate on technical solutions, I&apos;m available to chat! 
+              Whether you need AI integration for your business, consultation on AI projects, 
+              or want to collaborate and build something cool, I&apos;m available to chat! 
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
               <Button asChild size='lg' className='min-w-[160px]'>

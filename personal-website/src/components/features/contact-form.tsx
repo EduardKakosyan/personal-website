@@ -1,4 +1,4 @@
-'use client' // Forms generally require client-side interaction
+'use client'
 
 import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
@@ -18,15 +18,11 @@ export function ContactForm() {
     const email = formData.get('email') as string
     const message = formData.get('message') as string
 
-    // Simple mailto: link generation for now.
-    // For a real form, you'd use a backend API or a service like Formspree/Resend.
     if (name && email && message) {
       const subject = encodeURIComponent(`Contact Form Submission from ${name}`)
       const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`)
       window.location.href = `mailto:eduard@ai-first.ca?subject=${subject}&body=${body}`
       setStatus('Your message has been prepared. Please send it through your email client.')
-      // Optionally, reset the form:
-      // (event.target as HTMLFormElement).reset();
     } else {
       setStatus('Please fill out all fields.')
     }

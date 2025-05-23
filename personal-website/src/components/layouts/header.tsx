@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -22,6 +23,14 @@ export function Header() {
       <div className='container flex h-14 max-w-screen-2xl items-center justify-between'>
         <div className='flex items-center'>
           <Link href='/' className='flex items-center space-x-2 pl-4'>
+            <div className='relative w-8 h-8 rounded-full overflow-hidden bg-white'>
+              <Image
+                src='/images/logo.jpeg'
+                alt='Eduard Kakosyan Logo'
+                fill
+                className='object-cover'
+              />
+            </div>
             <span className='font-bold sm:inline-block'>Eduard Kakosyan</span>
           </Link>
         </div>

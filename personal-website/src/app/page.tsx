@@ -1,7 +1,8 @@
 import { HeroSection } from '@/components/features/hero-section'
+import { SkillsShowcase } from '@/components/features/skills-showcase'
 import { AIExpertiseSection } from '@/components/features/ai-expertise-section'
+import { AIAssistantSection } from '@/components/features/ai-assistant-section'
 import { AchievementsSection } from '@/components/features/achievements-section'
-import { ProjectHighlights } from '@/components/features/project-highlights'
 import { CTASection } from '@/components/features/cta-section'
 import type { Metadata } from 'next'
 
@@ -10,13 +11,14 @@ export const metadata: Metadata = {
   description: 'Portfolio of Eduard Kakosyan, AI Developer and hackathon winner. Explore AI projects, LLM implementations, and technical solutions.',
 }
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
     <>
       <HeroSection />
+      <AIAssistantSection />
+      <SkillsShowcase />
       <AIExpertiseSection />
       <AchievementsSection />
-      <ProjectHighlights />
       <CTASection />
     </>
   )

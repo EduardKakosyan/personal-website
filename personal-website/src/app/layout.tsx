@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layouts/header";
 import { Footer } from "@/components/layouts/footer";
+import { Chatbot } from "@/components/features/chatbot";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
             <Header />
             <main className="flex-1 flex flex-col items-center w-full">{children}</main>
             <Footer />
+            <Chatbot />
           </div>
         </ThemeProvider>
       </body>

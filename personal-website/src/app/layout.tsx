@@ -23,6 +23,13 @@ export const metadata: Metadata = {
   keywords: ["AI Developer", "Machine Learning", "LLM", "OpenAI", "Ollama", "Halifax", "Nova Scotia", "Hackathon Winner"],
   authors: [{ name: "Eduard Kakosyan" }],
   creator: "Eduard Kakosyan",
+  icons: {
+    icon: [
+      { url: '/favicon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    apple: '/favicon/favicon-32x32.png'
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

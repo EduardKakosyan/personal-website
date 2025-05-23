@@ -12,8 +12,8 @@ const expertiseAreas: ExpertiseArea[] = [
   {
     title: 'Large Language Models',
     description: 'Building conversational systems and content generation platforms',
-    technologies: ['OpenAI SDK', 'Azure OpenAI', 'LangChain', 'LangGraph'],
-    applications: ['Conversational AI', 'Content Generation', 'Code Assistance', 'Document Analysis']
+    technologies: ['OpenAI SDK', 'Azure OpenAI', 'LangChain', 'LangGraph', 'Google AI Studio'],
+    applications: ['Content Generation', 'Code Assistance', 'Document Analysis', 'Agentic Systems']
   },
   {
     title: 'Local AI Deployment',
@@ -24,7 +24,7 @@ const expertiseAreas: ExpertiseArea[] = [
   {
     title: 'AI Application Architecture',
     description: 'Designing scalable, production-ready AI systems with modern frameworks',
-    technologies: ['Next.js', 'Vercel AI SDK', 'Azure', 'Supabase', 'Docker', 'FastAPI'],
+    technologies: ['Next.js', 'Vercel AI SDK', 'Azure', 'Supabase', 'Docker', 'FastAPI', 'Cursor', 'Zed'],
     applications: ['Enterprise Solutions', 'Real-time Systems', 'API Development', 'Cloud Deployment']
   },
   {

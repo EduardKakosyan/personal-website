@@ -1,6 +1,5 @@
 import { BioSection } from '@/components/features/bio-section'
 import { SkillsShowcase } from '@/components/features/skills-showcase'
-import { TestimonialsSection } from '@/components/features/testimonials-section'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -13,7 +12,6 @@ export default function AboutPage() {
     <>
       <BioSection />
       <SkillsShowcase />
-      <TestimonialsSection />
     </>
   )
 } 

@@ -19,23 +19,23 @@ const skillCategories: SkillCategory[] = [
   },
   {
     title: 'AI & Machine Learning',
-    skills: ['OpenAI SDK', 'Azure OpenAI', 'Ollama', 'LangChain', 'LangGraph', 'Pinecone', 'WebLLM', 'WebGPU', 'SimPy', 'NetworkX'],
+    skills: ['OpenAI SDK', 'Azure OpenAI', 'Ollama', 'llama.cpp', 'LangGraph', 'n8n', 'WebLLM', 'WebGPU' ],
     description: 'Where I spend most of my time these days',
-    context: 'Building conversational AI with OpenAI and Azure, running local models with Ollama on my MacBook, creating multi-agent systems with LangGraph, and simulating complex networks for research.',
+    context: 'Building agentic AI with OpenAI and Azure, running local models with Ollama on my MacBook for unlimited tokens, and creating multi-agent systems with LangGraph.',
     icon: '🤖'
   },
   {
     title: 'Web Development',
     skills: ['Next.js', 'React', 'Vercel', 'Supabase', 'Tailwind CSS', 'shadcn/ui', 'Clerk', 'Stripe'],
     description: 'Building full-stack applications that people actually use',
-    context: 'From this portfolio site to CarGrep, I use Next.js for everything. Supabase for databases, Clerk for auth, and Tailwind because writing CSS from scratch is painful.',
+    context: 'From this portfolio site to CarGrep, I use Next.js for everything. Supabase for databases, Clerk for auth, and Tailwind because writing CSS from scratch is painful. Zed for code editing.',
     icon: '🌐'
   },
   {
     title: 'Tools & Environment',
-    skills: ['Git', 'GitHub', 'Docker', 'Linux', 'macOS', 'Cursor', 'NVIM', 'Tmux', 'n8n', 'OrbStack'],
+    skills: ['Git', 'Docker', 'Linux', 'macOS', 'Cursor', 'NVIM', 'Tmux', 'n8n', 'OrbStack', 'Zed'],
     description: 'The daily drivers that keep me productive',
-    context: 'Cursor for most coding (though I still jump into NVIM), Tmux for terminal management, Docker for containerization, and n8n for workflow automation. Git saves my life daily.',
+    context: 'Currently jumping between different editors experimenting with Zed, Cursor and my go to Nvim, Tmux for terminal management, and Alacritty for the terminal. OrbStack for better Docker and Linux experience. Vivaldi for the browser. If you are interested in my dotfiles, check out my GitHub repo.',
     icon: '🛠️'
   },
   {

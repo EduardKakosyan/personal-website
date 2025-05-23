@@ -20,20 +20,20 @@ const achievements: Achievement[] = [
     color: 'destructive'
   },
   {
-    title: 'Volta Hackathon',
-    position: 'Second Place',
-    organization: 'Volta Innovation',
-    date: '2024',
-    description: 'Developed Second Brain, an AI-powered time management platform for university students.',
-    color: 'secondary'
-  },
-  {
     title: 'AI Developer',
     position: 'Professional Role',
     organization: 'AI-First Consulting',
     date: 'Current',
     description: 'Building AI solutions for enterprise clients, specializing in intelligent automation and LLM integration.',
     color: 'default'
+  },
+  {
+    title: 'Volta Hackathon',
+    position: 'Second Place',
+    organization: 'Volta Innovation',
+    date: 'December 2024',
+    description: 'Developed Second Brain, an AI-powered time management platform for university students.',
+    color: 'secondary'
   },
 ]
 
@@ -45,9 +45,6 @@ export function AchievementsSection() {
           <h2 className='text-3xl font-bold tracking-tighter sm:text-4xl mb-4'>
             Recent Activities 
           </h2>
-          <p className='text-muted-foreground md:text-lg max-w-2xl mx-auto'>
-            Recognition in AI development and hackathons
-          </p>
         </div>
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {achievements.map((achievement, index) => (

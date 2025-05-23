@@ -19,7 +19,7 @@ const skillCategories: SkillCategory[] = [
   },
   {
     title: 'AI & Machine Learning',
-    skills: ['OpenAI SDK', 'Azure OpenAI', 'Ollama', 'LangChain', 'LangGraph', 'Pinecone', 'SimPy', 'NetworkX'],
+    skills: ['OpenAI SDK', 'Azure OpenAI', 'Ollama', 'LangChain', 'LangGraph', 'Pinecone', 'WebLLM', 'WebGPU', 'SimPy', 'NetworkX'],
     description: 'Where I spend most of my time these days',
     context: 'Building conversational AI with OpenAI and Azure, running local models with Ollama on my MacBook, creating multi-agent systems with LangGraph, and simulating complex networks for research.',
     icon: '🤖'

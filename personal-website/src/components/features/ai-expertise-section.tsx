@@ -18,7 +18,7 @@ const expertiseAreas: ExpertiseArea[] = [
   {
     title: 'Local AI Deployment',
     description: 'Hosting and optimizing AI models for privacy-focused and offline applications',
-    technologies: ['Ollama', 'llama.cpp', 'MacBook', 'Raspberry Pi', 'Local Inference', 'Model Optimization'],
+    technologies: ['Ollama', 'llama.cpp', 'MacBook', 'Raspberry Pi', 'Local Inference', 'Model Optimization', 'WebLLM', 'MLC-AI'],
     applications: ['Privacy-First Solutions', 'Edge Computing', 'Rapid Prototyping', 'Custom Fine-tuning']
   },
   {

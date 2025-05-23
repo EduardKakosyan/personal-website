@@ -39,7 +39,7 @@ const achievements: Achievement[] = [
 
 export function AchievementsSection() {
   return (
-    <section className='py-12 md:py-24 bg-muted/40 w-full'>
+    <section className='py-12 md:py-24 bg-secondary/20 w-full'>
       <div className='container mx-auto px-4 max-w-6xl'>
         <div className='text-center mb-12'>
           <h2 className='text-3xl font-bold tracking-tighter sm:text-4xl mb-4'>

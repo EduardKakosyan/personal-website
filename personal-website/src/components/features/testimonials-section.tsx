@@ -55,7 +55,7 @@ export function TestimonialsSection() {
               <CardContent className='p-6 h-full flex flex-col'>
                 <div className='flex-1'>
                   <blockquote className='text-sm leading-relaxed text-muted-foreground mb-4 italic'>
-                    "{testimonial.quote}"
+                    &ldquo;{testimonial.quote}&rdquo;
                   </blockquote>
                 </div>
                 <div className='space-y-3 pt-4 border-t border-muted'>

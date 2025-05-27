@@ -68,7 +68,7 @@ export default function ContactPage() {
         </h1>
         <p className='mt-3 max-w-3xl mx-auto text-lg text-muted-foreground md:text-xl'>
           Whether you need AI consultation, want to partner on a hackathon, or have a project idea, 
-          I'm available to discuss potential collaboration opportunities.
+          I&apos;m available to discuss potential collaboration opportunities.
         </p>
       </div>
 

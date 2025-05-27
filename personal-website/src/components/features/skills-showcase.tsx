@@ -56,7 +56,7 @@ export function SkillsShowcase() {
             What I Work With
           </h2>
           <p className='text-muted-foreground md:text-lg max-w-2xl mx-auto'>
-            Here's my technical toolkit and how I actually use it in practice
+            Here&apos;s my technical toolkit and how I actually use it in practice
           </p>
         </div>
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
@@ -94,7 +94,7 @@ export function SkillsShowcase() {
               <p className='text-muted-foreground text-sm leading-relaxed'>
                 The tech world moves fast, and I enjoy keeping up. Currently exploring: advanced prompt engineering techniques, 
                 local AI model optimization, and better ways to build user-friendly AI applications. 
-                If you're working on something interesting, I'd love to hear about it.
+                If you&apos;re working on something interesting, I&apos;d love to hear about it.
               </p>
             </CardContent>
           </Card>

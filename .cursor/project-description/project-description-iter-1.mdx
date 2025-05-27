@@ -1,0 +1,403 @@
+## Project Overview
+
+This is a Next.js (v15.3.2) personal portfolio website for Eduard Kakosyan, an AI Developer. It utilizes React (v19) and TypeScript. The styling is primarily handled by Tailwind CSS (v4), with some UI components potentially leveraging Radix UI primitives, as suggested by the presence of `@radix-ui/react-label`, `@radix-ui/react-navigation-menu`, and `@radix-ui/react-slot`. The project uses `next-themes` for theme management (e.g., light/dark mode) and `lucide-react` for icons.
+
+## Key Technologies and Features
+
+*   **Framework:** Next.js (App Router)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS, `clsx`, `tailwind-merge`
+*   **UI:** Radix UI (likely for underlying component structure), `lucide-react` (icons)
+*   **Content Management:** Markdown/MDX for blog posts and project descriptions. The processing pipeline includes `unified`, `remark`, `rehype`, `gray-matter`, and `rehype-highlight` for syntax highlighting.
+*   **Fonts:** Geist Sans and Geist Mono.
+*   **SEO:** Comprehensive metadata setup in the root layout for Open Graph, Twitter Cards, and general search engine optimization.
+*   **WebLLM Integration:** The project includes `@mlc-ai/web-llm` and has specific Next.js configurations (headers, Webpack fallbacks for `fs`, `path`, `crypto`, and enabling `asyncWebAssembly`) to support WebLLM functionality. This is a significant feature, likely powering the `Chatbot` component.
+*   **Linting/Formatting:** ESLint and likely Prettier (though not explicitly seen, it's common with this stack). TypeScript and ESLint build error checks are currently disabled in `next.config.js` as a temporary measure.
+*   **Build Tool:** Next.js with Turbopack for development (`next dev --turbopack`).
+
+## Directory Structure and File Organization
+
+*   **`src/app/`**: Contains the core application logic using the Next.js App Router.
+    *   `layout.tsx`: Root layout, sets up global styles, fonts, theme provider, header, footer, and a persistent chatbot.
+    *   `page.tsx`: Homepage, composed of several feature sections (`HeroSection`, `AIAssistantSection`, etc.).
+    *   `globals.css`: Global stylesheets.
+    *   `(pages)/`: Directory group for standard static pages like `about`, `contact`, and `projects`.
+        *   Each page (e.g., `about/page.tsx`) likely defines its own content and metadata.
+    *   `blog/`: Contains the blog functionality.
+        *   `layout.tsx`: Specific layout for blog pages.
+        *   `page.tsx`: Blog listing page.
+        *   `[slug]/page.tsx`: Template for individual blog posts (dynamic route).
+*   **`src/components/`**: Houses reusable React components.
+    *   `features/`: Components for specific sections/features (e.g., `HeroSection`, `AIAssistantSection`, `Chatbot`).
+    *   `layouts/`: Layout components like `Header.tsx` and `Footer.tsx`.
+    *   `ui/`: Likely contains generic UI elements (e.g., buttons, cards), possibly custom implementations or wrappers around Shadcn UI/Radix.
+    *   `shared/`: Components shared across different parts of the application.
+    *   `theme-provider.tsx`: Component for managing light/dark themes.
+*   **`src/content/`**: Stores content for the website, primarily Markdown files and data definitions.
+    *   `blog/`: Contains Markdown files for blog posts.
+    *   `project-descriptions/`: Contains Markdown files for detailed project descriptions.
+    *   `projects.ts`: Defines an array of project objects, including metadata and a function to load the long description from Markdown files.
+*   **`src/lib/`**: Contains utility functions, custom hooks, and type definitions.
+    *   `utils.ts`: General utility functions (e.g., `cn` for class name merging).
+    *   `markdown.ts`: Functions for reading Markdown files (`getMarkdownContent`) and converting Markdown to HTML (`markdownToHtml`).
+    *   `blog-utils.ts`: Utilities specific to blog functionality.
+    *   `types.ts`: Global TypeScript type definitions.
+    *   `constants.ts`: Global constants.
+    *   `hooks/`: Custom React hooks.
+*   **`public/`**: Static assets.
+    *   `favicon/`: Favicon images.
+    *   `images/`: Other images, such as the logo (`logo.jpeg`).
+*   **Configuration Files (Root):**
+    *   `next.config.js`: Next.js configuration (includes WebLLM setup, temporary disabling of TS/ESLint errors during build).
+    *   `tailwind.config.ts`: Tailwind CSS configuration (content paths, theme extensions, typography plugin).
+    *   `package.json`: Project dependencies, scripts, and metadata.
+    *   `tsconfig.json`: TypeScript configuration.
+    *   `components.json`: Likely related to Shadcn UI, specifying component library settings.
+
+## Page Structure and Navigation
+
+*   **Homepage (`/`)**:
+    *   Displays a `HeroSection`, `AIAssistantSection`, `AIExpertiseSection`, `AchievementsSection`, and `CTASection`.
+*   **Main Navigation (Header)**:
+    *   Logo and "Eduard Kakosyan" (links to Homepage).
+    *   Links: "About", "Projects", "Contact".
+*   **Footer**:
+    *   Copyright notice.
+    *   Links to GitHub and LinkedIn profiles.
+*   **Pages**:
+    *   **About (`/about`)**: Information about Eduard Kakosyan.
+    *   **Projects (`/projects`)**: Lists projects. Likely uses data from `src/content/projects.ts`.
+        *   Individual Project Pages (`/projects/[slug]`): Detailed view of a specific project, with content possibly from Markdown files in `src/content/project-descriptions/`.
+    *   **Contact (`/contact`)**: Contact information or a contact form.
+    *   **Blog (`/blog`)**: Lists blog posts.
+        *   Individual Blog Post Pages (`/blog/[slug]`): Displays a single blog post, with content from Markdown files in `src/content/blog/`.
+
+## Key Components and Functionality
+
+*   **Header (`src/components/layouts/header.tsx`)**: Sticky navigation bar with logo, site name, and links to main pages. Uses Radix UI NavigationMenu.
+*   **Footer (`src/components/layouts/footer.tsx`)**: Contains copyright and social media links.
+*   **ThemeProvider (`src/components/theme-provider.tsx`)**: Manages light/dark mode using `next-themes`.
+*   **Chatbot (`src/components/features/chatbot/index.tsx` - path assumed)**: A persistent chatbot feature, likely powered by the WebLLM integration. This is a standout interactive element of the site.
+*   **Project System**:
+    *   Data for projects is defined in `src/content/projects.ts`.
+    *   Each project has properties like title, description, tags, URLs, and a slug.
+    *   `longDescription` for each project is loaded from a corresponding Markdown file in `src/content/project-descriptions/`.
+    *   Helper functions in `projects.ts` allow fetching all projects, featured projects, projects by slug, etc.
+*   **Blog System**:
+    *   Blog posts are likely managed as Markdown files in `src/content/blog/`.
+    *   `src/lib/blog-utils.ts` probably contains functions to fetch and process blog post data (e.g., reading frontmatter from Markdown).
+    *   Dynamic routing (`/blog/[slug]`) is used for individual posts.
+*   **Markdown Processing (`src/lib/markdown.ts`)**:
+    *   `getMarkdownContent`: Reads raw Markdown content from files.
+    *   `markdownToHtml`: Converts Markdown strings to HTML, applying syntax highlighting (`rehype-highlight`) and GFM support.
+
+## Styling and Design
+
+*   **Tailwind CSS**: Used for utility-first styling. The configuration specifies content paths and includes the `@tailwindcss/typography` plugin for styling Markdown-generated HTML.
+*   **Theme**: Uses Geist Sans and Geist Mono fonts. Supports light/dark mode.
+*   **Colors/Branding**: The logo is `/images/logo.jpeg`. Specific color palette details would be in `globals.css` or defined within Tailwind config/CSS variables, but not explicitly detailed in the file structure scan. The header has a backdrop blur effect.
+
+## Interaction and Data Flow (Simplified)
+
+1.  **User Request**: User navigates to a URL.
+2.  **Next.js Routing**: The App Router matches the URL to a page component (e.g., `src/app/projects/page.tsx`).
+3.  **Layout Rendering**: The root `layout.tsx` wraps the page component, providing the overall structure (Header, Footer, ThemeProvider, Chatbot).
+4.  **Page Component Rendering**:
+    *   **Static Pages (e.g., About)**: Render their JSX content.
+    *   **Dynamic Pages (e.g., Project Details, Blog Posts)**:
+        *   The page component (e.g., `src/app/projects/[slug]/page.tsx`) likely uses its `slug` parameter to fetch data.
+        *   For projects, it would call functions from `src/content/projects.ts` (e.g., `getProjectBySlug`). This function, in turn, might call `getMarkdownContent` from `src/lib/markdown.ts` to load the detailed description.
+        *   The Markdown content is then converted to HTML by `markdownToHtml` (if not done at build time for SSG).
+        *   The fetched and processed data is passed as props to the page component for rendering.
+    *   **Homepage**: Renders various feature sections, which might internally fetch data if needed (e.g., featured projects for an "Achievements" or "Projects" section).
+5.  **Component Rendering**: Individual components (Header, Footer, sections, UI elements) render their respective JSX and apply styles via Tailwind CSS.
+6.  **Client-Side Interactivity**:
+    *   `Header` uses client-side navigation via `next/link`.
+    *   `ThemeProvider` handles theme switching on the client.
+    *   The `Chatbot` component provides interactive AI-powered chat, leveraging WebLLM on the client side.
+    *   Other client components (`'use client'`) handle user interactions and state updates.
+
+## Mind Map/Relationships
+
+*   **`RootLayout`** is the entry point for UI.
+    *   It applies global styles, fonts, and themes (`ThemeProvider`).
+    *   It embeds `Header`, `Footer`, and `Chatbot`.
+    *   It renders `children` (the current page).
+*   **`Page Components`** (e.g., `HomePage`, `AboutPage`, `ProjectsPage`) define the content for specific routes.
+    *   They often compose multiple **`Feature Components`** (e.g., `HeroSection`, `ProjectCard`).
+    *   Data for dynamic pages (blog, projects) comes from **`Content Sources`** (`src/content/`).
+        *   `projects.ts` acts as a data accessor for project information, pulling long descriptions from Markdown files in `project-descriptions/`.
+        *   Blog posts are likely individual Markdown files in `src/content/blog/`, processed by `blog-utils.ts` and `markdown.ts`.
+*   **`Utility Functions`** (`src/lib/`) support various tasks:
+    *   `markdown.ts`: Markdown parsing and conversion.
+    *   `utils.ts`: CSS class name management.
+*   **`Styling`** is primarily through Tailwind CSS, configured in `tailwind.config.ts` and applied via class names in components.
+*   **`WebLLM Integration`** is a core feature, supported by `next.config.js` modifications and the `@mlc-ai/web-llm` package, powering the `Chatbot`.
+
+This description provides a structured overview that another LLM should be able to understand, focusing on architecture, key technologies, content flow, and primary features without overly complex notations or direct code links.
+
+---
+
+@project-description
+
+# Security and UI/UX Improvement Plan
+
+## 🔒 Critical Security Issues
+
+### **1. XSS Vulnerability - HTML Injection**
+**Severity: HIGH**
+- **Problem**: Using `dangerouslySetInnerHTML` without sanitization in blog posts and project pages
+- **Files**: `src/app/blog/[slug]/page.tsx:108`, `src/app/(pages)/projects/[slug]/page.tsx:111`
+- **Risk**: Malicious HTML/JavaScript injection through markdown content
+- **Solution**: 
+  - Install and implement DOMPurify for HTML sanitization
+  - Create sanitized content wrapper component
+  - Sanitize all markdown-to-HTML conversions
+
+### **2. Missing Content Security Policy**
+**Severity: HIGH**
+- **Problem**: No CSP headers implemented
+- **Risk**: XSS attacks, clickjacking, and unauthorized resource loading
+- **Solution**: 
+  - Implement comprehensive CSP headers in `next.config.js`
+  - Configure strict policies for scripts, styles, and external resources
+  - Add nonce-based script execution for WebLLM
+
+### **3. Unsafe Markdown Processing**
+**Severity: MEDIUM**
+- **Problem**: `allowDangerousHtml: true` in markdown processing without sanitization
+- **File**: `src/lib/markdown.ts:13,16`
+- **Risk**: HTML injection through markdown files
+- **Solution**: 
+  - Remove `allowDangerousHtml` flags
+  - Implement server-side sanitization with DOMPurify
+  - Use safer rehype plugins
+
+### **4. TypeScript and ESLint Disabled During Build**
+**Severity: MEDIUM**
+- **Problem**: Build process ignores type errors and linting
+- **File**: `next.config.js:4-12`
+- **Risk**: Runtime errors, security vulnerabilities from unchecked code
+- **Solution**: 
+  - Fix all TypeScript errors
+  - Enable strict type checking
+  - Re-enable ESLint during builds
+
+### **5. Insecure External Link Handling**
+**Severity: LOW-MEDIUM**
+- **Problem**: No `rel="noopener noreferrer"` on external links
+- **Files**: Various components with external links
+- **Risk**: Tabnabbing attacks, information leakage
+- **Solution**: 
+  - Add security attributes to all external links
+  - Create secure link wrapper component
+
+## 🛡️ Security Enhancements to Implement
+
+### **1. Input Validation and Sanitization**
+```typescript
+// Add input validation library
+"dependencies": {
+  "zod": "^3.22.4",
+  "dompurify": "^3.0.7",
+  "isomorphic-dompurify": "^2.0.0"
+}
+```
+
+### **2. Security Headers Implementation**
+```javascript
+// Enhanced next.config.js security headers
+headers: [
+  {
+    key: 'Content-Security-Policy',
+    value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:;"
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'DENY'
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff'
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'origin-when-cross-origin'
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=()'
+  }
+]
+```
+
+### **3. Form Security**
+- Add CSRF protection
+- Implement rate limiting for contact form
+- Add server-side validation schemas
+- Sanitize all form inputs
+
+### **4. WebLLM Security**
+- Implement proper error boundaries
+- Add input sanitization for chat messages
+- Limit message length and frequency
+- Add content filtering for inappropriate content
+
+## 🎨 UI/UX Improvements
+
+### **1. Accessibility (a11y) Issues**
+
+#### **Missing Accessibility Features**
+- **Problem**: Inadequate keyboard navigation support
+- **Solution**: 
+  - Add proper focus management
+  - Implement skip navigation links
+  - Add ARIA labels and descriptions
+  - Ensure all interactive elements are keyboard accessible
+
+#### **Color Contrast and Visual Design**
+- **Problem**: No accessibility color contrast verification
+- **Solution**: 
+  - Audit all color combinations for WCAG AA compliance
+  - Add high contrast mode support
+  - Implement focus indicators that meet accessibility standards
+
+#### **Screen Reader Support**
+- **Problem**: Missing semantic HTML and ARIA attributes
+- **Solution**: 
+  - Add proper heading hierarchy
+  - Implement ARIA landmarks
+  - Add screen reader-only content for context
+  - Test with screen readers (NVDA, JAWS, VoiceOver)
+
+### **2. Performance and Loading Experience**
+
+#### **Loading States and Feedback**
+- **Problem**: Missing loading indicators and skeleton screens
+- **Solution**: 
+  - Add skeleton loaders for content sections
+  - Implement progressive loading for images
+  - Add loading states for chatbot initialization
+  - Create smooth transitions between states
+
+#### **Error Handling and User Feedback**
+- **Problem**: Poor error messaging and recovery
+- **Solution**: 
+  - Implement user-friendly error boundaries
+  - Add retry mechanisms for failed operations
+  - Create informative error messages
+  - Add success feedback for user actions
+
+### **3. Mobile and Responsive Design**
+
+#### **Mobile Navigation**
+- **Problem**: Desktop-focused navigation
+- **Solution**: 
+  - Implement mobile-first navigation design
+  - Add hamburger menu for mobile
+  - Ensure touch targets meet minimum size requirements (44px)
+  - Optimize for thumb navigation
+
+#### **Responsive Components**
+- **Problem**: Components not optimized for all screen sizes
+- **Solution**: 
+  - Audit all components for mobile responsiveness
+  - Implement fluid typography using clamp()
+  - Add proper spacing for different screen sizes
+  - Test on various device sizes
+
+### **4. User Experience Enhancements**
+
+#### **Contact Form UX**
+- **Problem**: Poor form user experience
+- **Solution**: 
+  - Add real-time validation feedback
+  - Implement proper error messaging
+  - Add form auto-save functionality
+  - Create better success confirmation
+  - Add alternative contact methods
+
+#### **Chatbot Experience**
+- **Problem**: Chatbot lacks context and error handling
+- **Solution**: 
+  - Add typing indicators during response generation
+  - Implement conversation history persistence
+  - Add quick action buttons for common queries
+  - Create fallback responses for errors
+  - Add option to clear conversation
+
+#### **Content Discovery**
+- **Problem**: Limited content navigation and search
+- **Solution**: 
+  - Add search functionality for blog posts and projects
+  - Implement tag-based filtering
+  - Add related content suggestions
+  - Create breadcrumb navigation
+
+## 🚀 Performance Optimizations
+
+### **1. Core Web Vitals**
+- Implement lazy loading for images and components
+- Optimize bundle splitting for better LCP
+- Add preloading for critical resources
+- Implement proper caching strategies
+
+### **2. SEO and Meta Data**
+- Add structured data (JSON-LD) for better search results
+- Implement proper canonical URLs
+- Add sitemap generation
+- Optimize meta descriptions and titles
+- Add Open Graph images for social sharing
+
+### **3. Monitoring and Analytics**
+- Implement error tracking (Sentry)
+- Add performance monitoring
+- Track user interactions for UX insights
+- Monitor Core Web Vitals
+
+## 📦 Required Dependencies
+
+```json
+{
+  "dependencies": {
+    "dompurify": "^3.0.7",
+    "isomorphic-dompurify": "^2.0.0",
+    "zod": "^3.22.4",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-toast": "^1.1.5"
+  },
+  "devDependencies": {
+    "@axe-core/react": "^4.8.4",
+    "eslint-plugin-jsx-a11y": "^6.8.0"
+  }
+}
+```
+
+## 🎯 Implementation Priority
+
+### **Phase 1: Critical Security (Week 1)**
+1. Implement DOMPurify for HTML sanitization
+2. Add Content Security Policy headers
+3. Fix TypeScript errors and re-enable build checks
+4. Secure external links
+
+### **Phase 2: Accessibility & Core UX (Week 2)**
+1. Implement proper accessibility features
+2. Add loading states and error boundaries
+3. Improve mobile navigation
+4. Add form validation and feedback
+
+### **Phase 3: Enhanced Features (Week 3)**
+1. Implement search functionality
+2. Add content discovery features
+3. Enhance chatbot experience
+4. Add monitoring and analytics
+
+### **Phase 4: Performance & SEO (Week 4)**
+1. Optimize Core Web Vitals
+2. Implement structured data
+3. Add comprehensive caching
+4. Performance monitoring setup
+
+This comprehensive plan addresses the critical security vulnerabilities while significantly improving the user experience and accessibility of the personal website.

@@ -259,8 +259,10 @@ export function Chatbot() {
 
 	// Quick action buttons
 	const quickActions = [
-		"Tell me about Eduard&apos;s projects",
-		"What are Eduard&apos;s technical skills?",
+		// eslint-disable-next-line quotes
+		"Tell me about Eduard's projects",
+		// eslint-disable-next-line quotes
+		"What are Eduard's technical skills?",
 		"What hackathons has Eduard won?",
 		"How can I contact Eduard?"
 	]
@@ -403,7 +405,8 @@ export function Chatbot() {
 									!isSupported 
 										? 'WebGPU required...' 
 										: engine 
-										? 'Ask about Eduard&apos;s projects...' 
+										// eslint-disable-next-line quotes
+										? "Ask about Eduard's projects..." 
 										: 'Initializing...'
 								}
 								disabled={!engine || isLoading || !isSupported}

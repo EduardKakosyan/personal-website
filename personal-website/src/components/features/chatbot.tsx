@@ -2,16 +2,25 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { ChatCompletionMessageParam } from '@mlc-ai/web-llm'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { MessageCircle, X, Send, Loader2, Bot, User, AlertTriangle } from 'lucide-react'
+import { MessageCircle, X, Send, Bot, User, AlertTriangle, Trash2 } from 'lucide-react'
 import { useWebLLM } from '@/lib/hooks/use-webllm'
+import { validateChatMessage } from '@/lib/validation'
+import { sanitizeUserInput } from '@/lib/sanitizer'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
 
 interface Message {
 	role: 'user' | 'assistant'
 	content: string
 	timestamp: Date
+	id: string
+}
+
+interface RateLimit {
+	count: number
+	resetTime: number
 }
 
 const CHATBOT_CONTEXT = `You are Eduard Kakosyan's personal website assistant. You are helpful, friendly, and knowledgeable about Eduard's background, projects, and skills.
@@ -73,32 +82,67 @@ INSTRUCTIONS:
 - If asked about topics outside Eduard's profile, politely redirect to relevant topics
 - Highlight achievements and technical innovations in projects
 - Encourage users to check out live demos and GitHub repositories
-- Keep responses focused but informative`
+- Keep responses focused but informative
+- Be helpful and professional at all times
+- Do not generate harmful, inappropriate, or misleading content`
+
+// Rate limiting constants
+const RATE_LIMIT_MAX = 10 // messages per window
+const RATE_LIMIT_WINDOW = 60000 // 1 minute in milliseconds
 
 export function Chatbot() {
 	const [isOpen, setIsOpen] = useState(false)
 	const [messages, setMessages] = useState<Message[]>([])
 	const [inputMessage, setInputMessage] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
+	const [rateLimit, setRateLimit] = useState<RateLimit>({ count: 0, resetTime: Date.now() + RATE_LIMIT_WINDOW })
+	const [inputError, setInputError] = useState('')
 	const messagesEndRef = useRef<HTMLDivElement>(null)
+	const inputRef = useRef<HTMLTextAreaElement>(null)
 
-	const { engine, isInitializing, isSupported, initialize, generateResponse, error } = useWebLLM({
+	const { engine, isInitializing, isSupported, initialize, generateResponse } = useWebLLM({
 		onInitialized: () => {
-			setMessages([{
+			const welcomeMessage: Message = {
+				id: generateMessageId(),
 				role: 'assistant',
 				content: "Hello! I'm Eduard's AI assistant. I can tell you about his projects, background, and technical skills. What would you like to know?",
 				timestamp: new Date()
-			}])
+			}
+			setMessages([welcomeMessage])
 		},
 		onError: (error) => {
-			setMessages([{
+			const errorMessage: Message = {
+				id: generateMessageId(),
 				role: 'assistant',
 				content: `Sorry, I'm having trouble starting up: ${error.message}`,
 				timestamp: new Date()
-			}])
+			}
+			setMessages([errorMessage])
 		}
 	})
 
+	// Generate unique message IDs
+	const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+	// Check rate limit
+	const checkRateLimit = (): boolean => {
+		const now = Date.now()
+		
+		// Reset rate limit if window has expired
+		if (now > rateLimit.resetTime) {
+			setRateLimit({ count: 0, resetTime: now + RATE_LIMIT_WINDOW })
+			return true
+		}
+		
+		// Check if under limit
+		if (rateLimit.count >= RATE_LIMIT_MAX) {
+			return false
+		}
+		
+		return true
+	}
+
+	// Scroll to bottom of messages
 	const scrollToBottom = () => {
 		setTimeout(() => {
 			messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -109,12 +153,45 @@ export function Chatbot() {
 		scrollToBottom()
 	}, [messages])
 
+	// Clear conversation
+	const clearConversation = () => {
+		setMessages([{
+			id: generateMessageId(),
+			role: 'assistant',
+			content: "Hello! I'm Eduard's AI assistant. I can tell you about his projects, background, and technical skills. What would you like to know?",
+			timestamp: new Date()
+		}])
+	}
+
 	const sendMessage = async () => {
 		if (!inputMessage.trim() || isLoading || !engine) return
 
+		// Clear any previous input errors
+		setInputError('')
+
+		// Validate input
+		const validation = validateChatMessage({ content: inputMessage.trim() })
+		if (!validation.success) {
+			setInputError(validation.errors[0] || 'Invalid message')
+			return
+		}
+
+		// Check rate limiting
+		if (!checkRateLimit()) {
+			setInputError('Rate limit exceeded. Please wait before sending another message.')
+			return
+		}
+
+		// Update rate limit
+		setRateLimit(prev => ({ ...prev, count: prev.count + 1 }))
+
+		// Sanitize input
+		const sanitizedContent = sanitizeUserInput(validation.data.content)
+
 		const userMessage: Message = {
+			id: generateMessageId(),
 			role: 'user',
-			content: inputMessage.trim(),
+			content: sanitizedContent,
 			timestamp: new Date()
 		}
 
@@ -137,6 +214,7 @@ export function Chatbot() {
 			)
 
 			const assistantMessage: Message = {
+				id: generateMessageId(),
 				role: 'assistant',
 				content: responseContent,
 				timestamp: new Date()
@@ -146,6 +224,7 @@ export function Chatbot() {
 		} catch (error) {
 			console.error('Error generating response:', error)
 			const errorMessage: Message = {
+				id: generateMessageId(),
 				role: 'assistant',
 				content: "I'm sorry, I encountered an error. Please try again.",
 				timestamp: new Date()
@@ -163,6 +242,14 @@ export function Chatbot() {
 		}
 	}
 
+	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		setInputMessage(e.target.value)
+		// Clear error when user starts typing
+		if (inputError) {
+			setInputError('')
+		}
+	}
+
 	const toggleChat = () => {
 		if (!isOpen && !engine && !isInitializing) {
 			initialize()
@@ -170,14 +257,22 @@ export function Chatbot() {
 		setIsOpen(!isOpen)
 	}
 
+	// Quick action buttons
+	const quickActions = [
+		"Tell me about Eduard&apos;s projects",
+		"What are Eduard&apos;s technical skills?",
+		"What hackathons has Eduard won?",
+		"How can I contact Eduard?"
+	]
+
 	return (
-		<>
+		<ErrorBoundary>
 			{/* Chat Toggle Button */}
 			<Button
 				onClick={toggleChat}
 				className='fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50'
 				size='icon'
-				aria-label='Open chat'
+				aria-label={isOpen ? 'Close chat' : 'Open chat'}
 			>
 				{isOpen ? <X className='h-6 w-6' /> : <MessageCircle className='h-6 w-6' />}
 			</Button>
@@ -186,18 +281,29 @@ export function Chatbot() {
 			{isOpen && (
 				<Card className='fixed bottom-24 right-6 w-96 h-[500px] shadow-2xl z-40 flex flex-col overflow-hidden'>
 					<CardHeader className='pb-3 border-b flex-shrink-0'>
-						<div className='flex items-center gap-3'>
-							<div className='h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center'>
-								<Bot className='h-4 w-4 text-primary' />
+						<div className='flex items-center justify-between'>
+							<div className='flex items-center gap-3'>
+								<div className='h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center'>
+									<Bot className='h-4 w-4 text-primary' />
+								</div>
+								<div>
+									<CardTitle className='text-lg'>Eduard&apos;s Assistant</CardTitle>
+									<p className='text-sm text-muted-foreground'>Ask me about his projects & background</p>
+								</div>
 							</div>
-							<div>
-								<CardTitle className='text-lg'>Eduard's Assistant</CardTitle>
-								<p className='text-sm text-muted-foreground'>Ask me about his projects & background</p>
-							</div>
+							<Button
+								onClick={clearConversation}
+								variant="ghost"
+								size="sm"
+								className="h-8 w-8 p-0"
+								aria-label="Clear conversation"
+							>
+								<Trash2 className="h-4 w-4" />
+							</Button>
 						</div>
 						{isInitializing && (
 							<div className='flex items-center gap-2 text-sm text-muted-foreground'>
-								<Loader2 className='h-4 w-4 animate-spin' />
+								<LoadingSpinner size="sm" />
 								Loading Llama 3.2...
 							</div>
 						)}
@@ -219,9 +325,9 @@ export function Chatbot() {
 								<p className='mt-2'>Please switch to a supported browser to use this feature.</p>
 							</div>
 						)}
-						{messages.map((message, index) => (
+						{messages.map((message) => (
 							<div
-								key={index}
+								key={message.id}
 								className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
 							>
 								{message.role === 'assistant' && (
@@ -230,7 +336,7 @@ export function Chatbot() {
 									</div>
 								)}
 								<div
-									className={`max-w-[80%] rounded-lg p-3 text-sm break-words ${
+									className={`max-w-[80%] rounded-lg p-3 text-sm break-words whitespace-pre-wrap ${
 										message.role === 'user'
 											? 'bg-primary text-primary-foreground ml-auto'
 											: 'bg-muted'
@@ -251,62 +357,85 @@ export function Chatbot() {
 									<Bot className='h-3 w-3 text-primary' />
 								</div>
 								<div className='bg-muted rounded-lg p-3 text-sm'>
-									<Loader2 className='h-4 w-4 animate-spin' />
+									<LoadingSpinner size="sm" text="Thinking..." />
 								</div>
 							</div>
 						)}
+						
+						{/* Quick actions for new conversations */}
+						{messages.length === 1 && !isLoading && engine && (
+							<div className="space-y-2">
+								<p className="text-xs text-muted-foreground">Quick questions:</p>
+								<div className="flex flex-wrap gap-1">
+									{quickActions.map((action, index) => (
+										<Button
+											key={index}
+											variant="outline"
+											size="sm"
+											className="text-xs h-7"
+											onClick={() => setInputMessage(action)}
+										>
+											{action}
+										</Button>
+									))}
+								</div>
+							</div>
+						)}
+						
 						<div ref={messagesEndRef} />
 					</div>
 
 					{/* Input Area - Fixed at bottom */}
 					<div className='border-t p-4 flex-shrink-0'>
+						{inputError && (
+							<div className="mb-2 text-xs text-destructive flex items-center gap-1">
+								<AlertTriangle className="h-3 w-3" />
+								{inputError}
+							</div>
+						)}
 						<div className='flex gap-2'>
 							<textarea
+								ref={inputRef}
 								value={inputMessage}
-								onChange={(e) => setInputMessage(e.target.value)}
+								onChange={handleInputChange}
 								onKeyDown={handleKeyPress}
 								placeholder={
 									!isSupported 
 										? 'WebGPU required...' 
 										: engine 
-										? 'Ask about Eduard\'s projects...' 
+										? 'Ask about Eduard&apos;s projects...' 
 										: 'Initializing...'
 								}
 								disabled={!engine || isLoading || !isSupported}
 								className='flex-1 resize-none border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[100px] disabled:opacity-50'
 								rows={1}
+								maxLength={1000}
+								aria-label="Chat message input"
 							/>
 							<Button
 								onClick={sendMessage}
 								disabled={!engine || !inputMessage.trim() || isLoading || !isSupported}
 								size='icon'
 								className='h-10 w-10'
+								aria-label="Send message"
 							>
 								<Send className='h-4 w-4' />
 							</Button>
 						</div>
 						{!engine && !isInitializing && isSupported && (
 							<p className='text-xs text-muted-foreground mt-2'>
-								Click to initialize the AI assistant
+								Click the chat button to initialize the AI assistant
 							</p>
 						)}
-						{error && (
-							<p className='text-xs text-destructive mt-2'>
-								{error}
-							</p>
-						)}
+						<div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+							<span>{inputMessage.length}/1000</span>
+							{rateLimit.count > 0 && (
+								<span>Messages: {rateLimit.count}/{RATE_LIMIT_MAX}</span>
+							)}
+						</div>
 					</div>
 				</Card>
 			)}
-
-			{/* Browser Compatibility Notice */}
-			{isOpen && !isSupported && (
-				<div className='fixed bottom-2 right-6 z-30'>
-					<Badge variant='destructive' className='text-xs bg-background/90 backdrop-blur'>
-						WebGPU required - Use Chrome/Edge
-					</Badge>
-				</div>
-			)}
-		</>
+		</ErrorBoundary>
 	)
 } 

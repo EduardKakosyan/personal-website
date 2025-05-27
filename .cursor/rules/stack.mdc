@@ -11,3 +11,6 @@ alwaysApply: true
 
 # Database (if needed)
 - Supabase
+
+# Internals
+- Use pnpm to run `dev` and `build` and `tests`

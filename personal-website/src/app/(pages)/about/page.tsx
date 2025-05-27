@@ -3,7 +3,7 @@ import { SkillsShowcase } from '@/components/features/skills-showcase'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'About Me | AI Developer',
+  title: 'About Me | Eduard Kakosyan',
   description: 'Learn about my experience, skills, and background as an AI Developer based in Halifax, Nova Scotia.',
 }
 

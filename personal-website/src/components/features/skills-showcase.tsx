@@ -42,7 +42,7 @@ const skillCategories: SkillCategory[] = [
     title: 'Cloud & Infrastructure',
     skills: ['AWS', 'Azure', 'Vercel', 'Google Cloud', 'Docker', 'API Design', 'Database Design'],
     description: 'Deploying and scaling applications',
-    context: 'Azure for AI services, Vercel for web apps, AWS for general cloud needs. I enjoy designing APIs that are actually pleasant to use and databases that make sense.',
+    context: 'Azure for AI services, Vercel for web apps, AWS for general cloud needs (AWS Certified Cloud Practitioner). I enjoy designing APIs that are actually pleasant to use and databases that make sense.',
     icon: '☁️'
   },
 ]

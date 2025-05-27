@@ -1,4 +1,4 @@
-import { Mail, Linkedin, Github, MapPin, Calendar, Coffee } from 'lucide-react'
+import { Mail, Linkedin, Github, MapPin, Calendar, Coffee} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import type { Metadata } from 'next'
 
@@ -124,19 +124,6 @@ export default function ContactPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Response Expectation */}
-      <div className='mt-16 text-center'>
-        <Card className='max-w-2xl mx-auto bg-muted/40'>
-          <CardContent className='p-6'>
-            <h3 className='font-semibold text-lg mb-2'>Response Time</h3>
-            <p className='text-muted-foreground text-sm'>
-              I typically respond to emails within 24-48 hours. For urgent matters, 
-              mention it in your subject line.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

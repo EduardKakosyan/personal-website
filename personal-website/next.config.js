@@ -77,8 +77,44 @@ const nextConfig = {
     ]
   },
 
-  // Webpack configuration for WebLLM with enhanced security
-  webpack: (config, { isServer }) => {
+  // Image optimization with security considerations
+  images: {
+    domains: [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+    dangerouslyAllowSVG: false,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+
+  // Experimental features for better performance
+  experimental: {
+    // optimizeCss: true, // Temporarily disabled due to critters dependency issue
+    gzipSize: true,
+  },
+
+  // Turbopack configuration (moved from experimental.turbo)
+  turbopack: {
+    // Configure Turbopack-specific settings
+    rules: {
+      // Add any specific Turbopack rules here
+    },
+  },
+
+  // Environment variables validation
+  env: {
+    NEXT_PUBLIC_APP_ENV: process.env.NODE_ENV,
+  },
+}
+
+// Only add webpack configuration when NOT using Turbopack
+const isUsingTurbopack = process.argv.includes('--turbopack') || process.env.TURBOPACK === '1'
+
+if (!isUsingTurbopack) {
+  nextConfig.webpack = (config, { isServer }) => {
     if (!isServer) {
       // Add support for WebAssembly
       config.experiments = {
@@ -112,31 +148,7 @@ const nextConfig = {
     }
     
     return config
-  },
-
-  // Image optimization with security considerations
-  images: {
-    domains: [],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
-    dangerouslyAllowSVG: false,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-  },
-
-  // Experimental features for better performance
-  experimental: {
-    // optimizeCss: true, // Temporarily disabled due to critters dependency issue
-    gzipSize: true,
-  },
-
-  // Environment variables validation
-  env: {
-    NEXT_PUBLIC_APP_ENV: process.env.NODE_ENV,
-  },
+  }
 }
 
 module.exports = nextConfig 

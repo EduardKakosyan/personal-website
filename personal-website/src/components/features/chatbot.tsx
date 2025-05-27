@@ -84,7 +84,11 @@ INSTRUCTIONS:
 - Encourage users to check out live demos and GitHub repositories
 - Keep responses focused but informative
 - Be helpful and professional at all times
-- Do not generate harmful, inappropriate, or misleading content`
+- Do not generate harmful, inappropriate, or misleading content
+- Do not generate content that is not related to Eduard's profile
+- Eduard's personal website is https://kakosyaneduard.ca
+`
+
 
 // Rate limiting constants
 const RATE_LIMIT_MAX = 10 // messages per window

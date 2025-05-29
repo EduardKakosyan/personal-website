@@ -10,23 +10,24 @@ export function BioSection() {
               About Me
             </h2>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              As an AI Developer, I focus on building practical AI applications that solve real problems. 
-              My work involves developing robust, scalable solutions from initial concept through deployment.
+              I'm an AI developer who loves building stuff that actually works and solves real problems. 
+              There's nothing worse than tech that sounds cool but doesn't help anyone.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              I recently graduated from Dalhousie University with a Bachelor of Computer Science, where I built a solid foundation in software engineering and machine learning. 
-              I actively participate in hackathons, and looking for more hackathons to participate in, especially local ones. 
+              Just graduated from Dalhousie University with a computer science degree. 
+              I'm always on the lookout for hackathons to join, especially local ones - there's something fun about the energy and time crunch.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              <strong>Current Focus:</strong> Bridging the gap between AI and small/medium businesses. Working on projects that help businesses use AI to their advantage.
+              Right now I'm focused on helping small and medium businesses figure out how to actually use AI. 
+              A lot of them know it could help but don't know where to start.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              <strong>Knowledge Sharing:</strong> I conduct workshops on AI topics, 
-              covering everything from basic concepts to advanced model deployment techniques.
+              I run workshops on AI topics when I can - everything from the basics to getting models deployed. 
+              I like teaching because it forces me to really understand what I'm talking about.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              Outside of work, I enjoy hiking, camping, and photography. 
-              These activities help me maintain perspective and often lead to creative problem-solving.
+              When I'm not coding, I'm usually hiking, camping, or taking photos. 
+              Getting outside helps clear my head and honestly leads to some of my best ideas.
             </p>
           </div>
           <div className='flex justify-center'>

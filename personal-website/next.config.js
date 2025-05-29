@@ -92,6 +92,7 @@ const nextConfig = {
 
   // Experimental features for better performance
   experimental: {
+    optimizePackageImports: ['@mlc-ai/web-llm'],
     // optimizeCss: true, // Temporarily disabled due to critters dependency issue
     gzipSize: true,
   },
@@ -108,6 +109,84 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_APP_ENV: process.env.NODE_ENV,
   },
+
+  // File watching improvements
+  webpack: (config, { dev, isServer }) => {
+    if (dev) {
+      // Improve file watching stability
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ['node_modules/**', '.next/**', '.git/**'],
+      }
+      
+      // Reduce memory usage during development
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false,
+      }
+    }
+    return config
+  },
+
+  // Improve development performance  
+  // swcMinify: true, // DEPRECATED: SWC minification is now enabled by default in Next.js 13+
+  
+  // Better error handling
+  onDemandEntries: {
+    // Period (in ms) where the server will keep pages in the buffer
+    maxInactiveAge: 25 * 1000,
+    // Number of pages that should be kept simultaneously without being disposed
+    pagesBufferLength: 2,
+  },
+
+  // PWA and manifest
+  async rewrites() {
+    return [
+      {
+        source: '/manifest.json',
+        destination: '/api/manifest',
+      },
+    ]
+  },
+
+  // Bundle analyzer (only in production)
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+      if (!dev && !isServer) {
+        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+        config.plugins.push(
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            reportFilename: '../analyze/client.html',
+            openAnalyzer: false,
+          })
+        )
+      }
+      return config
+    },
+  }),
+
+  // Compiler options
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Logging
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+
+  // Development optimizations - REMOVED devIndicators.buildActivity as it's deprecated
+  // ...(process.env.NODE_ENV === 'development' && {
+  //   devIndicators: {
+  //     buildActivity: false, // DEPRECATED: No longer configurable
+  //   },
+  // }),
 }
 
 // Only add webpack configuration when NOT using Turbopack

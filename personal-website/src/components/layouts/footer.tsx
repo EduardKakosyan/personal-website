@@ -1,29 +1,9 @@
-import { Github, Linkedin, Mail, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SocialLinks } from '@/components/features/social-links'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
-
-  const socialLinks = [
-    {
-      name: 'GitHub',
-      href: 'https://github.com/eduardkakosyan',
-      icon: Github,
-      label: 'View my code on GitHub'
-    },
-    {
-      name: 'LinkedIn',
-      href: 'https://linkedin.com/in/eduard-kakosyan',
-      icon: Linkedin,
-      label: 'Connect with me on LinkedIn'
-    },
-    {
-      name: 'Email',
-      href: 'mailto:hello@eduardkakosyan.com',
-      icon: Mail,
-      label: 'Send me an email'
-    }
-  ]
 
   const navigationLinks = [
     { name: 'About', href: '/about' },
@@ -60,30 +40,7 @@ export function Footer() {
           </div>
 
           {/* Social links */}
-          <div className='space-y-4 md:flex-shrink-0'>
-            <h4 className='text-sm font-semibold uppercase tracking-wider text-muted-foreground'>
-              Connect
-            </h4>
-            <div className='flex flex-col md:flex-row gap-3 md:gap-6'>
-              {socialLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  target='_blank'
-                  rel='noreferrer'
-                  aria-label={social.label}
-                  className={cn(
-                    'inline-flex items-center gap-3 md:gap-2 text-sm text-muted-foreground hover:text-foreground transition-all duration-200',
-                    'touch-target haptic-light group w-fit'
-                  )}
-                >
-                  <social.icon className='h-4 w-4 group-hover:scale-110 transition-transform' />
-                  <span className='md:sr-only'>{social.name}</span>
-                  <ExternalLink className='h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity md:hidden' />
-                </a>
-              ))}
-            </div>
-          </div>
+          <SocialLinks />
         </div>
 
         {/* Bottom section */}

@@ -1,7 +1,6 @@
 import { getProjectBySlug, getAllProjects } from '@/content/projects'
 import { markdownToHtml } from '@/lib/markdown'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
@@ -9,6 +8,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MarkdownContent } from '@/components/ui/secure-content'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { ProjectAnalytics } from '@/components/features/project-analytics'
+import { ProjectButtons } from '@/components/features/project-buttons'
 
 export async function generateStaticParams() {
   const allProjects = await getAllProjects()
@@ -68,6 +69,7 @@ export default async function ProjectDetailPage({ params }: Props) {
 
   return (
     <ErrorBoundary>
+      <ProjectAnalytics projectSlug={project.slug} />
       <article className='container py-12 md:py-16'>
         <div className='mb-8'>
           <Link
@@ -132,34 +134,12 @@ export default async function ProjectDetailPage({ params }: Props) {
             dark:prose-invert lg:prose-lg"
         />
         
-        {(project.liveUrl || project.repoUrl) && (
-          <div className='mt-12 flex flex-col gap-4 sm:flex-row sm:justify-center'>
-            {project.liveUrl && (
-              <Button asChild size='lg'>
-                <a 
-                  href={project.liveUrl} 
-                  target='_blank' 
-                  rel='noopener noreferrer'
-                  aria-label={`View live demo of ${project.title}`}
-                >
-                  View Live Demo
-                </a>
-              </Button>
-            )}
-            {project.repoUrl && (
-              <Button asChild variant='outline' size='lg'>
-                <a 
-                  href={project.repoUrl} 
-                  target='_blank' 
-                  rel='noopener noreferrer'
-                  aria-label={`View source code for ${project.title}`}
-                >
-                  View Code Repository
-                </a>
-              </Button>
-            )}
-          </div>
-        )}
+        <ProjectButtons
+          projectSlug={project.slug}
+          projectTitle={project.title}
+          liveUrl={project.liveUrl}
+          repoUrl={project.repoUrl}
+        />
         
         {/* Structured data for SEO */}
         <script

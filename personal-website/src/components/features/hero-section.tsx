@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { analyticsEvents } from '@/lib/analytics'
 
 export function HeroSection() {
   const [isVisible, setIsVisible] = useState(false)
@@ -63,7 +64,11 @@ export function HeroSection() {
               size='lg' 
               className='w-full sm:w-auto haptic-medium group'
             >
-              <Link href='/projects' className='flex items-center gap-2'>
+              <Link 
+                href='/projects' 
+                className='flex items-center gap-2'
+                onClick={() => analyticsEvents.heroCtaClicked('View My Work')}
+              >
                 View My Work
                 <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
               </Link>
@@ -74,7 +79,12 @@ export function HeroSection() {
               size='lg'
               className='w-full sm:w-auto haptic-light'
             >
-              <Link href='/contact'>Get in Touch</Link>
+              <Link 
+                href='/contact'
+                onClick={() => analyticsEvents.heroCtaClicked('Get in Touch')}
+              >
+                Get in Touch
+              </Link>
             </Button>
           </div>
           {/* Scroll indicator for mobile */}

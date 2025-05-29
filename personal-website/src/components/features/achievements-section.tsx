@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Trophy, Building, Calendar, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { analyticsEvents } from '@/lib/analytics'
 
 interface Achievement {
   title: string
@@ -114,10 +115,22 @@ export function AchievementsSection() {
             const CardWrapper = achievement.link 
               ? achievement.isInternal 
                 ? ({ children }: { children: React.ReactNode }) => (
-                    <Link href={achievement.link!}>{children}</Link>
+                    <Link 
+                      href={achievement.link!}
+                      onClick={() => analyticsEvents.achievementClicked(achievement.title)}
+                    >
+                      {children}
+                    </Link>
                   )
                 : ({ children }: { children: React.ReactNode }) => (
-                    <div onClick={() => window.open(achievement.link, '_blank')}>{children}</div>
+                    <div 
+                      onClick={() => {
+                        analyticsEvents.achievementClicked(achievement.title)
+                        window.open(achievement.link, '_blank')
+                      }}
+                    >
+                      {children}
+                    </div>
                   )
               : ({ children }: { children: React.ReactNode }) => <div>{children}</div>
             

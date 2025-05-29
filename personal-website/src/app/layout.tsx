@@ -7,6 +7,9 @@ import { Header } from "@/components/layouts/header";
 import { Footer } from "@/components/layouts/footer";
 import { Chatbot } from "@/components/features/chatbot";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { WebVitals } from '@/components/features/web-vitals';
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -155,6 +158,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <WebVitals />
             {/* Skip to main content link for accessibility */}
             <a
               href="#main-content"
@@ -177,6 +181,8 @@ export default function RootLayout({
             </div>
           </ThemeProvider>
         </ErrorBoundary>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

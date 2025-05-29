@@ -255,3 +255,167 @@
     border: 1px solid #444;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  pre code.hljs {
+    background: #1e1e1e !important;
+  }
+}
+
+/* Mobile-first optimizations */
+@layer utilities {
+  /* Touch-friendly interactions */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Smooth scrolling for mobile */
+  @media (max-width: 768px) {
+    html {
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Improve tap target sizes */
+    button, 
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    a {
+      min-height: 44px;
+      min-width: 44px;
+      touch-action: manipulation;
+    }
+    
+    /* Better focus states for mobile */
+    button:focus-visible,
+    [role="button"]:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+    }
+    
+    /* Prevent text size adjust on orientation change */
+    body {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Smooth transitions for mobile interactions */
+    .mobile-smooth {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Better mobile scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted-foreground) / 0.3);
+      border-radius: 2px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--muted-foreground) / 0.5);
+    }
+  }
+  
+  /* Enhanced mobile chat styles */
+  .chat-mobile {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Mobile keyboard safe area */
+  .keyboard-safe {
+    padding-bottom: env(keyboard-inset-height, 0px);
+  }
+  
+  /* Pull-to-refresh override */
+  .no-pull-refresh {
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Mobile drag handle */
+  .drag-handle {
+    cursor: grab;
+    touch-action: pan-y;
+  }
+  
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+  
+  /* Haptic feedback simulation */
+  @media (max-width: 768px) {
+    .haptic-light {
+      transition: transform 0.1s ease;
+    }
+    
+    .haptic-light:active {
+      transform: scale(0.98);
+    }
+    
+    .haptic-medium {
+      transition: transform 0.15s ease;
+    }
+    
+    .haptic-medium:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .border {
+    border-width: 2px;
+  }
+  
+  .text-muted-foreground {
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+  /* Better readability in dark mode on mobile */
+  .prose {
+    color: hsl(var(--foreground) / 0.9);
+  }
+  
+  /* Softer shadows for mobile dark mode */
+  .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -2px rgb(0 0 0 / 0.2);
+  }
+  
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+  }
+}

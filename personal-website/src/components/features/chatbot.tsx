@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { ChatCompletionMessageParam } from '@mlc-ai/web-llm'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, X, Send, Bot, User, AlertTriangle, Trash2 } from 'lucide-react'
+import { MessageCircle, X, Send, Bot, User, AlertTriangle, Trash2, ChevronDown, Maximize2, Minimize2 } from 'lucide-react'
 import { useWebLLM } from '@/lib/hooks/use-webllm'
 import { validateChatMessage } from '@/lib/validation'
 import { sanitizeUserInput } from '@/lib/sanitizer'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { cn } from '@/lib/utils'
 
 interface Message {
 	role: 'user' | 'assistant'
@@ -89,20 +90,24 @@ INSTRUCTIONS:
 - Eduard's personal website is https://kakosyaneduard.ca
 `
 
-
 // Rate limiting constants
 const RATE_LIMIT_MAX = 10 // messages per window
 const RATE_LIMIT_WINDOW = 60000 // 1 minute in milliseconds
 
 export function Chatbot() {
 	const [isOpen, setIsOpen] = useState(false)
+	const [isMinimized, setIsMinimized] = useState(false)
+	const [isFullscreen, setIsFullscreen] = useState(false)
 	const [messages, setMessages] = useState<Message[]>([])
 	const [inputMessage, setInputMessage] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
 	const [rateLimit, setRateLimit] = useState<RateLimit>({ count: 0, resetTime: Date.now() + RATE_LIMIT_WINDOW })
 	const [inputError, setInputError] = useState('')
+	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+	const [isDragging, setIsDragging] = useState(false)
 	const messagesEndRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLTextAreaElement>(null)
+	const chatWindowRef = useRef<HTMLDivElement>(null)
 
 	const { engine, isInitializing, isSupported, initialize, generateResponse } = useWebLLM({
 		onInitialized: () => {
@@ -132,13 +137,11 @@ export function Chatbot() {
 	const checkRateLimit = (): boolean => {
 		const now = Date.now()
 		
-		// Reset rate limit if window has expired
 		if (now > rateLimit.resetTime) {
 			setRateLimit({ count: 0, resetTime: now + RATE_LIMIT_WINDOW })
 			return true
 		}
 		
-		// Check if under limit
 		if (rateLimit.count >= RATE_LIMIT_MAX) {
 			return false
 		}
@@ -156,6 +159,21 @@ export function Chatbot() {
 	useEffect(() => {
 		scrollToBottom()
 	}, [messages])
+
+	// Handle escape key
+	useEffect(() => {
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && isOpen) {
+				if (isFullscreen) {
+					setIsFullscreen(false)
+				} else {
+					setIsOpen(false)
+				}
+			}
+		}
+		window.addEventListener('keydown', handleEscape)
+		return () => window.removeEventListener('keydown', handleEscape)
+	}, [isOpen, isFullscreen])
 
 	// Clear conversation
 	const clearConversation = () => {
@@ -259,24 +277,92 @@ export function Chatbot() {
 			initialize()
 		}
 		setIsOpen(!isOpen)
+		setIsMinimized(false)
+	}
+
+	const toggleMinimize = () => {
+		setIsMinimized(!isMinimized)
+	}
+
+	const toggleFullscreen = () => {
+		setIsFullscreen(!isFullscreen)
+		setIsMinimized(false)
+	}
+
+	// Touch handling for mobile drag
+	const handleTouchStart = (e: React.TouchEvent) => {
+		if (window.innerWidth >= 768) return // Only on mobile
+		const touch = e.touches[0]
+		setDragOffset({
+			x: touch.clientX,
+			y: touch.clientY
+		})
+		setIsDragging(true)
+	}
+
+	const handleTouchMove = (e: React.TouchEvent) => {
+		if (!isDragging || window.innerWidth >= 768) return
+		e.preventDefault()
+	}
+
+	const handleTouchEnd = (e: React.TouchEvent) => {
+		if (!isDragging || window.innerWidth >= 768) return
+		const touch = e.changedTouches[0]
+		const deltaY = touch.clientY - dragOffset.y
+		
+		// Swipe down to minimize
+		if (deltaY > 100) {
+			setIsMinimized(true)
+		}
+		// Swipe up to maximize  
+		else if (deltaY < -100) {
+			setIsFullscreen(true)
+		}
+		
+		setIsDragging(false)
 	}
 
 	// Quick action buttons
 	const quickActions = [
-		// eslint-disable-next-line quotes
 		"Tell me about Eduard's projects",
-		// eslint-disable-next-line quotes
 		"What are Eduard's technical skills?",
 		"What hackathons has Eduard won?",
 		"How can I contact Eduard?"
 	]
+
+	// Mobile-specific chat window classes
+	const getChatWindowClasses = () => {
+		const baseClasses = 'fixed shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-in-out'
+		
+		if (isFullscreen) {
+			return `${baseClasses} inset-0 z-50 rounded-none`
+		}
+		
+		if (window.innerWidth < 768) {
+			// Mobile layout
+			if (isMinimized) {
+				return `${baseClasses} bottom-20 left-4 right-4 h-16 z-40 rounded-t-xl border border-b-0`
+			}
+			return `${baseClasses} bottom-20 left-4 right-4 h-[70vh] max-h-[600px] z-40 rounded-t-xl border border-b-0`
+		}
+		
+		// Desktop layout
+		if (isMinimized) {
+			return `${baseClasses} bottom-24 right-6 w-80 h-16 z-40 rounded-lg border`
+		}
+		return `${baseClasses} bottom-24 right-6 w-96 h-[500px] z-40 rounded-lg border`
+	}
 
 	return (
 		<ErrorBoundary>
 			{/* Chat Toggle Button */}
 			<Button
 				onClick={toggleChat}
-				className='fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50'
+				className={cn(
+					'fixed h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50',
+					'bottom-6 right-6 md:bottom-6 md:right-6',
+					isOpen && 'scale-110'
+				)}
 				size='icon'
 				aria-label={isOpen ? 'Close chat' : 'Open chat'}
 			>
@@ -285,162 +371,228 @@ export function Chatbot() {
 
 			{/* Chat Window */}
 			{isOpen && (
-				<Card className='fixed bottom-24 right-6 w-96 h-[500px] shadow-2xl z-40 flex flex-col overflow-hidden'>
-					<CardHeader className='pb-3 border-b flex-shrink-0'>
+				<Card 
+					ref={chatWindowRef}
+					className={getChatWindowClasses()}
+					onTouchStart={handleTouchStart}
+					onTouchMove={handleTouchMove}
+					onTouchEnd={handleTouchEnd}
+				>
+					{/* Header */}
+					<CardHeader className={cn('pb-3 border-b flex-shrink-0', isMinimized && 'pb-2')}>
 						<div className='flex items-center justify-between'>
 							<div className='flex items-center gap-3'>
 								<div className='h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center'>
 									<Bot className='h-4 w-4 text-primary' />
 								</div>
-								<div>
+								<div className={cn(isMinimized && 'hidden sm:block')}>
 									<CardTitle className='text-lg'>Eduard&apos;s Assistant</CardTitle>
-									<p className='text-sm text-muted-foreground'>Ask me about his projects & background</p>
+									{!isMinimized && (
+										<p className='text-sm text-muted-foreground'>Ask me about his projects & background</p>
+									)}
 								</div>
 							</div>
-							<Button
-								onClick={clearConversation}
-								variant="ghost"
-								size="sm"
-								className="h-8 w-8 p-0"
-								aria-label="Clear conversation"
-							>
-								<Trash2 className="h-4 w-4" />
-							</Button>
+							
+							<div className='flex items-center gap-1'>
+								{/* Mobile controls */}
+								<div className='md:hidden flex items-center gap-1'>
+									<Button
+										onClick={toggleChat}
+										variant="ghost"
+										size="sm"
+										className="h-8 w-8 p-0"
+										aria-label="Close chat"
+									>
+										<ChevronDown className="h-4 w-4" />
+									</Button>
+									<Button
+										onClick={toggleFullscreen}
+										variant="ghost"
+										size="sm"
+										className="h-8 w-8 p-0"
+										aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+									>
+										{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+									</Button>
+								</div>
+								
+								{/* Desktop controls */}
+								<div className='hidden md:flex items-center gap-1'>
+									<Button
+										onClick={clearConversation}
+										variant="ghost"
+										size="sm"
+										className="h-8 w-8 p-0"
+										aria-label="Clear conversation"
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+									<Button
+										onClick={toggleChat}
+										variant="ghost"
+										size="sm"
+										className="h-8 w-8 p-0"
+										aria-label="Close chat"
+									>
+										<ChevronDown className="h-4 w-4" />
+									</Button>
+								</div>
+							</div>
 						</div>
-						{isInitializing && (
-							<div className='flex items-center gap-2 text-sm text-muted-foreground'>
-								<LoadingSpinner size="sm" />
-								Loading Llama 3.2...
-							</div>
+						
+						{/* Status indicators */}
+						{!isMinimized && (
+							<>
+								{isInitializing && (
+									<div className='flex items-center gap-2 text-sm text-muted-foreground'>
+										<LoadingSpinner size="sm" />
+										Loading Llama 3.2...
+									</div>
+								)}
+								{!isSupported && (
+									<div className='flex items-center gap-2 text-sm text-destructive'>
+										<AlertTriangle className='h-4 w-4' />
+										WebGPU not supported
+									</div>
+								)}
+							</>
 						)}
-						{!isSupported && (
-							<div className='flex items-center gap-2 text-sm text-destructive'>
-								<AlertTriangle className='h-4 w-4' />
-								WebGPU not supported
-							</div>
-						)}
+						
+						{/* Mobile drag indicator */}
+						<div className='md:hidden flex justify-center pt-2'>
+							<div className='w-8 h-1 bg-muted-foreground/30 rounded-full' />
+						</div>
 					</CardHeader>
 
-					{/* Messages Area - Scrollable */}
-					<div className='flex-1 overflow-y-auto p-4 space-y-4'>
-						{!isSupported && messages.length === 0 && (
-							<div className='text-center text-sm text-muted-foreground p-4'>
-								<AlertTriangle className='h-8 w-8 mx-auto mb-2 text-destructive' />
-								<p className='font-medium'>WebGPU Required</p>
-								<p>This AI assistant requires a WebGPU-compatible browser like Chrome or Edge.</p>
-								<p className='mt-2'>Please switch to a supported browser to use this feature.</p>
-							</div>
-						)}
-						{messages.map((message) => (
-							<div
-								key={message.id}
-								className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-							>
-								{message.role === 'assistant' && (
-									<div className='h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1'>
-										<Bot className='h-3 w-3 text-primary' />
+					{/* Messages Area - Only show when not minimized */}
+					{!isMinimized && (
+						<>
+							<div className='flex-1 overflow-y-auto p-4 space-y-4'>
+								{!isSupported && messages.length === 0 && (
+									<div className='text-center text-sm text-muted-foreground p-4'>
+										<AlertTriangle className='h-8 w-8 mx-auto mb-2 text-destructive' />
+										<p className='font-medium'>WebGPU Required</p>
+										<p>This AI assistant requires a WebGPU-compatible browser like Chrome or Edge.</p>
+										<p className='mt-2'>Please switch to a supported browser to use this feature.</p>
 									</div>
 								)}
-								<div
-									className={`max-w-[80%] rounded-lg p-3 text-sm break-words whitespace-pre-wrap ${
-										message.role === 'user'
-											? 'bg-primary text-primary-foreground ml-auto'
-											: 'bg-muted'
-									}`}
-								>
-									{message.content}
-								</div>
-								{message.role === 'user' && (
-									<div className='h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1'>
-										<User className='h-3 w-3' />
-									</div>
-								)}
-							</div>
-						))}
-						{isLoading && (
-							<div className='flex gap-3 justify-start'>
-								<div className='h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1'>
-									<Bot className='h-3 w-3 text-primary' />
-								</div>
-								<div className='bg-muted rounded-lg p-3 text-sm'>
-									<LoadingSpinner size="sm" text="Thinking..." />
-								</div>
-							</div>
-						)}
-						
-						{/* Quick actions for new conversations */}
-						{messages.length === 1 && !isLoading && engine && (
-							<div className="space-y-2">
-								<p className="text-xs text-muted-foreground">Quick questions:</p>
-								<div className="flex flex-wrap gap-1">
-									{quickActions.map((action, index) => (
-										<Button
-											key={index}
-											variant="outline"
-											size="sm"
-											className="text-xs h-7"
-											onClick={() => setInputMessage(action)}
+								
+								{messages.map((message) => (
+									<div
+										key={message.id}
+										className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+									>
+										{message.role === 'assistant' && (
+											<div className='h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1'>
+												<Bot className='h-3 w-3 text-primary' />
+											</div>
+										)}
+										<div
+											className={cn(
+												'max-w-[85%] md:max-w-[80%] rounded-lg p-3 text-sm break-words whitespace-pre-wrap',
+												message.role === 'user'
+													? 'bg-primary text-primary-foreground ml-auto'
+													: 'bg-muted'
+											)}
 										>
-											{action}
-										</Button>
-									))}
+											{message.content}
+										</div>
+										{message.role === 'user' && (
+											<div className='h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1'>
+												<User className='h-3 w-3' />
+											</div>
+										)}
+									</div>
+								))}
+								
+								{isLoading && (
+									<div className='flex gap-3 justify-start'>
+										<div className='h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1'>
+											<Bot className='h-3 w-3 text-primary' />
+										</div>
+										<div className='bg-muted rounded-lg p-3 text-sm'>
+											<LoadingSpinner size="sm" text="Thinking..." />
+										</div>
+									</div>
+								)}
+								
+								{/* Quick actions for new conversations */}
+								{messages.length === 1 && !isLoading && engine && (
+									<div className="space-y-2">
+										<p className="text-xs text-muted-foreground">Quick questions:</p>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+											{quickActions.map((action, index) => (
+												<Button
+													key={index}
+													variant="outline"
+													size="sm"
+													className="text-xs h-auto py-2 px-3 whitespace-normal text-left justify-start"
+													onClick={() => setInputMessage(action)}
+												>
+													{action}
+												</Button>
+											))}
+										</div>
+									</div>
+								)}
+								
+								<div ref={messagesEndRef} />
+							</div>
+
+							{/* Input Area - Fixed at bottom */}
+							<div className='border-t p-4 flex-shrink-0'>
+								{inputError && (
+									<div className="mb-2 text-xs text-destructive flex items-center gap-1">
+										<AlertTriangle className="h-3 w-3" />
+										{inputError}
+									</div>
+								)}
+								
+								<div className='flex gap-2'>
+									<textarea
+										ref={inputRef}
+										value={inputMessage}
+										onChange={handleInputChange}
+										onKeyDown={handleKeyPress}
+										placeholder={
+											!isSupported 
+												? 'WebGPU required...' 
+												: engine 
+												? "Ask about Eduard's projects..." 
+												: 'Initializing...'
+										}
+										disabled={!engine || isLoading || !isSupported}
+										className='flex-1 resize-none border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[100px] disabled:opacity-50'
+										rows={1}
+										maxLength={1000}
+										aria-label="Chat message input"
+									/>
+									<Button
+										onClick={sendMessage}
+										disabled={!engine || !inputMessage.trim() || isLoading || !isSupported}
+										size='icon'
+										className='h-11 w-11 flex-shrink-0'
+										aria-label="Send message"
+									>
+										<Send className='h-4 w-4' />
+									</Button>
+								</div>
+								
+								{!engine && !isInitializing && isSupported && (
+									<p className='text-xs text-muted-foreground mt-2'>
+										Click the chat button to initialize the AI assistant
+									</p>
+								)}
+								
+								<div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+									<span>{inputMessage.length}/1000</span>
+									{rateLimit.count > 0 && (
+										<span>Messages: {rateLimit.count}/{RATE_LIMIT_MAX}</span>
+									)}
 								</div>
 							</div>
-						)}
-						
-						<div ref={messagesEndRef} />
-					</div>
-
-					{/* Input Area - Fixed at bottom */}
-					<div className='border-t p-4 flex-shrink-0'>
-						{inputError && (
-							<div className="mb-2 text-xs text-destructive flex items-center gap-1">
-								<AlertTriangle className="h-3 w-3" />
-								{inputError}
-							</div>
-						)}
-						<div className='flex gap-2'>
-							<textarea
-								ref={inputRef}
-								value={inputMessage}
-								onChange={handleInputChange}
-								onKeyDown={handleKeyPress}
-								placeholder={
-									!isSupported 
-										? 'WebGPU required...' 
-										: engine 
-										// eslint-disable-next-line quotes
-										? "Ask about Eduard's projects..." 
-										: 'Initializing...'
-								}
-								disabled={!engine || isLoading || !isSupported}
-								className='flex-1 resize-none border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[100px] disabled:opacity-50'
-								rows={1}
-								maxLength={1000}
-								aria-label="Chat message input"
-							/>
-							<Button
-								onClick={sendMessage}
-								disabled={!engine || !inputMessage.trim() || isLoading || !isSupported}
-								size='icon'
-								className='h-10 w-10'
-								aria-label="Send message"
-							>
-								<Send className='h-4 w-4' />
-							</Button>
-						</div>
-						{!engine && !isInitializing && isSupported && (
-							<p className='text-xs text-muted-foreground mt-2'>
-								Click the chat button to initialize the AI assistant
-							</p>
-						)}
-						<div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-							<span>{inputMessage.length}/1000</span>
-							{rateLimit.count > 0 && (
-								<span>Messages: {rateLimit.count}/{RATE_LIMIT_MAX}</span>
-							)}
-						</div>
-					</div>
+						</>
+					)}
 				</Card>
 			)}
 		</ErrorBoundary>

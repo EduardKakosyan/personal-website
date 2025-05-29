@@ -12,27 +12,21 @@ const expertiseAreas: ExpertiseArea[] = [
   {
     title: 'Large Language Models',
     description: 'Building conversational systems and content generation platforms',
-    technologies: ['OpenAI SDK', 'Azure OpenAI', 'LangChain', 'LangGraph', 'Google AI Studio'],
+    technologies: ['OpenAI SDK', 'Azure OpenAI', 'LangGraph', 'Google AI Studio'],
     applications: ['Content Generation', 'Code Assistance', 'Document Analysis', 'Agentic Systems']
   },
   {
     title: 'Local AI Deployment',
     description: 'Hosting and optimizing AI models for privacy-focused and offline applications',
-    technologies: ['Ollama', 'llama.cpp', 'MacBook', 'Raspberry Pi', 'Local Inference', 'Model Optimization', 'WebLLM', 'MLC-AI'],
+    technologies: ['Ollama', 'llama.cpp', 'Raspberry Pi', 'WebLLM', 'MLC-AI'],
     applications: ['Privacy-First Solutions', 'Edge Computing', 'Rapid Prototyping', 'Custom Fine-tuning']
   },
   {
-    title: 'AI Application Architecture',
+    title: 'Tech Stack',
     description: 'Designing scalable, production-ready AI systems with modern frameworks',
-    technologies: ['Next.js', 'Vercel AI SDK', 'Azure', 'Supabase', 'Docker', 'FastAPI', 'Cursor', 'Zed'],
+    technologies: ['Next.js', 'Python', 'Typescript', 'Azure', 'Docker', 'FastAPI', 'N8N', 'Power Automate'],
     applications: ['Enterprise Solutions', 'Real-time Systems', 'API Development', 'Cloud Deployment']
   },
-  {
-    title: 'Simulation & Modeling',
-    description: 'Creating intelligent agents and complex system simulations',
-    technologies: ['Multi-Agent Systems', 'Reinforcement Learning', 'SimPy', 'NetworkX', 'Gymnasium', 'PyTorch'],
-    applications: ['Agent-Based Modeling', 'Network Simulation', 'Behavioral Analysis', 'Optimization']
-  }
 ]
 
 export function AIExpertiseSection() {
@@ -47,7 +41,7 @@ export function AIExpertiseSection() {
             Experimenting with AI technologies, from local model deployment to enterprise-scale systems
           </p>
         </div>
-        <div className='grid gap-8 md:grid-cols-2'>
+        <div className='grid gap-8 md:grid-cols-2 lg:grid-cols-3'>
           {expertiseAreas.map((area, index) => (
             <Card key={index} className='h-full border-0 shadow-lg'>
               <CardHeader>

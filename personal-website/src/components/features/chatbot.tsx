@@ -12,6 +12,13 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { TokenDisplay } from '@/components/ui/token-display'
 import { useTokenSession } from '@/lib/hooks/use-token-session'
+import { 
+	validateUserInput, 
+	validateAIResponse, 
+	getEnhancedContext, 
+	getSuggestedPrompts,
+	isLikelyEduardRelated 
+} from '@/lib/guardrails'
 import { cn } from '@/lib/utils'
 
 interface Message {
@@ -26,7 +33,7 @@ interface RateLimit {
 	resetTime: number
 }
 
-const CHATBOT_CONTEXT = `You are Eduard's personal website assistant. Keep responses short, friendly, and conversational. Never use markdown formatting - just plain text.
+const BASE_CHATBOT_CONTEXT = `You are Eduard's personal website assistant. Keep responses short, friendly, and conversational. Never use markdown formatting - just plain text.
 
 ABOUT EDUARD:
 Eduard is an AI developer who graduated from Dalhousie University with a computer science degree. He likes building AI apps that actually solve real problems and helps businesses figure out how to use AI effectively.
@@ -64,10 +71,13 @@ RESPONSE STYLE:
 - Don't oversell or use buzzwords
 - When you are asked about how to reach Eduard, just say "You can reach him at eduard@ai-first.ca or check out Contact page for more info"
 - His website is https://kakosyaneduard.ca
-- He is employed at AI First, a company that helps small/medium Atlantic Canadianbusinesses use AI effectively.
+- He is employed at AI First, a company that helps small/medium Atlantic Canadian businesses use AI effectively.
 - If you are asked about anything not about Eduard, just say "I'm sorry, I can only answer questions about Eduard."
 - Do not engage in political, religious, or other controversial discussions.
 `
+
+// Enhanced context with guardrails
+const CHATBOT_CONTEXT = getEnhancedContext(BASE_CHATBOT_CONTEXT)
 
 // Rate limiting constants
 const RATE_LIMIT_MAX = 10 // messages per window
@@ -82,6 +92,7 @@ export function Chatbot() {
 	const [isLoading, setIsLoading] = useState(false)
 	const [rateLimit, setRateLimit] = useState<RateLimit>({ count: 0, resetTime: Date.now() + RATE_LIMIT_WINDOW })
 	const [inputError, setInputError] = useState('')
+	const [isOffTopicInput, setIsOffTopicInput] = useState(false)
 	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 	const [isDragging, setIsDragging] = useState(false)
 	const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -216,6 +227,34 @@ export function Chatbot() {
 			return
 		}
 
+		// Guardrail validation - check if input is appropriate
+		const guardrailCheck = validateUserInput(inputMessage.trim())
+		if (!guardrailCheck.allowed) {
+			console.log('Guardrail blocked input:', guardrailCheck.reason)
+			
+			// Provide immediate guardrail response without calling AI
+			const guardrailMessage: Message = {
+				id: generateMessageId(),
+				role: 'assistant',
+				content: guardrailCheck.suggestedResponse || "I'm sorry, I can only answer questions about Eduard. What would you like to know about his projects or background?",
+				timestamp: new Date()
+			}
+			
+			const userMessage: Message = {
+				id: generateMessageId(),
+				role: 'user',
+				content: inputMessage.trim(),
+				timestamp: new Date()
+			}
+			
+			setMessages(prev => [...prev, userMessage, guardrailMessage])
+			setInputMessage('')
+			
+			// Add to token session
+			addMessage(userMessage.content, guardrailMessage.content)
+			return
+		}
+
 		// Check rate limiting
 		if (!checkRateLimit()) {
 			setInputError('Rate limit exceeded. Please wait before sending another message.')
@@ -253,10 +292,19 @@ export function Chatbot() {
 				}))
 			)
 
+			// Validate AI response
+			const responseValidation = validateAIResponse(responseContent, userMessage.content)
+			let finalResponse = responseContent
+			
+			if (!responseValidation.allowed) {
+				console.log('AI response blocked by guardrails:', responseValidation.reason)
+				finalResponse = responseValidation.suggestedResponse || "I'm sorry, I can only answer questions about Eduard. What would you like to know about his projects or background?"
+			}
+
 			const assistantMessage: Message = {
 				id: generateMessageId(),
 				role: 'assistant',
-				content: responseContent,
+				content: finalResponse,
 				timestamp: new Date()
 			}
 
@@ -289,10 +337,20 @@ export function Chatbot() {
 	}
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setInputMessage(e.target.value)
+		const newValue = e.target.value
+		setInputMessage(newValue)
+		
 		// Clear error when user starts typing
 		if (inputError) {
 			setInputError('')
+		}
+		
+		// Real-time guardrail feedback
+		if (newValue.trim()) {
+			const isLikelyValid = isLikelyEduardRelated(newValue.trim())
+			setIsOffTopicInput(!isLikelyValid)
+		} else {
+			setIsOffTopicInput(false)
 		}
 	}
 
@@ -346,13 +404,8 @@ export function Chatbot() {
 		setIsDragging(false)
 	}
 
-	// Quick action buttons
-	const quickActions = [
-		"What projects has Eduard built?",
-		"What tech does he use?",
-		"Tell me about his hackathon wins",
-		"How can I reach him?"
-	]
+	// Quick action buttons - use guardrail suggested prompts
+	const quickActions = getSuggestedPrompts().slice(0, 4)
 
 	// Mobile-specific chat window classes
 	const getChatWindowClasses = () => {
@@ -572,6 +625,14 @@ export function Chatbot() {
 									</div>
 								)}
 								
+								{/* Off-topic input warning */}
+								{isOffTopicInput && inputMessage.trim() && (
+									<div className="mb-2 text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+										<AlertTriangle className="h-3 w-3" />
+										This doesn't seem to be about Eduard. Try asking about his projects or background!
+									</div>
+								)}
+								
 								<div className='flex gap-2'>
 									<textarea
 										ref={inputRef}
@@ -586,7 +647,10 @@ export function Chatbot() {
 												: 'Initializing...'
 										}
 										disabled={!engine || isLoading || !isSupported}
-										className='flex-1 resize-none border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[100px] disabled:opacity-50'
+										className={cn(
+											'flex-1 resize-none border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[100px] disabled:opacity-50 transition-colors',
+											isOffTopicInput && inputMessage.trim() && 'border-yellow-400 focus:ring-yellow-400'
+										)}
 										rows={1}
 										maxLength={1000}
 										aria-label="Chat message input"

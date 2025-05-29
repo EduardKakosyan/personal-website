@@ -293,7 +293,7 @@ export function Chatbot() {
 			)
 
 			// Validate AI response
-			const responseValidation = validateAIResponse(responseContent, userMessage.content)
+			const responseValidation = validateAIResponse(responseContent)
 			let finalResponse = responseContent
 			
 			if (!responseValidation.allowed) {
@@ -355,15 +355,11 @@ export function Chatbot() {
 	}
 
 	const toggleChat = () => {
-		if (!isOpen && !engine && !isInitializing) {
+		if (!isOpen && !engine && !isInitializing && isSupported) {
 			initialize()
 		}
 		setIsOpen(!isOpen)
 		setIsMinimized(false)
-	}
-
-	const toggleMinimize = () => {
-		setIsMinimized(!isMinimized)
 	}
 
 	const toggleFullscreen = () => {
@@ -629,7 +625,7 @@ export function Chatbot() {
 								{isOffTopicInput && inputMessage.trim() && (
 									<div className="mb-2 text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
 										<AlertTriangle className="h-3 w-3" />
-										This doesn't seem to be about Eduard. Try asking about his projects or background!
+										This doesn&apos;t seem to be about Eduard. Try asking about his projects or background!
 									</div>
 								)}
 								
@@ -643,7 +639,7 @@ export function Chatbot() {
 											!isSupported 
 												? 'WebGPU required...' 
 												: engine 
-												? "Ask about Eduard's projects..." 
+												? "Ask about Eduard&apos;s projects..."
 												: 'Initializing...'
 										}
 										disabled={!engine || isLoading || !isSupported}
@@ -674,20 +670,27 @@ export function Chatbot() {
 								
 								{/* Token Display - replaces character counter */}
 								<div className="mt-2">
-									<TokenDisplay
-										currentTokens={currentInputTokens}
-										analysis={currentInputAnalysis}
-										session={session}
-										conversationTokens={conversationTokens}
-										warningLevel={warningLevel}
-										remainingContext={remainingContext}
-										modelName="llama3.2"
-										compact={true}
-										showDetails={true}
-										onExport={handleExportSession}
-										onImport={importSession}
-										onReset={resetSession}
-									/>
+									{currentInputAnalysis && (
+										<TokenDisplay
+											currentTokens={currentInputTokens}
+											analysis={currentInputAnalysis}
+											session={session}
+											conversationTokens={conversationTokens}
+											warningLevel={warningLevel}
+											remainingContext={remainingContext}
+											modelName="llama3.2"
+											compact={true}
+											showDetails={true}
+											onExport={handleExportSession}
+											onImport={importSession}
+											onReset={resetSession}
+										/>
+									)}
+									{!currentInputAnalysis && currentInputTokens > 0 && (
+										<div className="text-xs text-muted-foreground">
+											Tokens: {currentInputTokens}
+										</div>
+									)}
 								</div>
 								
 								{/* Rate limit display */}

@@ -108,10 +108,8 @@ const isOffTopic = (input: string): boolean => {
 
 // Main guardrail function for input validation
 export const validateUserInput = (input: string): GuardrailResult => {
-	const cleanInput = input.trim().toLowerCase()
-	
 	// Check for empty input
-	if (!cleanInput) {
+	if (!input.trim()) {
 		return {
 			allowed: false,
 			reason: 'Empty input',
@@ -120,7 +118,7 @@ export const validateUserInput = (input: string): GuardrailResult => {
 	}
 	
 	// Check for system prompt extraction attempts
-	if (isSystemPromptAttempt(cleanInput)) {
+	if (isSystemPromptAttempt(input)) {
 		return {
 			allowed: false,
 			reason: 'System prompt extraction attempt',
@@ -129,7 +127,7 @@ export const validateUserInput = (input: string): GuardrailResult => {
 	}
 	
 	// Check for jailbreak attempts
-	if (isJailbreakAttempt(cleanInput)) {
+	if (isJailbreakAttempt(input)) {
 		return {
 			allowed: false,
 			reason: 'Jailbreak attempt',
@@ -138,7 +136,7 @@ export const validateUserInput = (input: string): GuardrailResult => {
 	}
 	
 	// Check if the question is off-topic
-	if (isOffTopic(cleanInput)) {
+	if (isOffTopic(input)) {
 		return {
 			allowed: false,
 			reason: 'Off-topic question',
@@ -151,9 +149,8 @@ export const validateUserInput = (input: string): GuardrailResult => {
 }
 
 // Response validation to ensure the AI didn't go off-topic
-export const validateAIResponse = (response: string, userInput: string): GuardrailResult => {
+export const validateAIResponse = (response: string): GuardrailResult => {
 	const cleanResponse = response.toLowerCase()
-	const cleanInput = userInput.toLowerCase()
 	
 	// Check if response contains Eduard-related content or is a proper redirect
 	const properRedirect = /i'm sorry.*only.*eduard|can only answer.*eduard|about eduard/i.test(cleanResponse)

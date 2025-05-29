@@ -110,30 +110,6 @@ const nextConfig = {
     NEXT_PUBLIC_APP_ENV: process.env.NODE_ENV,
   },
 
-  // File watching improvements
-  webpack: (config, { dev, isServer }) => {
-    if (dev) {
-      // Improve file watching stability
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-        ignored: ['node_modules/**', '.next/**', '.git/**'],
-      }
-      
-      // Reduce memory usage during development
-      config.optimization = {
-        ...config.optimization,
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        splitChunks: false,
-      }
-    }
-    return config
-  },
-
-  // Improve development performance  
-  // swcMinify: true, // DEPRECATED: SWC minification is now enabled by default in Next.js 13+
-  
   // Better error handling
   onDemandEntries: {
     // Period (in ms) where the server will keep pages in the buffer
@@ -152,23 +128,6 @@ const nextConfig = {
     ]
   },
 
-  // Bundle analyzer (only in production)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-      if (!dev && !isServer) {
-        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
-        config.plugins.push(
-          new BundleAnalyzerPlugin({
-            analyzerMode: 'static',
-            reportFilename: '../analyze/client.html',
-            openAnalyzer: false,
-          })
-        )
-      }
-      return config
-    },
-  }),
-
   // Compiler options
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
@@ -181,26 +140,38 @@ const nextConfig = {
     },
   },
 
-  // Development optimizations - REMOVED devIndicators.buildActivity as it's deprecated
-  // ...(process.env.NODE_ENV === 'development' && {
-  //   devIndicators: {
-  //     buildActivity: false, // DEPRECATED: No longer configurable
-  //   },
-  // }),
-}
+  // Unified webpack configuration
+  webpack: (config, { dev, isServer, buildId, defaultLoaders, webpack }) => {
+    // Development optimizations
+    if (dev) {
+      // Improve file watching stability
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ['node_modules/**', '.next/**', '.git/**'],
+      }
+      
+      // Reduce memory usage during development
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false,
+      }
+    }
 
-// Only add webpack configuration when NOT using Turbopack
-const isUsingTurbopack = process.argv.includes('--turbopack') || process.env.TURBOPACK === '1'
-
-if (!isUsingTurbopack) {
-  nextConfig.webpack = (config, { isServer }) => {
+    // Client-side configuration
     if (!isServer) {
-      // Add support for WebAssembly
+      // Add support for WebAssembly with proper async/await support
       config.experiments = {
         ...config.experiments,
         asyncWebAssembly: true,
         layers: true,
+        topLevelAwait: true,
       }
+      
+      // Set target to support modern browsers with async/await
+      config.target = 'web'
       
       // Configure for WebLLM with security considerations
       config.resolve.fallback = {
@@ -214,12 +185,13 @@ if (!isUsingTurbopack) {
         process: false,
       }
       
-      // Add bundle analyzer in development
+      // Add bundle analyzer in development or when ANALYZE=true
       if (process.env.ANALYZE === 'true') {
         const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
         config.plugins.push(
           new BundleAnalyzerPlugin({
             analyzerMode: 'static',
+            reportFilename: dev ? '../analyze/client.html' : '../analyze/client.html',
             openAnalyzer: false,
           })
         )
@@ -227,7 +199,7 @@ if (!isUsingTurbopack) {
     }
     
     return config
-  }
+  },
 }
 
 module.exports = nextConfig 

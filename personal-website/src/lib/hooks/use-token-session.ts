@@ -3,9 +3,8 @@ import {
 	TokenSession, 
 	createTokenSession, 
 	updateTokenSession, 
-	countTokens, 
+	countTokensSync,
 	analyzeTokens,
-	calculateConversationTokens,
 	getTokenWarningLevel,
 	getRemainingContext,
 	ModelName,
@@ -15,14 +14,14 @@ import {
 
 const SESSION_STORAGE_KEY = 'chatbot-token-session'
 
-interface UseTokenSessionReturn {
+interface TokenSessionHook {
 	session: TokenSession
 	currentInputTokens: number
-	currentInputAnalysis: TokenAnalysis
+	currentInputAnalysis: TokenAnalysis | null
 	conversationTokens: number
 	warningLevel: 'safe' | 'warning' | 'danger'
 	remainingContext: number
-	updateInput: (text: string) => void
+	updateInput: (input: string) => void
 	addMessage: (inputText: string, outputText: string) => void
 	resetSession: () => void
 	exportSession: () => string
@@ -33,7 +32,7 @@ export function useTokenSession(
 	messages: Array<{ role: string; content: string }> = [],
 	systemPrompt: string = '',
 	modelName: ModelName = 'llama3.2'
-): UseTokenSessionReturn {
+): TokenSessionHook {
 	// Initialize session from localStorage or create new
 	const [session, setSession] = useState<TokenSession>(() => {
 		if (typeof window === 'undefined') return createTokenSession()
@@ -56,7 +55,8 @@ export function useTokenSession(
 		return createTokenSession()
 	})
 
-	const [currentInputText, setCurrentInputText] = useState('')
+	const [currentInput, setCurrentInput] = useState('')
+	const [currentInputAnalysis, setCurrentInputAnalysis] = useState<TokenAnalysis | null>(null)
 
 	// Persist session to localStorage
 	useEffect(() => {
@@ -69,55 +69,83 @@ export function useTokenSession(
 		}
 	}, [session])
 
-	// Calculate current input tokens and analysis
+	// Calculate current input tokens
 	const currentInputTokens = useMemo(() => {
-		return countTokens(currentInputText, modelName)
-	}, [currentInputText, modelName])
+		if (!currentInput.trim()) return 0
+		return countTokensSync(currentInput, modelName)
+	}, [currentInput, modelName])
 
-	const currentInputAnalysis = useMemo(() => {
-		return analyzeTokens(currentInputText, modelName)
-	}, [currentInputText, modelName])
-
-	// Calculate total conversation tokens
+	// Calculate conversation tokens (system + messages)
 	const conversationTokens = useMemo(() => {
-		return calculateConversationTokens(messages, systemPrompt, modelName)
+		const systemTokens = countTokensSync(systemPrompt, modelName)
+		const messageTokens = messages.reduce((total, msg) => {
+			return total + countTokensSync(`${msg.role}: ${msg.content}`, modelName) + 4
+		}, 0)
+		return systemTokens + messageTokens
 	}, [messages, systemPrompt, modelName])
 
-	// Get warning level for current context usage
-	const warningLevel = useMemo(() => {
-		const totalTokens = conversationTokens + currentInputTokens
-		return getTokenWarningLevel(totalTokens, MODEL_CONFIGS[modelName].maxTokens)
-	}, [conversationTokens, currentInputTokens, modelName])
+	// Calculate total tokens including current input
+	const totalTokens = conversationTokens + currentInputTokens
 
-	// Calculate remaining context window
-	const remainingContext = useMemo(() => {
-		const totalTokens = conversationTokens + currentInputTokens
-		return getRemainingContext(totalTokens, modelName)
-	}, [conversationTokens, currentInputTokens, modelName])
+	// Get warning level
+	const warningLevel = getTokenWarningLevel(totalTokens, MODEL_CONFIGS[modelName].maxTokens)
 
-	// Update current input text for token counting
-	const updateInput = useCallback((text: string) => {
-		setCurrentInputText(text)
-	}, [])
+	// Get remaining context
+	const remainingContext = getRemainingContext(totalTokens, modelName)
 
-	// Add a new message exchange to the session
+	// Update current input and analyze it
+	const updateInput = useCallback(async (input: string) => {
+		setCurrentInput(input)
+		
+		if (input.trim()) {
+			try {
+				const analysis = await analyzeTokens(input, modelName)
+				setCurrentInputAnalysis(analysis)
+			} catch (error) {
+				console.warn('Failed to analyze tokens:', error)
+				// Fallback analysis
+				const tokens = countTokensSync(input, modelName)
+				const words = input.trim().split(/\s+/).length
+				const characters = input.length
+				const charactersNoSpaces = input.replace(/\s/g, '').length
+				const avgTokensPerWord = words > 0 ? tokens / words : 0
+				const efficiency = characters > 0 ? tokens / characters : 0
+				
+				let complexity: 'low' | 'medium' | 'high'
+				if (avgTokensPerWord < 1.2) complexity = 'low'
+				else if (avgTokensPerWord < 1.5) complexity = 'medium'
+				else complexity = 'high'
+				
+				setCurrentInputAnalysis({
+					count: tokens,
+					words,
+					characters,
+					charactersNoSpaces,
+					avgTokensPerWord,
+					efficiency,
+					complexity
+				})
+			}
+		} else {
+			setCurrentInputAnalysis(null)
+		}
+	}, [modelName])
+
+	// Add message to session
 	const addMessage = useCallback((inputText: string, outputText: string) => {
-		const inputTokens = countTokens(inputText, modelName)
-		const outputTokens = countTokens(outputText, modelName)
+		const inputTokens = countTokensSync(inputText, modelName)
+		const outputTokens = countTokensSync(outputText, modelName)
 		
 		setSession(prevSession => 
 			updateTokenSession(prevSession, inputTokens, outputTokens, modelName)
 		)
-		
-		// Clear current input after adding message
-		setCurrentInputText('')
 	}, [modelName])
 
-	// Reset the session
+	// Reset session
 	const resetSession = useCallback(() => {
-		const newSession = createTokenSession()
-		setSession(newSession)
-		setCurrentInputText('')
+		setSession(createTokenSession())
+		setCurrentInput('')
+		setCurrentInputAnalysis(null)
 		
 		// Clear from localStorage
 		if (typeof window !== 'undefined') {
@@ -125,36 +153,29 @@ export function useTokenSession(
 		}
 	}, [])
 
-	// Export session data as JSON string
+	// Export session data
 	const exportSession = useCallback(() => {
 		const exportData = {
 			session,
+			messages,
+			systemPrompt,
 			modelName,
-			exportDate: new Date().toISOString(),
-			version: '1.0'
+			timestamp: new Date().toISOString()
 		}
 		return JSON.stringify(exportData, null, 2)
-	}, [session, modelName])
+	}, [session, messages, systemPrompt, modelName])
 
-	// Import session data from JSON string
+	// Import session data
 	const importSession = useCallback((data: string): boolean => {
 		try {
-			const importData = JSON.parse(data)
-			
-			if (!importData.session || !importData.version) {
-				throw new Error('Invalid session data format')
+			const parsed = JSON.parse(data)
+			if (parsed.session && typeof parsed.session === 'object') {
+				setSession(parsed.session)
+				return true
 			}
-			
-			const importedSession = {
-				...importData.session,
-				startTime: new Date(importData.session.startTime),
-				lastActivity: new Date(importData.session.lastActivity)
-			}
-			
-			setSession(importedSession)
-			return true
+			return false
 		} catch (error) {
-			console.error('Failed to import session data:', error)
+			console.error('Failed to import session:', error)
 			return false
 		}
 	}, [])

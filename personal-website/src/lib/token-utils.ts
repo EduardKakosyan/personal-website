@@ -1,4 +1,20 @@
-import { encoding_for_model, Tiktoken } from 'tiktoken'
+// Dynamic import to handle WebAssembly loading
+let tiktokenModule: typeof import('tiktoken') | null = null
+
+// Initialize tiktoken module asynchronously
+const initializeTiktoken = async () => {
+	if (typeof window === 'undefined') return null // Server-side guard
+	
+	try {
+		if (!tiktokenModule) {
+			tiktokenModule = await import('tiktoken')
+		}
+		return tiktokenModule
+	} catch (error) {
+		console.warn('Failed to load tiktoken module:', error)
+		return null
+	}
+}
 
 // Model configurations for token counting
 export const MODEL_CONFIGS = {
@@ -46,8 +62,8 @@ export const createTokenSession = (): TokenSession => ({
 	lastActivity: new Date()
 })
 
-// Token counting function with caching
-export const countTokens = (text: string, modelName: ModelName = 'llama3.2'): number => {
+// Token counting function with caching and graceful WebAssembly handling
+export const countTokens = async (text: string, modelName: ModelName = 'llama3.2'): Promise<number> => {
 	if (!text || text.trim().length === 0) return 0
 	
 	// Create cache key
@@ -59,8 +75,16 @@ export const countTokens = (text: string, modelName: ModelName = 'llama3.2'): nu
 	}
 	
 	try {
+		const tiktoken = await initializeTiktoken()
+		if (!tiktoken) {
+			// Fallback: rough estimation (4 characters per token average)
+			const fallbackCount = Math.ceil(text.length / 4)
+			tokenCache.set(cacheKey, fallbackCount)
+			return fallbackCount
+		}
+
 		const config = MODEL_CONFIGS[modelName]
-		const encoder: Tiktoken = encoding_for_model(config.encoding as any)
+		const encoder = tiktoken.encoding_for_model(config.encoding as 'gpt-4')
 		const tokens = encoder.encode(text)
 		const count = tokens.length
 		
@@ -74,8 +98,27 @@ export const countTokens = (text: string, modelName: ModelName = 'llama3.2'): nu
 	} catch (error) {
 		console.warn('Token counting failed, using fallback estimation:', error)
 		// Fallback: rough estimation (4 characters per token average)
-		return Math.ceil(text.length / 4)
+		const fallbackCount = Math.ceil(text.length / 4)
+		tokenCache.set(cacheKey, fallbackCount)
+		return fallbackCount
 	}
+}
+
+// Synchronous version for backward compatibility (uses cache or fallback)
+export const countTokensSync = (text: string, modelName: ModelName = 'llama3.2'): number => {
+	if (!text || text.trim().length === 0) return 0
+	
+	const cacheKey = `${modelName}:${text}`
+	
+	// Check cache first
+	if (tokenCache.has(cacheKey)) {
+		return tokenCache.get(cacheKey)!
+	}
+	
+	// Fallback estimation for synchronous calls
+	const fallbackCount = Math.ceil(text.length / 4)
+	tokenCache.set(cacheKey, fallbackCount)
+	return fallbackCount
 }
 
 // Advanced token analysis
@@ -89,8 +132,8 @@ export interface TokenAnalysis {
 	complexity: 'low' | 'medium' | 'high'
 }
 
-export const analyzeTokens = (text: string, modelName: ModelName = 'llama3.2'): TokenAnalysis => {
-	const tokens = countTokens(text, modelName)
+export const analyzeTokens = async (text: string, modelName: ModelName = 'llama3.2'): Promise<TokenAnalysis> => {
+	const tokens = await countTokens(text, modelName)
 	const words = text.trim().split(/\s+/).length
 	const characters = text.length
 	const charactersNoSpaces = text.replace(/\s/g, '').length
@@ -181,20 +224,21 @@ export const getCacheStats = () => ({
 })
 
 // Batch token counting for multiple texts
-export const countTokensBatch = (
+export const countTokensBatch = async (
 	texts: string[],
 	modelName: ModelName = 'llama3.2'
-): number[] => {
-	return texts.map(text => countTokens(text, modelName))
+): Promise<number[]> => {
+	return Promise.all(texts.map(text => countTokens(text, modelName)))
 }
 
 // Token-aware text truncation
-export const truncateToTokenLimit = (
+export const truncateToTokenLimit = async (
 	text: string,
 	maxTokens: number,
 	modelName: ModelName = 'llama3.2'
-): string => {
-	if (countTokens(text, modelName) <= maxTokens) return text
+): Promise<string> => {
+	const currentTokens = await countTokens(text, modelName)
+	if (currentTokens <= maxTokens) return text
 	
 	// Binary search for optimal truncation point
 	let left = 0
@@ -204,7 +248,7 @@ export const truncateToTokenLimit = (
 	while (left <= right) {
 		const mid = Math.floor((left + right) / 2)
 		const truncated = text.substring(0, mid)
-		const tokens = countTokens(truncated, modelName)
+		const tokens = await countTokens(truncated, modelName)
 		
 		if (tokens <= maxTokens) {
 			result = truncated
@@ -218,16 +262,20 @@ export const truncateToTokenLimit = (
 }
 
 // Calculate conversation context tokens
-export const calculateConversationTokens = (
+export const calculateConversationTokens = async (
 	messages: Array<{ role: string; content: string }>,
 	systemPrompt: string,
 	modelName: ModelName = 'llama3.2'
-): number => {
-	const systemTokens = countTokens(systemPrompt, modelName)
-	const messageTokens = messages.reduce((total, msg) => {
+): Promise<number> => {
+	const systemTokens = await countTokens(systemPrompt, modelName)
+	
+	const messageTokensPromises = messages.map(async (msg) => {
 		// Add tokens for role and content, plus formatting overhead
-		return total + countTokens(`${msg.role}: ${msg.content}`, modelName) + 4
-	}, 0)
+		return await countTokens(`${msg.role}: ${msg.content}`, modelName) + 4
+	})
+	
+	const messageTokensArray = await Promise.all(messageTokensPromises)
+	const messageTokens = messageTokensArray.reduce((total, tokens) => total + tokens, 0)
 	
 	return systemTokens + messageTokens
 } 

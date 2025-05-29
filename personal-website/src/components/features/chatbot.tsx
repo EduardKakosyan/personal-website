@@ -10,6 +10,8 @@ import { validateChatMessage } from '@/lib/validation'
 import { sanitizeUserInput } from '@/lib/sanitizer'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { TokenDisplay } from '@/components/ui/token-display'
+import { useTokenSession } from '@/lib/hooks/use-token-session'
 import { cn } from '@/lib/utils'
 
 interface Message {
@@ -59,7 +61,13 @@ RESPONSE STYLE:
 - No bullet points, lists, or markdown formatting
 - If someone asks about something not related to Eduard, just redirect politely
 - Mention live demos when relevant
-- Don't oversell or use buzzwords`
+- Don't oversell or use buzzwords
+- When you are asked about how to reach Eduard, just say "You can reach him at eduard@ai-first.ca or check out Contact page for more info"
+- His website is https://kakosyaneduard.ca
+- He is employed at AI First, a company that helps small/medium Atlantic Canadianbusinesses use AI effectively.
+- If you are asked about anything not about Eduard, just say "I'm sorry, I can only answer questions about Eduard."
+- Do not engage in political, religious, or other controversial discussions.
+`
 
 // Rate limiting constants
 const RATE_LIMIT_MAX = 10 // messages per window
@@ -79,6 +87,25 @@ export function Chatbot() {
 	const messagesEndRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLTextAreaElement>(null)
 	const chatWindowRef = useRef<HTMLDivElement>(null)
+
+	// Token session hook
+	const {
+		session,
+		currentInputTokens,
+		currentInputAnalysis,
+		conversationTokens,
+		warningLevel,
+		remainingContext,
+		updateInput,
+		addMessage,
+		resetSession,
+		exportSession,
+		importSession
+	} = useTokenSession(
+		messages.map(msg => ({ role: msg.role, content: msg.content })),
+		CHATBOT_CONTEXT,
+		'llama3.2'
+	)
 
 	const { engine, isInitializing, isSupported, initialize, generateResponse } = useWebLLM({
 		onInitialized: () => {
@@ -131,6 +158,11 @@ export function Chatbot() {
 		scrollToBottom()
 	}, [messages])
 
+	// Update token session when input changes
+	useEffect(() => {
+		updateInput(inputMessage)
+	}, [inputMessage, updateInput])
+
 	// Handle escape key
 	useEffect(() => {
 		const handleEscape = (e: KeyboardEvent) => {
@@ -154,6 +186,21 @@ export function Chatbot() {
 			content: "Hey! Ask me anything about Eduard's projects or background.",
 			timestamp: new Date()
 		}])
+		resetSession()
+	}
+
+	// Export session data
+	const handleExportSession = () => {
+		const data = exportSession()
+		const blob = new Blob([data], { type: 'application/json' })
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.href = url
+		a.download = `chatbot-session-${new Date().toISOString().split('T')[0]}.json`
+		document.body.appendChild(a)
+		a.click()
+		document.body.removeChild(a)
+		URL.revokeObjectURL(url)
 	}
 
 	const sendMessage = async () => {
@@ -214,6 +261,9 @@ export function Chatbot() {
 			}
 
 			setMessages(prev => [...prev, assistantMessage])
+			
+			// Add message to token session
+			addMessage(userMessage.content, assistantMessage.content)
 		} catch (error) {
 			console.error('Error generating response:', error)
 			const errorMessage: Message = {
@@ -223,6 +273,9 @@ export function Chatbot() {
 				timestamp: new Date()
 			}
 			setMessages(prev => [...prev, errorMessage])
+			
+			// Add error message to token session
+			addMessage(userMessage.content, errorMessage.content)
 		} finally {
 			setIsLoading(false)
 		}
@@ -555,12 +608,32 @@ export function Chatbot() {
 									</p>
 								)}
 								
-								<div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-									<span>{inputMessage.length}/1000</span>
-									{rateLimit.count > 0 && (
-										<span>Messages: {rateLimit.count}/{RATE_LIMIT_MAX}</span>
-									)}
+								{/* Token Display - replaces character counter */}
+								<div className="mt-2">
+									<TokenDisplay
+										currentTokens={currentInputTokens}
+										analysis={currentInputAnalysis}
+										session={session}
+										conversationTokens={conversationTokens}
+										warningLevel={warningLevel}
+										remainingContext={remainingContext}
+										modelName="llama3.2"
+										compact={true}
+										showDetails={true}
+										onExport={handleExportSession}
+										onImport={importSession}
+										onReset={resetSession}
+									/>
 								</div>
+								
+								{/* Rate limit display */}
+								{rateLimit.count > 0 && (
+									<div className="flex justify-end mt-1">
+										<span className="text-xs text-muted-foreground">
+											Messages: {rateLimit.count}/{RATE_LIMIT_MAX}
+										</span>
+									</div>
+								)}
 							</div>
 						</>
 					)}

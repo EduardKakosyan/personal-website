@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Trophy, Building, Calendar, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 interface Achievement {
   title: string
@@ -15,6 +16,7 @@ interface Achievement {
   color: 'destructive' | 'secondary' | 'default' | 'outline'
   icon: React.ElementType
   link?: string
+  isInternal?: boolean
 }
 
 const achievements: Achievement[] = [
@@ -26,7 +28,8 @@ const achievements: Achievement[] = [
     description: 'Developed llm-powered personas to simulate change in human behavior to real/fake Covid-19 news.',
     color: 'destructive',
     icon: Trophy,
-    link: 'https://healthbyte-dashboard.vercel.app/'
+    link: '/projects/healthbyte',
+    isInternal: true
   },
   {
     title: 'AI Developer',
@@ -36,7 +39,8 @@ const achievements: Achievement[] = [
     description: 'Building AI solutions for SMBs all across Atlantic Canada, specializing in intelligent automation and LLM integration.',
     color: 'default',
     icon: Building,
-    link: 'https://www.ai-first.ca/'
+    link: 'https://www.ai-first.ca/',
+    isInternal: false
   },
   {
     title: 'Volta Hackathon',
@@ -45,7 +49,9 @@ const achievements: Achievement[] = [
     date: 'December 2024',
     description: 'Developed Second Brain, an AI-powered time management platform for university students.',
     color: 'secondary',
-    icon: Trophy
+    icon: Trophy,
+    link: '/projects/second-brain',
+    isInternal: true
   },
 ]
 
@@ -105,6 +111,16 @@ export function AchievementsSection() {
             const IconComponent = achievement.icon
             const isVisible = visibleCards[index]
             
+            const CardWrapper = achievement.link 
+              ? achievement.isInternal 
+                ? ({ children }: { children: React.ReactNode }) => (
+                    <Link href={achievement.link!}>{children}</Link>
+                  )
+                : ({ children }: { children: React.ReactNode }) => (
+                    <div onClick={() => window.open(achievement.link, '_blank')}>{children}</div>
+                  )
+              : ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+            
             return (
               <div
                 key={index}
@@ -117,63 +133,63 @@ export function AchievementsSection() {
                 )}
                 style={{ transitionDelay: `${index * 150}ms` }}
               >
-                <Card className={cn(
-                  'h-full group hover:shadow-xl transition-all duration-300 cursor-pointer',
-                  'border-2 hover:border-primary/20 bg-background/80 backdrop-blur',
-                  achievement.link && 'hover:scale-105 haptic-medium'
-                )}
-                onClick={() => achievement.link && window.open(achievement.link, '_blank')}
-                >
-                  <CardHeader className='pb-4'>
-                    <div className='flex items-start justify-between mb-3'>
-                      <div className='flex items-center gap-3'>
-                        <div className={cn(
-                          'p-2 rounded-lg transition-colors',
-                          achievement.color === 'destructive' ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
-                          achievement.color === 'secondary' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' :
-                          'bg-primary/10 text-primary'
-                        )}>
-                          <IconComponent className='h-5 w-5' />
+                <CardWrapper>
+                  <Card className={cn(
+                    'h-full group hover:shadow-xl transition-all duration-300',
+                    'border-2 hover:border-primary/20 bg-background/80 backdrop-blur',
+                    achievement.link && 'cursor-pointer hover:scale-105 haptic-medium'
+                  )}>
+                    <CardHeader className='pb-4'>
+                      <div className='flex items-start justify-between mb-3'>
+                        <div className='flex items-center gap-3'>
+                          <div className={cn(
+                            'p-2 rounded-lg transition-colors',
+                            achievement.color === 'destructive' ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
+                            achievement.color === 'secondary' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' :
+                            'bg-primary/10 text-primary'
+                          )}>
+                            <IconComponent className='h-5 w-5' />
+                          </div>
+                          <Badge 
+                            variant={achievement.color} 
+                            className='font-semibold text-xs px-2 py-1'
+                          >
+                            {achievement.position}
+                          </Badge>
                         </div>
-                        <Badge 
-                          variant={achievement.color} 
-                          className='font-semibold text-xs px-2 py-1'
-                        >
-                          {achievement.position}
-                        </Badge>
+                        
+                        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                          <Calendar className='h-3 w-3' />
+                          {achievement.date}
+                        </div>
                       </div>
                       
-                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                        <Calendar className='h-3 w-3' />
-                        {achievement.date}
-                      </div>
-                    </div>
+                      <CardTitle className='text-xl group-hover:text-primary transition-colors'>
+                        {achievement.title}
+                        {achievement.link && (
+                          <ExternalLink className='inline h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity' />
+                        )}
+                      </CardTitle>
+                      
+                      <CardDescription className='font-medium text-muted-foreground'>
+                        <Building className='inline h-3 w-3 mr-1' />
+                        {achievement.organization}
+                      </CardDescription>
+                    </CardHeader>
                     
-                    <CardTitle className='text-xl group-hover:text-primary transition-colors'>
-                      {achievement.title}
+                    <CardContent>
+                      <p className='text-muted-foreground text-sm leading-relaxed'>
+                        {achievement.description}
+                      </p>
+                      
                       {achievement.link && (
-                        <ExternalLink className='inline h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity' />
+                        <div className='mt-4 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity'>
+                          {achievement.isInternal ? 'View project details →' : 'Click to learn more →'}
+                        </div>
                       )}
-                    </CardTitle>
-                    
-                    <CardDescription className='font-medium text-muted-foreground'>
-                      <Building className='inline h-3 w-3 mr-1' />
-                      {achievement.organization}
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <p className='text-muted-foreground text-sm leading-relaxed'>
-                      {achievement.description}
-                    </p>
-                    
-                    {achievement.link && (
-                      <div className='mt-4 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity'>
-                        Click to learn more →
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </CardWrapper>
               </div>
             )
           })}

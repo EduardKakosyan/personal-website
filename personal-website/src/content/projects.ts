@@ -90,7 +90,7 @@ const allProjects: Project[] = [
     description: 'Comprehensive network simulation platform comparing reinforcement learning-based routing (Q-routing) against traditional algorithms like Dijkstra and OSPF in dynamic network environments.',
     longDescription: getProjectMarkdown('network-sim'),
     tags: ['Python 3.13', 'SimPy', 'NetworkX', 'Q-Learning', 'Reinforcement Learning', 'Network Simulation', 'Performance Analysis', 'OSPF', 'Graph Theory'],
-    repoUrl: 'https://github.com/EduardKakosyan/network-sim',
+    repoUrl: 'https://github.com/EduardKakosyan/q-learning-network-sim',
     featured: true,
     category: 'Research',
     completionDate: '2024',

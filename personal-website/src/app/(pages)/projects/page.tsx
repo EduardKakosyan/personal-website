@@ -13,11 +13,11 @@ export default async function ProjectsPage() {
   return (
     <div className='container py-12 md:py-16'>
       <div className='mb-12 text-center'>
-        <h1 className='text-4xl font-bold tracking-tighter sm:text-5xl'>
-          My Portfolio
+        <h1 className='text-4xl font-bold tracking-tight mb-4'>
+          Projects
         </h1>
-        <p className='mt-3 max-w-2xl mx-auto text-lg text-muted-foreground md:text-xl'>
-          Here are some of the projects I&apos;ve passionately worked on, showcasing my skills in AI and software development.
+        <p className='text-xl text-muted-foreground max-w-3xl'>
+          Here are some of the projects I've passionately worked on, showcasing my skills in AI and software development.
         </p>
       </div>
 

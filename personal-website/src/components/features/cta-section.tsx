@@ -8,12 +8,12 @@ export function CTASection() {
       <div className='container mx-auto px-4 max-w-4xl'>
         <Card className='border-0 shadow-lg bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5'>
           <CardContent className='p-8 md:p-12 text-center'>
-            <h2 className='text-3xl font-bold tracking-tighter sm:text-4xl mb-4'>
-              Let&apos;s Connect
+            <h2 className='text-3xl font-bold tracking-tight mb-4'>
+              Let's Connect
             </h2>
-            <p className='text-muted-foreground md:text-lg mb-8 max-w-2xl mx-auto leading-relaxed'>
+            <p className='text-xl text-muted-foreground mb-8 max-w-2xl mx-auto'>
               Whether you need AI integration for your business, consultation on AI projects, 
-              or want to collaborate and build something cool, I&apos;m available to chat! 
+              or want to collaborate and build something cool, I'm available to chat! 
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
               <Button asChild size='lg' className='min-w-[160px]'>

@@ -459,7 +459,7 @@ export function Chatbot() {
 									<Bot className='h-4 w-4 text-primary' />
 								</div>
 								<div className={cn(isMinimized && 'hidden sm:block')}>
-									<CardTitle className='text-lg'>Eduard&apos;s Assistant</CardTitle>
+									<CardTitle className='text-lg'>Eduard's Assistant</CardTitle>
 									{!isMinimized && (
 										<p className='text-sm text-muted-foreground'>Ask me about his projects & background</p>
 									)}
@@ -625,7 +625,7 @@ export function Chatbot() {
 								{isOffTopicInput && inputMessage.trim() && (
 									<div className="mb-2 text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
 										<AlertTriangle className="h-3 w-3" />
-										This doesn&apos;t seem to be about Eduard. Try asking about his projects or background!
+										This doesn't seem to be about Eduard. Try asking about his projects or background!
 									</div>
 								)}
 								
@@ -639,7 +639,7 @@ export function Chatbot() {
 											!isSupported 
 												? 'WebGPU required...' 
 												: engine 
-												? "Ask about Eduard&apos;s projects..."
+												? "Ask about Eduard's projects..."
 												: 'Initializing...'
 										}
 										disabled={!engine || isLoading || !isSupported}

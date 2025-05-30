@@ -93,7 +93,7 @@ export function ContactForm() {
 			<CardHeader>
 				<CardTitle>Send a Message</CardTitle>
 				<CardDescription>
-					Have a question or a project in mind? Let&apos;s connect.
+					Have a question or a project in mind? Let's connect.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>

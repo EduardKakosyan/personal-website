@@ -10,20 +10,12 @@ export function BioSection() {
               About Me
             </h2>
             <p className='text-muted-foreground md:text-lg/relaxed'>
-              I'm an AI developer who loves building stuff that actually works and solves real problems. 
-              There's nothing worse than tech that sounds cool but doesn't help anyone.
+              I'm an AI developer who loves building stuff and learning new things. 
+              I'm currently working on a project that helps small and medium businesses figure out how to actually use the new tech.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
               Just graduated from Dalhousie University with a computer science degree. 
               I'm always on the lookout for hackathons to join, especially local ones - there's something fun about the energy and time crunch.
-            </p>
-            <p className='text-muted-foreground md:text-lg/relaxed'>
-              Right now I'm focused on helping small and medium businesses figure out how to actually use AI. 
-              A lot of them know it could help but don't know where to start.
-            </p>
-            <p className='text-muted-foreground md:text-lg/relaxed'>
-              I run workshops on AI topics when I can - everything from the basics to getting models deployed. 
-              I like teaching because it forces me to really understand what I'm talking about.
             </p>
             <p className='text-muted-foreground md:text-lg/relaxed'>
               When I'm not coding, I'm usually hiking, camping, or taking photos. 

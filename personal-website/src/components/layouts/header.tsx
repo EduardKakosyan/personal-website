@@ -58,7 +58,7 @@ export function Header() {
           : 'border-border/20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/40'
       )}
     >
-      <div className='container flex h-16 max-w-screen-2xl items-center justify-between px-4'>
+      <div className='container mx-auto flex h-16 items-center justify-between px-4'>
         {/* Logo */}
         <Link href='/' className='flex items-center space-x-3 group'>
           <div className='relative w-10 h-10 rounded-full overflow-hidden bg-white ring-2 ring-transparent group-hover:ring-primary/20 transition-all duration-200'>

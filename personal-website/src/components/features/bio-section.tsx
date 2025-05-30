@@ -9,7 +9,6 @@ export function BioSection() {
             <h2 className='text-3xl font-bold tracking-tighter sm:text-4xl'>
               About Me
             </h2>
-            {/* eslint-disable react/no-unescaped-entities */}
             <p className='text-muted-foreground md:text-lg/relaxed'>
               I'm an AI developer who loves building stuff that actually works and solves real problems. 
               There's nothing worse than tech that sounds cool but doesn't help anyone.
@@ -30,7 +29,6 @@ export function BioSection() {
               When I'm not coding, I'm usually hiking, camping, or taking photos. 
               Getting outside helps clear my head and honestly leads to some of my best ideas.
             </p>
-            {/* eslint-enable react/no-unescaped-entities */}
           </div>
           <div className='flex justify-center'>
             <div className='w-full max-w-md h-80 rounded-lg bg-muted flex items-center justify-center text-muted-foreground'>

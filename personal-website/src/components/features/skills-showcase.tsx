@@ -52,11 +52,12 @@ export function SkillsShowcase() {
     <section className='py-12 md:py-24 bg-muted/40 w-full'>
       <div className='container mx-auto px-4 max-w-6xl'>
         <div className='text-center mb-12'>
-          <h2 className='text-3xl font-bold tracking-tighter sm:text-4xl mb-4'>
-            What I Work With
+          <Badge variant='secondary' className='mb-4'>Technical Skills</Badge>
+          <h2 className='text-3xl font-bold tracking-tight mb-4'>
+            What I Use
           </h2>
-          <p className='text-muted-foreground md:text-lg max-w-2xl mx-auto'>
-            Here&apos;s my technical toolkit and how I actually use it in practice
+          <p className='text-xl text-muted-foreground max-w-3xl mx-auto'>
+            Here's my technical toolkit and how I actually use it in practice
           </p>
         </div>
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
@@ -94,7 +95,7 @@ export function SkillsShowcase() {
               <p className='text-muted-foreground text-sm leading-relaxed'>
                 The tech world moves fast, and I enjoy keeping up. Currently exploring: advanced prompt engineering techniques, 
                 local AI model optimization, and better ways to build user-friendly AI applications. 
-                If you&apos;re working on something interesting, I&apos;d love to hear about it.
+                If you're working on something interesting, I'd love to hear about it.
               </p>
             </CardContent>
           </Card>

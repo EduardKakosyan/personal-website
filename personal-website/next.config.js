@@ -4,10 +4,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Re-enable ESLint during build (security fix)
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
   
   // Comprehensive Security Headers
   async headers() {

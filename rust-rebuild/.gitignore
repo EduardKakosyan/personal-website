@@ -1,0 +1,29 @@
+# Rust / Cargo
+target/
+**/*.rs.bk
+Cargo.lock
+
+# If you're building a library, keep Cargo.lock — but for web apps it's fine to ignore
+
+# VS Code
+.vscode/
+
+# IntelliJ / CLion / RustRover
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# OS files
+.DS_Store
+
+# Node (if web assets involved)
+node_modules/
+dist/
+build/
+

@@ -1,0 +1,8 @@
+# Runs from git root
+MSG_FILE="$1"
+if [[ "$MSG_FILE" != /* ]]; then
+  MSG_FILE="$(pwd)/$MSG_FILE"
+fi
+
+cd personal-website
+pnpm commitlint --edit "$MSG_FILE"

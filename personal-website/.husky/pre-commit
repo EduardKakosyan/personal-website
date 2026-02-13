@@ -1,0 +1,26 @@
+# Runs from git root
+
+# Check for secrets before running lint-staged
+echo "Scanning for secrets..."
+
+if command -v gitleaks &> /dev/null; then
+  gitleaks protect --staged --verbose --redact --config=.gitleaks.toml
+
+  if [ $? -ne 0 ]; then
+    echo "Secret detected! Commit blocked."
+    echo ""
+    echo "If this is a false positive:"
+    echo "   1. Add inline comment: // gitleaks:allow"
+    echo "   2. Update .gitleaks.toml allowlist"
+    echo "   3. Emergency bypass: SKIP=gitleaks git commit -m 'message'"
+    exit 1
+  fi
+  echo "No secrets detected"
+else
+  echo "Gitleaks not installed. Skipping secret scan."
+  echo "   Install: brew install gitleaks (macOS) or see https://github.com/gitleaks/gitleaks"
+fi
+
+# Run lint-staged from app directory
+cd personal-website
+pnpm lint-staged

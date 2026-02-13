@@ -62,3 +62,12 @@ ehthumbs.db
 
 # Bundle analyzer
 /analyze/
+
+# Act secrets (local GitHub Actions simulation)
+.secrets
+
+# eslint cache
+.eslintcache
+
+# stylelint cache
+.stylelintcache

@@ -4,7 +4,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  
+
   // Comprehensive Security Headers
   async headers() {
     return [
@@ -35,7 +35,7 @@ const nextConfig = {
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
-              "upgrade-insecure-requests"
+              'upgrade-insecure-requests',
             ].join('; '),
           },
           // Prevent clickjacking
@@ -64,10 +64,14 @@ const nextConfig = {
             value: '1; mode=block',
           },
           // HSTS (only in production)
-          ...(process.env.NODE_ENV === 'production' ? [{
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload',
-          }] : []),
+          ...(process.env.NODE_ENV === 'production'
+            ? [
+                {
+                  key: 'Strict-Transport-Security',
+                  value: 'max-age=31536000; includeSubDomains; preload',
+                },
+              ]
+            : []),
         ],
       },
     ]
@@ -88,7 +92,7 @@ const nextConfig = {
 
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['@mlc-ai/web-llm'],
+    optimizePackageImports: ['@mlc-ai/web-llm', 'three', 'motion', '@react-three/drei'],
     // optimizeCss: true, // Temporarily disabled due to critters dependency issue
     gzipSize: true,
   },
@@ -146,7 +150,7 @@ const nextConfig = {
         aggregateTimeout: 300,
         ignored: ['node_modules/**', '.next/**', '.git/**'],
       }
-      
+
       // Reduce memory usage during development
       config.optimization = {
         ...config.optimization,
@@ -165,10 +169,10 @@ const nextConfig = {
         layers: true,
         topLevelAwait: true,
       }
-      
+
       // Set target to support modern browsers with async/await
       config.target = 'web'
-      
+
       // Configure for WebLLM with security considerations
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -180,7 +184,7 @@ const nextConfig = {
         buffer: false,
         process: false,
       }
-      
+
       // Add bundle analyzer in development or when ANALYZE=true
       if (process.env.ANALYZE === 'true') {
         const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
@@ -189,13 +193,13 @@ const nextConfig = {
             analyzerMode: 'static',
             reportFilename: dev ? '../analyze/client.html' : '../analyze/client.html',
             openAnalyzer: false,
-          })
+          }),
         )
       }
     }
-    
+
     return config
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

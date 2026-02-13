@@ -1,7 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-Working directory: ./personal-website
-Code in ./personal-website/src/

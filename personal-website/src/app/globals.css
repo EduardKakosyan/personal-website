@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -43,7 +43,26 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Lenis smooth scroll */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 :root {
+  --accent-neon: oklch(0.75 0.18 230);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
@@ -79,6 +98,7 @@
 }
 
 .dark {
+  --accent-neon: oklch(0.8 0.2 220);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -269,111 +289,110 @@
     min-height: 44px;
     min-width: 44px;
   }
-  
-  /* Smooth scrolling for mobile */
+
+  /* Mobile optimizations */
   @media (max-width: 768px) {
     html {
-      scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
     }
-    
+
     body {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    
+
     /* Improve tap target sizes */
-    button, 
-    [role="button"],
-    input[type="button"],
-    input[type="submit"],
+    button,
+    [role='button'],
+    input[type='button'],
+    input[type='submit'],
     a {
       min-height: 44px;
       min-width: 44px;
       touch-action: manipulation;
     }
-    
+
     /* Better focus states for mobile */
     button:focus-visible,
-    [role="button"]:focus-visible,
+    [role='button']:focus-visible,
     input:focus-visible,
     textarea:focus-visible,
     a:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: 2px;
     }
-    
+
     /* Prevent text size adjust on orientation change */
     body {
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
     }
-    
+
     /* Smooth transitions for mobile interactions */
     .mobile-smooth {
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     /* Better mobile scrollbars */
     ::-webkit-scrollbar {
       width: 4px;
       height: 4px;
     }
-    
+
     ::-webkit-scrollbar-track {
       background: transparent;
     }
-    
+
     ::-webkit-scrollbar-thumb {
       background: hsl(var(--muted-foreground) / 0.3);
       border-radius: 2px;
     }
-    
+
     ::-webkit-scrollbar-thumb:hover {
       background: hsl(var(--muted-foreground) / 0.5);
     }
   }
-  
+
   /* Enhanced mobile chat styles */
   .chat-mobile {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
-  
+
   /* Mobile keyboard safe area */
   .keyboard-safe {
     padding-bottom: env(keyboard-inset-height, 0px);
   }
-  
+
   /* Pull-to-refresh override */
   .no-pull-refresh {
     overscroll-behavior-y: contain;
   }
-  
+
   /* Mobile drag handle */
   .drag-handle {
     cursor: grab;
     touch-action: pan-y;
   }
-  
+
   .drag-handle:active {
     cursor: grabbing;
   }
-  
+
   /* Haptic feedback simulation */
   @media (max-width: 768px) {
     .haptic-light {
       transition: transform 0.1s ease;
     }
-    
+
     .haptic-light:active {
       transform: scale(0.98);
     }
-    
+
     .haptic-medium {
       transition: transform 0.15s ease;
     }
-    
+
     .haptic-medium:active {
       transform: scale(0.95);
     }
@@ -385,7 +404,7 @@
   .border {
     border-width: 2px;
   }
-  
+
   .text-muted-foreground {
     color: hsl(var(--foreground));
   }
@@ -409,13 +428,39 @@
   .prose {
     color: hsl(var(--foreground) / 0.9);
   }
-  
+
   /* Softer shadows for mobile dark mode */
   .shadow-lg {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -2px rgb(0 0 0 / 0.2);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.3),
+      0 4px 6px -2px rgb(0 0 0 / 0.2);
   }
-  
+
   .shadow-2xl {
     box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
   }
+}
+
+/* Gradient text utility — use inline styles for bg-clip since Lightning CSS strips background-clip: text */
+
+/* Dark section background */
+.section-dark {
+  background: oklch(0.16 0.005 285);
+  color: oklch(0.95 0 0);
+}
+
+.dark .section-dark {
+  background: oklch(0.11 0.005 285);
+}
+
+/* Glass card utility */
+.glass-card {
+  background: oklch(1 0 0 / 5%);
+  backdrop-filter: blur(12px);
+  border: 1px solid oklch(1 0 0 / 10%);
+}
+
+.dark .glass-card {
+  background: oklch(1 0 0 / 5%);
+  border: 1px solid oklch(1 0 0 / 8%);
 }

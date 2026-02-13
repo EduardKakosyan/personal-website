@@ -7,16 +7,17 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Home | Eduard Kakosyan - AI Developer',
-  description: 'Portfolio of Eduard Kakosyan, AI Developer and hackathon winner. Explore AI projects, LLM implementations, and technical solutions.',
+  description:
+    'Portfolio of Eduard Kakosyan, AI Developer and hackathon winner. Explore AI projects, LLM implementations, and technical solutions.',
 }
 
 export default function HomePage() {
   return (
     <>
       <HeroSection />
-      <AIAssistantSection />
       <AIExpertiseSection />
       <AchievementsSection />
+      <AIAssistantSection />
       <CTASection />
     </>
   )

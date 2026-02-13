@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { motion, useScroll, useTransform } from 'motion/react'
 import { HeroText } from './hero-text'
+import { setMouseOverHero, setMousePosition } from './hero-scene'
 
 const HeroScene = dynamic(
   () => import('./hero-scene').then((mod) => ({ default: mod.HeroScene })),
@@ -12,6 +13,7 @@ const HeroScene = dynamic(
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null)
+
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
@@ -21,11 +23,20 @@ export function HeroSection() {
   const scale = useTransform(scrollYProgress, [0, 0.8], [1, 0.95])
   const y = useTransform(scrollYProgress, [0, 0.8], [0, 60])
 
+  const handlePointerEnter = useCallback(() => setMouseOverHero(true), [])
+  const handlePointerLeave = useCallback(() => setMouseOverHero(false), [])
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    setMousePosition(e.clientX, e.clientY)
+  }, [])
+
   return (
     <section
       ref={sectionRef}
       className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
       data-section="hero"
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      onPointerMove={handlePointerMove}
     >
       {/* 3D Background */}
       <HeroScene />

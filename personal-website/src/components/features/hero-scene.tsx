@@ -5,41 +5,95 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Float } from '@react-three/drei'
 import * as THREE from 'three'
 
-const PARTICLE_COUNT = 80
-const CONNECTION_DISTANCE = 2.2
+// --- Logo shape constants ---
+const NUM_RAYS = 7
+const PARTICLES_PER_RAY = 14
+const CENTER_PARTICLES = 10
+const PARTICLE_COUNT = CENTER_PARTICLES + NUM_RAYS * PARTICLES_PER_RAY // 108
+const LOGO_RADIUS = 2.8
+const RAY_TWIST = 0.5 // radians of curve per ray
+const CONNECTION_DISTANCE = 0.5
 
-// Generate initial particle data outside of component (module-level, runs once)
-function generateParticleData() {
-  const pos = new Float32Array(PARTICLE_COUNT * 3)
-  const vel = new Float32Array(PARTICLE_COUNT * 3)
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const i3 = i * 3
-    // Use seeded-style deterministic values based on index for purity
-    const seed1 = Math.sin(i * 127.1 + 311.7) * 43758.5453
-    const seed2 = Math.sin(i * 269.5 + 183.3) * 43758.5453
-    const seed3 = Math.sin(i * 419.2 + 371.9) * 43758.5453
-    const seed4 = Math.sin(i * 547.3 + 127.1) * 43758.5453
-    const seed5 = Math.sin(i * 631.7 + 269.5) * 43758.5453
-    const seed6 = Math.sin(i * 773.1 + 419.2) * 43758.5453
-    pos[i3] = (seed1 - Math.floor(seed1) - 0.5) * 8
-    pos[i3 + 1] = (seed2 - Math.floor(seed2) - 0.5) * 8
-    pos[i3 + 2] = (seed3 - Math.floor(seed3) - 0.5) * 4
-    vel[i3] = (seed4 - Math.floor(seed4) - 0.5) * 0.003
-    vel[i3 + 1] = (seed5 - Math.floor(seed5) - 0.5) * 0.003
-    vel[i3 + 2] = (seed6 - Math.floor(seed6) - 0.5) * 0.002
-  }
-  return { positions: pos, velocities: vel }
+// --- KNN attraction constants (up to K=3 nearest neighbors within radius) ---
+const RAMP_UP_SPEED = 3.0
+const RAMP_DOWN_SPEED = 1.5
+const ATTRACTION_STRENGTH = 0.8
+const MAX_ATTRACT_RADIUS_SQ = 2.5 * 2.5
+
+// --- Module-level mouse state (avoids re-renders) ---
+let _isMouseOverHero = false
+let _mouseClientX = 0
+let _mouseClientY = 0
+
+export function setMouseOverHero(over: boolean) {
+  _isMouseOverHero = over
 }
 
-const INITIAL_PARTICLE_DATA = generateParticleData()
+export function setMousePosition(clientX: number, clientY: number) {
+  _mouseClientX = clientX
+  _mouseClientY = clientY
+}
+
+// Scratch objects reused every frame (zero allocation)
+const _mouseWorld = new THREE.Vector3()
+const _mouseLocal = new THREE.Vector3()
+const _rayDir = new THREE.Vector3()
+const _invMatrix = new THREE.Matrix4()
+
+// Generate logo-shaped particle layout
+function generateParticleData() {
+  const targets = new Float32Array(PARTICLE_COUNT * 3)
+  const pos = new Float32Array(PARTICLE_COUNT * 3)
+
+  let idx = 0
+
+  // Center cluster — tight ring at the hub
+  for (let i = 0; i < CENTER_PARTICLES; i++) {
+    const angle = (2 * Math.PI * i) / CENTER_PARTICLES
+    const r = 0.15
+    targets[idx * 3] = Math.cos(angle) * r
+    targets[idx * 3 + 1] = Math.sin(angle) * r
+    targets[idx * 3 + 2] = 0
+    idx++
+  }
+
+  // Curved rays — particles distributed along arcs from center outward
+  for (let ray = 0; ray < NUM_RAYS; ray++) {
+    const baseAngle = (2 * Math.PI * ray) / NUM_RAYS - Math.PI / 2 // start from top
+    const rayZOffset = Math.sin(ray * 0.9) * 0.12 // slight z stagger per ray for 3D depth
+
+    for (let p = 0; p < PARTICLES_PER_RAY; p++) {
+      const t = (p + 1) / (PARTICLES_PER_RAY + 1) // 0→1, evenly spaced
+      const radius = t * LOGO_RADIUS
+      const angle = baseAngle + t * RAY_TWIST // curve increases with distance
+
+      targets[idx * 3] = Math.cos(angle) * radius
+      targets[idx * 3 + 1] = Math.sin(angle) * radius
+      targets[idx * 3 + 2] = Math.sin(t * Math.PI) * 0.2 + rayZOffset
+      idx++
+    }
+  }
+
+  // Initialize positions at targets
+  pos.set(targets)
+
+  return { positions: pos, targets }
+}
+
+const INITIAL_DATA = generateParticleData()
 
 function NeuralNetwork() {
   const groupRef = useRef<THREE.Group>(null)
   const particlesRef = useRef<THREE.Points>(null)
   const linesRef = useRef<THREE.LineSegments>(null)
 
-  const positions = INITIAL_PARTICLE_DATA.positions
-  const velocities = INITIAL_PARTICLE_DATA.velocities
+  const positions = INITIAL_DATA.positions
+  const targets = INITIAL_DATA.targets
+
+  // Natural positions (where particles would be without attraction)
+  const naturalPositions = useRef<Float32Array | null>(null)
+  // Per-particle blend factor: 0 = natural, 1 = fully attracted
+  const attractionFactors = useRef<Float32Array | null>(null)
 
   const particleGeometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
@@ -58,27 +112,127 @@ function NeuralNetwork() {
     return geo
   }, [linePositions, lineColors])
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!particlesRef.current || !linesRef.current) return
 
+    const dt = Math.min(delta, 0.1)
     const time = state.clock.elapsedTime
     const posAttr = particlesRef.current.geometry.attributes.position
     const posArray = posAttr.array as Float32Array
 
-    // Update particle positions with sine-wave displacement
+    // Initialize refs on first frame
+    if (!naturalPositions.current) {
+      naturalPositions.current = new Float32Array(posArray.length)
+      naturalPositions.current.set(posArray)
+    }
+    if (!attractionFactors.current) {
+      attractionFactors.current = new Float32Array(PARTICLE_COUNT)
+    }
+
+    const natPos = naturalPositions.current
+    const factors = attractionFactors.current
+
+    // Gentle breathing — whole logo pulses slightly
+    const breathe = 1.0 + Math.sin(time * 0.6) * 0.02
+
+    // Update natural positions: oscillate around logo targets
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const i3 = i * 3
-      posArray[i3] += velocities[i3] + Math.sin(time * 0.3 + i) * 0.001
-      posArray[i3 + 1] += velocities[i3 + 1] + Math.cos(time * 0.2 + i) * 0.001
-      posArray[i3 + 2] += velocities[i3 + 2]
+      const phase = i * 2.399 // irrational spread for organic feel
 
-      // Boundary wrapping
-      for (let j = 0; j < 3; j++) {
-        const limit = j === 2 ? 2 : 4
-        if (posArray[i3 + j] > limit) posArray[i3 + j] = -limit
-        if (posArray[i3 + j] < -limit) posArray[i3 + j] = limit
+      // Multi-frequency oscillation for organic movement
+      const ox = Math.sin(time * 0.4 + phase) * 0.08 + Math.sin(time * 0.17 + phase * 2.3) * 0.04
+      const oy =
+        Math.cos(time * 0.35 + phase * 1.1) * 0.08 + Math.cos(time * 0.19 + phase * 1.7) * 0.04
+      const oz = Math.sin(time * 0.5 + phase * 0.8) * 0.05
+
+      natPos[i3] = targets[i3] * breathe + ox
+      natPos[i3 + 1] = targets[i3 + 1] * breathe + oy
+      natPos[i3 + 2] = targets[i3 + 2] + oz
+    }
+
+    // --- Mouse attraction logic ---
+    let mouseActive = false
+    let mlx = 0,
+      mly = 0,
+      mlz = 0
+
+    if (_isMouseOverHero && groupRef.current) {
+      const rect = state.gl.domElement.getBoundingClientRect()
+      const ndcX = ((_mouseClientX - rect.left) / rect.width) * 2 - 1
+      const ndcY = -((_mouseClientY - rect.top) / rect.height) * 2 + 1
+
+      const { camera } = state
+      _mouseWorld.set(ndcX, ndcY, 0.5).unproject(camera)
+      _rayDir.copy(_mouseWorld).sub(camera.position).normalize()
+
+      const t = -camera.position.z / _rayDir.z
+      if (t > 0) {
+        _mouseWorld.copy(camera.position).add(_rayDir.multiplyScalar(t))
+        _invMatrix.copy(groupRef.current.matrixWorld).invert()
+        _mouseLocal.copy(_mouseWorld).applyMatrix4(_invMatrix)
+
+        mlx = _mouseLocal.x
+        mly = _mouseLocal.y
+        mlz = _mouseLocal.z
+        mouseActive = true
       }
     }
+
+    // KNN search: find up to 3 nearest particles within attraction radius
+    let best0 = Infinity,
+      best1 = Infinity,
+      best2 = Infinity
+    let idx0 = -1,
+      idx1 = -1,
+      idx2 = -1
+
+    if (mouseActive) {
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const i3 = i * 3
+        const dx = natPos[i3] - mlx
+        const dy = natPos[i3 + 1] - mly
+        const dz = natPos[i3 + 2] - mlz
+        const distSq = dx * dx + dy * dy + dz * dz
+
+        if (distSq > MAX_ATTRACT_RADIUS_SQ) continue
+
+        if (distSq < best0) {
+          best2 = best1
+          idx2 = idx1
+          best1 = best0
+          idx1 = idx0
+          best0 = distSq
+          idx0 = i
+        } else if (distSq < best1) {
+          best2 = best1
+          idx2 = idx1
+          best1 = distSq
+          idx1 = i
+        } else if (distSq < best2) {
+          best2 = distSq
+          idx2 = i
+        }
+      }
+    }
+
+    // Attraction blending
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3
+      const isAttracted = i === idx0 || i === idx1 || i === idx2
+
+      if (isAttracted) {
+        factors[i] = Math.min(1.0, factors[i] + dt * RAMP_UP_SPEED)
+      } else {
+        factors[i] = Math.max(0.0, factors[i] - dt * RAMP_DOWN_SPEED)
+      }
+
+      const f = factors[i] * ATTRACTION_STRENGTH
+      posArray[i3] = natPos[i3] + (mlx - natPos[i3]) * f
+      posArray[i3 + 1] = natPos[i3 + 1] + (mly - natPos[i3 + 1]) * f
+      posArray[i3 + 2] = natPos[i3 + 2] + (mlz - natPos[i3 + 2]) * f
+    }
+
     posAttr.needsUpdate = true
 
     // Update connections
@@ -104,10 +258,10 @@ function NeuralNetwork() {
           linePos[i6 + 4] = posArray[j * 3 + 1]
           linePos[i6 + 5] = posArray[j * 3 + 2]
 
-          // Electric cyan color with distance-based fade
-          const r = 0.3 * alpha
-          const g = 0.85 * alpha
-          const b = 1.0 * alpha
+          // Electric cyan with distance fade
+          const r = 0.25 * alpha
+          const g = 0.7 * alpha
+          const b = 0.9 * alpha
           lineCol[i6] = r
           lineCol[i6 + 1] = g
           lineCol[i6 + 2] = b
@@ -130,22 +284,22 @@ function NeuralNetwork() {
     linesRef.current.geometry.attributes.color.needsUpdate = true
     linesRef.current.geometry.setDrawRange(0, lineIndex * 2)
 
-    // Gentle rotation
+    // Slow rotation to show 3D depth while keeping logo readable
     if (groupRef.current) {
-      groupRef.current.rotation.y = time * 0.05
-      groupRef.current.rotation.x = Math.sin(time * 0.03) * 0.1
+      groupRef.current.rotation.y = time * 0.03
+      groupRef.current.rotation.x = Math.sin(time * 0.025) * 0.06
     }
   })
 
   return (
-    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.3}>
+    <Float speed={1.0} rotationIntensity={0.1} floatIntensity={0.15}>
       <group ref={groupRef}>
         <points ref={particlesRef} geometry={particleGeometry}>
           <pointsMaterial
-            size={0.08}
+            size={0.055}
             color="#4dd9e8"
             transparent
-            opacity={1}
+            opacity={0.9}
             sizeAttenuation
             depthWrite={false}
             blending={THREE.AdditiveBlending}
@@ -155,7 +309,7 @@ function NeuralNetwork() {
           <lineBasicMaterial
             vertexColors
             transparent
-            opacity={0.5}
+            opacity={0.3}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />

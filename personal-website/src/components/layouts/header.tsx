@@ -114,6 +114,7 @@ export function Header() {
                 size="icon"
                 className="h-10 w-10 hover:bg-accent/50 transition-all duration-200"
                 aria-label="Toggle navigation menu"
+                suppressHydrationWarning
               >
                 <Menu className="h-5 w-5" />
               </Button>

@@ -26,7 +26,7 @@ export function CTASection() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
             Let&apos;s Build
             <br />
             <span

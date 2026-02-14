@@ -433,24 +433,17 @@ export function Chatbot() {
       return `${baseClasses} inset-0 z-50 rounded-none`
     }
 
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      if (isMinimized) {
-        return `${baseClasses} bottom-20 left-4 right-4 h-16 z-40 rounded-t-xl border border-b-0`
-      }
-      return `${baseClasses} bottom-20 left-4 right-4 h-[70vh] max-h-[600px] z-40 rounded-t-xl border border-b-0`
-    }
-
     if (isMinimized) {
-      return `${baseClasses} bottom-24 right-6 w-80 h-16 z-40 rounded-lg border`
+      return `${baseClasses} bottom-20 left-4 right-4 md:left-auto md:right-6 md:w-80 h-16 z-40 rounded-t-xl md:rounded-lg border md:border-b`
     }
-    return `${baseClasses} bottom-24 right-6 w-96 h-[500px] z-40 rounded-lg border`
+    return `${baseClasses} bottom-20 left-4 right-4 h-[calc(70dvh-env(safe-area-inset-bottom,0px))] max-h-[600px] md:left-auto md:right-6 md:bottom-24 md:w-96 md:h-[500px] z-40 rounded-t-xl md:rounded-lg border md:border-b`
   }
 
   return (
     <ErrorBoundary>
       {/* Chat Toggle Button */}
       <motion.div
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] right-6 z-50"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -508,50 +501,37 @@ export function Chatbot() {
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <div className="md:hidden flex items-center gap-1">
-                      <Button
-                        onClick={toggleChat}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        aria-label="Close chat"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={toggleFullscreen}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-                      >
-                        {isFullscreen ? (
-                          <Minimize2 className="h-4 w-4" />
-                        ) : (
-                          <Maximize2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <div className="hidden md:flex items-center gap-1">
-                      <Button
-                        onClick={clearConversation}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        aria-label="Clear conversation"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={toggleChat}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        aria-label="Close chat"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={clearConversation}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      aria-label="Clear conversation"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={toggleFullscreen}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 md:hidden"
+                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="h-4 w-4" />
+                      ) : (
+                        <Maximize2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      onClick={toggleChat}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      aria-label="Close chat"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 

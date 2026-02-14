@@ -193,7 +193,7 @@ export function AchievementsSection() {
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">
                         {achievement.title}
                         {achievement.link && (
-                          <ExternalLink className="inline h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="inline h-4 w-4 ml-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                         )}
                       </CardTitle>
 
@@ -209,8 +209,8 @@ export function AchievementsSection() {
                       </p>
 
                       {achievement.link && (
-                        <div className="mt-4 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          {achievement.isInternal ? 'View project details' : 'Click to learn more'}{' '}
+                        <div className="mt-4 text-xs text-primary font-medium opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                          {achievement.isInternal ? 'View project details' : 'Tap to learn more'}{' '}
                           &rarr;
                         </div>
                       )}

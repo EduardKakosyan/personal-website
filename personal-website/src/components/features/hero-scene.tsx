@@ -284,15 +284,11 @@ function NeuralNetwork() {
     linesRef.current.geometry.attributes.color.needsUpdate = true
     linesRef.current.geometry.setDrawRange(0, lineIndex * 2)
 
-    // Slow rotation to show 3D depth while keeping logo readable
-    if (groupRef.current) {
-      groupRef.current.rotation.y = time * 0.03
-      groupRef.current.rotation.x = Math.sin(time * 0.025) * 0.06
-    }
+    // Keep logo stationary (no axis rotation)
   })
 
   return (
-    <Float speed={1.0} rotationIntensity={0.1} floatIntensity={0.15}>
+    <Float speed={1.0} rotationIntensity={0} floatIntensity={0.15}>
       <group ref={groupRef}>
         <points ref={particlesRef} geometry={particleGeometry}>
           <pointsMaterial

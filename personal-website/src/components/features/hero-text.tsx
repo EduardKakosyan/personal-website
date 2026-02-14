@@ -38,7 +38,7 @@ export function HeroText() {
       {/* Name */}
       <motion.h1
         variants={itemVariants}
-        className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter leading-[0.9]"
+        className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter leading-[0.9]"
       >
         <span
           style={{
@@ -59,7 +59,7 @@ export function HeroText() {
         variants={itemVariants}
         className="text-xl md:text-2xl lg:text-3xl font-medium text-muted-foreground tracking-tight"
       >
-        AI Enthusiast & Developer
+        Lead AI Developer
       </motion.p>
 
       {/* Description */}

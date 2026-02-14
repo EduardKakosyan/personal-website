@@ -17,7 +17,7 @@ const expertiseAreas: ExpertiseArea[] = [
   {
     title: 'Large Language Models',
     description: 'Building conversational systems and content generation platforms',
-    technologies: ['OpenAI SDK', 'Azure OpenAI', 'LangGraph', 'Google AI Studio'],
+    technologies: ['Vercel Agents SDK', 'Google AI Studio', 'CrewAI', 'n8n'],
     applications: ['Content Generation', 'Code Assistance', 'Document Analysis', 'Agentic Systems'],
   },
   {
@@ -98,8 +98,7 @@ export function AIExpertiseSection() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-muted-foreground md:text-lg max-w-3xl mx-auto mt-4"
           >
-            Experimenting with AI technologies, from local model deployment to enterprise-scale
-            systems
+            Experimenting with AI technologies, from local model agents to enterprise-scale systems
           </motion.p>
         </div>
 

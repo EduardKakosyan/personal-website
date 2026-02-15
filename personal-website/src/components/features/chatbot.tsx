@@ -20,7 +20,7 @@ import {
   Scale,
   Sparkles,
 } from 'lucide-react'
-import { useWebLLM, MODEL_TIERS } from '@/lib/hooks/use-webllm'
+import { useWebLLMContext, MODEL_TIERS } from '@/components/providers/webllm-provider'
 import { useChatbotActions } from '@/lib/hooks/use-chatbot-actions'
 import { detectFunctionCall } from '@/lib/chatbot-functions'
 import { validateChatMessage } from '@/lib/validation'
@@ -161,31 +161,43 @@ export function Chatbot() {
     isSupported,
     currentModel,
     downloadProgress,
-    initialize,
+    estimatedTimeRemaining,
+    error: engineError,
     switchModel,
     generateStreamingResponse,
-  } = useWebLLM({
-    onInitialized: () => {
-      const welcomeMessage: Message = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: "Hey! Ask me anything about Eduard's projects or background.",
-        timestamp: new Date(),
-      }
-      setMessages([welcomeMessage])
-    },
-    onError: (error) => {
-      const errorMessage: Message = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: `Sorry, I'm having trouble starting up: ${error.message}`,
-        timestamp: new Date(),
-      }
-      setMessages([errorMessage])
-    },
-  })
+  } = useWebLLMContext()
 
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const welcomeSet = useRef(false)
+
+  // Set welcome message once engine is ready
+  useEffect(() => {
+    if (engine && !welcomeSet.current) {
+      welcomeSet.current = true
+      setMessages([
+        {
+          id: generateMessageId(),
+          role: 'assistant',
+          content: "Hey! Ask me anything about Eduard's projects or background.",
+          timestamp: new Date(),
+        },
+      ])
+    }
+  }, [engine])
+
+  // Show engine error as message
+  useEffect(() => {
+    if (engineError && messages.length === 0) {
+      setMessages([
+        {
+          id: generateMessageId(),
+          role: 'assistant',
+          content: `Sorry, I'm having trouble starting up: ${engineError}`,
+          timestamp: new Date(),
+        },
+      ])
+    }
+  }, [engineError, messages.length])
 
   const checkRateLimit = (): boolean => {
     const now = Date.now()
@@ -417,9 +429,6 @@ export function Chatbot() {
   }
 
   const toggleChat = () => {
-    if (!isOpen && !engine && !isInitializing && isSupported) {
-      initialize()
-    }
     setIsOpen(!isOpen)
     setIsMinimized(false)
   }
@@ -590,7 +599,14 @@ export function Chatbot() {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <LoadingSpinner size="sm" />
-                          Loading model...
+                          <span>Loading model...</span>
+                          {estimatedTimeRemaining &&
+                            downloadProgress > 0 &&
+                            downloadProgress < 100 && (
+                              <span className="ml-auto text-xs font-mono text-[var(--accent-neon)]">
+                                {Math.round(downloadProgress)}% &mdash; {estimatedTimeRemaining}
+                              </span>
+                            )}
                         </div>
                         {downloadProgress > 0 && downloadProgress < 100 && (
                           <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
@@ -750,7 +766,7 @@ export function Chatbot() {
 
                     {!engine && !isInitializing && isSupported && (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Click the chat button to initialize the AI assistant
+                        Preparing AI assistant...
                       </p>
                     )}
 

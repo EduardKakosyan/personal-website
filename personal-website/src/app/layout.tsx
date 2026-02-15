@@ -8,6 +8,7 @@ import { Footer } from '@/components/layouts/footer'
 import { Chatbot } from '@/components/features/chatbot'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { SmoothScrollProvider } from '@/components/providers/smooth-scroll-provider'
+import { WebLLMProvider } from '@/components/providers/webllm-provider'
 import { PageTransitionProvider } from '@/components/providers/page-transition-provider'
 import { CustomCursor } from '@/components/ui/custom-cursor'
 import { Analytics } from '@vercel/analytics/react'
@@ -180,21 +181,23 @@ export default function RootLayout({
               Skip to main content
             </a>
 
-            <SmoothScrollProvider>
-              <div className="relative flex min-h-dvh flex-col bg-background">
-                <Header />
-                <main
-                  id="main-content"
-                  className="flex-1 flex flex-col items-center w-full"
-                  role="main"
-                >
-                  <PageTransitionProvider>{children}</PageTransitionProvider>
-                </main>
-                <Footer />
-                <Chatbot />
-              </div>
-              <CustomCursor />
-            </SmoothScrollProvider>
+            <WebLLMProvider>
+              <SmoothScrollProvider>
+                <div className="relative flex min-h-dvh flex-col bg-background">
+                  <Header />
+                  <main
+                    id="main-content"
+                    className="flex-1 flex flex-col items-center w-full"
+                    role="main"
+                  >
+                    <PageTransitionProvider>{children}</PageTransitionProvider>
+                  </main>
+                  <Footer />
+                  <Chatbot />
+                </div>
+                <CustomCursor />
+              </SmoothScrollProvider>
+            </WebLLMProvider>
           </ThemeProvider>
         </ErrorBoundary>
         <Analytics />

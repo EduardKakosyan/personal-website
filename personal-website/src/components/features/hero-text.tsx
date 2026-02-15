@@ -76,7 +76,7 @@ export function HeroText() {
         >
           AI-First Consulting
         </Link>
-        , focusing on practical AI implementations. 2+ years of experience in automation and AI.
+        , focusing on practical AI implementations. 3+ years of experience in automation and AI.
       </motion.p>
 
       {/* CTAs */}

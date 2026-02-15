@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     template: '%s | Eduard Kakosyan',
   },
   description:
-    'AI Developer specializing in LLMs, local model deployment, and intelligent systems. Winner of Atlantic AI Summit 2025. Based in Halifax, Nova Scotia.',
+    'Lead AI Developer specializing in LLMs, agentic systems, and AI education. Winner of Atlantic AI Summit 2025. Based in Halifax, Nova Scotia.',
   keywords: [
     'AI Developer',
     'Machine Learning',
@@ -46,6 +46,10 @@ export const metadata: Metadata = {
     'HealthByte',
     'CarGrep',
     'Dalhousie University',
+    'AI Education',
+    'Agentic AI',
+    'Digital Nova Scotia',
+    'Shiftkey Labs',
   ],
   authors: [{ name: 'Eduard Kakosyan', url: 'https://eduardkakosyan.com' }],
   creator: 'Eduard Kakosyan',
@@ -76,7 +80,7 @@ export const metadata: Metadata = {
     url: 'https://eduardkakosyan.com',
     title: 'Eduard Kakosyan | AI Developer',
     description:
-      'AI Developer specializing in LLMs, local model deployment, and intelligent systems. Winner of Atlantic AI Summit 2025.',
+      'Lead AI Developer specializing in LLMs, agentic systems, and AI education. Winner of Atlantic AI Summit 2025.',
     siteName: 'Eduard Kakosyan Portfolio',
     images: [
       {
@@ -90,8 +94,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Eduard Kakosyan | AI Developer',
-    description:
-      'AI Developer specializing in LLMs, local model deployment, and intelligent systems.',
+    description: 'Lead AI Developer specializing in LLMs, agentic systems, and AI education.',
     images: ['/images/og-image.jpg'],
   },
   verification: {
@@ -123,9 +126,9 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Person',
               name: 'Eduard Kakosyan',
-              jobTitle: 'AI Developer',
+              jobTitle: 'Lead AI Developer',
               description:
-                'AI Developer specializing in LLMs, local model deployment, and intelligent systems',
+                'Lead AI Developer specializing in LLMs, agentic systems, and AI education',
               url: 'https://eduardkakosyan.com',
               sameAs: [
                 'https://linkedin.com/in/eduardkakosyan',
@@ -133,7 +136,7 @@ export default function RootLayout({
               ],
               worksFor: {
                 '@type': 'Organization',
-                name: 'Freelance',
+                name: 'AI-First Consulting',
               },
               alumniOf: {
                 '@type': 'Organization',
@@ -146,6 +149,9 @@ export default function RootLayout({
                 'Next.js',
                 'OpenAI',
                 'Ollama',
+                'Claude',
+                'CrewAI',
+                'Agentic AI',
               ],
             }),
           }}

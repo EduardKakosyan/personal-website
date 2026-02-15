@@ -8,14 +8,14 @@ export function BioSection() {
           <div className="space-y-4">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">About Me</h2>
             <p className="text-muted-foreground md:text-lg/relaxed">
-              I'm an AI developer who loves building stuff and learning new things. I'm currently
-              working on a project that helps small and medium businesses figure out how to actually
-              use the new tech.
+              I'm an AI developer who loves building stuff and learning new things. Between teaching
+              AI courses, developing curriculum, and building agents for clients, I stay busy
+              helping people figure out how to actually use the new tech.
             </p>
             <p className="text-muted-foreground md:text-lg/relaxed">
-              Just graduated from Dalhousie University with a computer science degree. I'm always on
-              the lookout for hackathons to join, especially local ones - there's something fun
-              about the energy and time crunch.
+              Graduated from Dalhousie University with a computer science degree. I'm always on the
+              lookout for hackathons to join, especially local ones - there's something fun about
+              the energy and time crunch.
             </p>
             <p className="text-muted-foreground md:text-lg/relaxed">
               When I'm not coding, I'm usually hiking, camping, or taking photos. Getting outside

@@ -30,7 +30,7 @@ export function SocialLinks() {
     },
     {
       name: 'Email',
-      href: 'mailto:hello@eduardkakosyan.com',
+      href: 'mailto:eduard@ai-first.ca',
       icon: Mail,
       label: 'Send me an email',
       onClick: () => analyticsEvents.emailClicked(),

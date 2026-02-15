@@ -17,13 +17,29 @@ const expertiseAreas: ExpertiseArea[] = [
   {
     title: 'Large Language Models',
     description: 'Building conversational systems and content generation platforms',
-    technologies: ['Vercel Agents SDK', 'Google AI Studio', 'CrewAI', 'n8n'],
+    technologies: [
+      'Vercel Agents SDK',
+      'Anthropic Claude',
+      'LangChain',
+      'Google AI Studio',
+      'CrewAI',
+      'n8n',
+    ],
     applications: ['Content Generation', 'Code Assistance', 'Document Analysis', 'Agentic Systems'],
   },
   {
     title: 'Local AI Deployment',
     description: 'Hosting and optimizing AI models for privacy-focused and offline applications',
-    technologies: ['Ollama', 'llama.cpp', 'Raspberry Pi', 'WebLLM', 'MLC-AI'],
+    technologies: [
+      'Ollama',
+      'llama.cpp',
+      'MLX',
+      'Whisper',
+      'HuggingFace',
+      'Raspberry Pi',
+      'WebLLM',
+      'MLC-AI',
+    ],
     applications: [
       'Privacy-First Solutions',
       'Edge Computing',

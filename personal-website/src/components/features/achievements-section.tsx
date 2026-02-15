@@ -1,84 +1,116 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Trophy, Building, Calendar, ExternalLink } from 'lucide-react'
+import { ExternalLink, GraduationCap, Trophy, Users, Presentation } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { analyticsEvents } from '@/lib/analytics'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 
-interface Achievement {
+type ActivityType = 'teaching' | 'hackathon' | 'client' | 'workshop'
+
+interface Activity {
   title: string
-  position: string
-  organization: string
+  type: ActivityType
   date: string
   description: string
-  color: 'destructive' | 'secondary' | 'default' | 'outline'
-  icon: React.ComponentType<{ className?: string }>
+  badge?: string
   link?: string
   isInternal?: boolean
 }
 
-const achievements: Achievement[] = [
+const activities: Activity[] = [
   {
-    title: 'Atlantic AI Summit 2025',
-    position: 'First Place',
-    organization: 'Atlantic Canada Universities',
-    date: 'May 2025',
+    title: 'AI Workshops for Executive Search',
+    type: 'workshop',
+    date: 'Feb 2026',
     description:
-      'Developed llm-powered personas to simulate change in human behavior to real/fake Covid-19 news.',
-    color: 'destructive',
-    icon: Trophy,
+      'Demonstrated AI capabilities to executive search companies globally through 4 workshops.',
+  },
+  {
+    title: 'Digital Nova Scotia SFHA-DS & ML',
+    type: 'teaching',
+    date: 'Nov 2025 – Present',
+    description:
+      'Developing the Advanced Data Science & Machine Learning curriculum for 150+ participants. Handcrafted courses and assignments inspired by the Dalhousie course, in collaboration with Shiftkey Labs.',
+  },
+  {
+    title: 'Agentic AI Course @ Dalhousie',
+    type: 'teaching',
+    date: 'Sep – Oct 2025',
+    description:
+      'Taught generative AI and agents to 70+ students in collaboration with Shiftkey Labs. Students built solutions for real-life problems.',
+  },
+  {
+    title: '20+ Client Agent Deployments',
+    type: 'client',
+    date: '2025 – Present',
+    description:
+      'Built live agents for consulting firms (RFP sorting through thousands of documents), engineering companies (knowledge-base Q&A), and legal document processing. Over 20 clients with fully functional agents deployed.',
+  },
+  {
+    title: 'Atlantic AI Summit',
+    type: 'hackathon',
+    date: 'May 2025',
+    badge: 'First Place',
+    description:
+      'Built HealthByte: LLM-powered personas simulating human behavior changes to real/fake Covid-19 news.',
     link: '/projects/healthbyte',
     isInternal: true,
   },
   {
-    title: 'AI Developer',
-    position: 'Professional Role',
-    organization: 'AI-First Consulting',
-    date: 'Current',
-    description:
-      'Building AI solutions for SMBs all across Atlantic Canada, specializing in intelligent automation and LLM integration.',
-    color: 'default',
-    icon: Building,
-    link: 'https://www.ai-first.ca/',
-    isInternal: false,
-  },
-  {
     title: 'Volta Hackathon',
-    position: 'Second Place',
-    organization: 'Volta Innovation',
-    date: 'December 2024',
-    description:
-      'Developed Second Brain, an AI-powered time management platform for university students.',
-    color: 'secondary',
-    icon: Trophy,
+    type: 'hackathon',
+    date: 'Dec 2024',
+    badge: 'Second Place',
+    description: 'Built Second Brain: AI-powered time management platform for university students.',
     link: '/projects/second-brain',
     isInternal: true,
   },
 ]
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.15 },
+const typeConfig: Record<
+  ActivityType,
+  { icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
+  teaching: {
+    icon: GraduationCap,
+    color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
+  },
+  hackathon: {
+    icon: Trophy,
+    color: 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400',
+  },
+  client: {
+    icon: Users,
+    color: 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400',
+  },
+  workshop: {
+    icon: Presentation,
+    color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400',
   },
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.12 },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
   visible: {
     opacity: 1,
-    y: 0,
+    x: 0,
     transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
   },
 }
 
 export function AchievementsSection() {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(ref, { once: true, amount: 0.1 })
 
   return (
     <section
@@ -87,7 +119,7 @@ export function AchievementsSection() {
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
 
-      <div className="relative container mx-auto px-4 max-w-6xl" ref={ref}>
+      <div className="relative container mx-auto px-4 max-w-4xl" ref={ref}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -96,10 +128,10 @@ export function AchievementsSection() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border text-sm text-primary font-medium">
             <Trophy className="h-4 w-4" />
-            Achievements & Experience
+            Recent Activity
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
-            Recent{' '}
+            What I&apos;ve Been{' '}
             <span
               style={{
                 background: 'linear-gradient(135deg, var(--accent-neon), oklch(0.70 0.15 260))',
@@ -108,11 +140,11 @@ export function AchievementsSection() {
                 backgroundClip: 'text',
               }}
             >
-              Milestones
+              Up To
             </span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Key achievements and professional highlights from my journey in AI development
+            Teaching, building, and competing — here&apos;s what I&apos;ve been working on lately
           </p>
         </motion.div>
 
@@ -120,106 +152,92 @@ export function AchievementsSection() {
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
-          className="grid gap-6 md:gap-8 sm:grid-cols-1 lg:grid-cols-3"
+          className="relative"
         >
-          {achievements.map((achievement, index) => {
-            const IconComponent = achievement.icon
+          {/* Timeline line */}
+          <div className="absolute left-4 md:left-6 top-0 bottom-0 w-px bg-border" />
 
-            const CardWrapper = achievement.link
-              ? achievement.isInternal
-                ? ({ children }: { children: React.ReactNode }) => (
-                    <Link
-                      href={achievement.link!}
-                      onClick={() => analyticsEvents.achievementClicked(achievement.title)}
-                    >
-                      {children}
-                    </Link>
-                  )
-                : ({ children }: { children: React.ReactNode }) => (
-                    <div
-                      onClick={() => {
-                        analyticsEvents.achievementClicked(achievement.title)
-                        window.open(achievement.link, '_blank')
-                      }}
-                    >
-                      {children}
-                    </div>
-                  )
-              : ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+          <div className="space-y-8">
+            {activities.map((activity, index) => {
+              const config = typeConfig[activity.type]
+              const IconComponent = config.icon
 
-            return (
-              <motion.div
-                key={index}
-                variants={cardVariants}
-                whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              >
-                <CardWrapper>
-                  <Card
+              const content = (
+                <motion.div
+                  key={index}
+                  variants={itemVariants}
+                  className="relative pl-12 md:pl-16 group"
+                >
+                  {/* Timeline dot */}
+                  <div
                     className={cn(
-                      'h-full group hover:shadow-xl transition-shadow duration-300',
-                      'border-2 hover:border-primary/20 bg-background/80 backdrop-blur',
-                      achievement.link && 'cursor-pointer',
+                      'absolute left-2 md:left-4 top-1 w-5 h-5 rounded-full flex items-center justify-center ring-4 ring-background',
+                      config.color,
                     )}
                   >
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              'p-2 rounded-lg transition-colors',
-                              achievement.color === 'destructive'
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                                : achievement.color === 'secondary'
-                                  ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
-                                  : 'bg-primary/10 text-primary',
-                            )}
-                          >
-                            <IconComponent className="h-5 w-5" />
-                          </div>
-                          <Badge
-                            variant={achievement.color}
-                            className="font-semibold text-xs px-2 py-1"
-                          >
-                            {achievement.position}
-                          </Badge>
-                        </div>
+                    <IconComponent className="h-3 w-3" />
+                  </div>
 
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          {achievement.date}
-                        </div>
-                      </div>
-
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        {achievement.title}
-                        {achievement.link && (
-                          <ExternalLink className="inline h-4 w-4 ml-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
+                  {/* Card */}
+                  <div
+                    className={cn(
+                      'p-5 rounded-lg border bg-background/80 backdrop-blur transition-all duration-300',
+                      activity.link && 'hover:shadow-lg hover:border-primary/20 cursor-pointer',
+                    )}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                        {activity.title}
+                        {activity.link && (
+                          <ExternalLink className="h-4 w-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                         )}
-                      </CardTitle>
+                      </h3>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {activity.badge && (
+                          <Badge variant="destructive" className="text-xs font-semibold">
+                            {activity.badge}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {activity.date}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {activity.description}
+                    </p>
+                  </div>
+                </motion.div>
+              )
 
-                      <CardDescription className="font-medium text-muted-foreground">
-                        <Building className="inline h-3 w-3 mr-1" />
-                        {achievement.organization}
-                      </CardDescription>
-                    </CardHeader>
+              if (activity.link) {
+                if (activity.isInternal) {
+                  return (
+                    <Link
+                      key={index}
+                      href={activity.link}
+                      onClick={() => analyticsEvents.achievementClicked(activity.title)}
+                    >
+                      {content}
+                    </Link>
+                  )
+                }
+                return (
+                  <a
+                    key={index}
+                    href={activity.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => analyticsEvents.achievementClicked(activity.title)}
+                  >
+                    {content}
+                  </a>
+                )
+              }
 
-                    <CardContent>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {achievement.description}
-                      </p>
-
-                      {achievement.link && (
-                        <div className="mt-4 text-xs text-primary font-medium opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                          {achievement.isInternal ? 'View project details' : 'Tap to learn more'}{' '}
-                          &rarr;
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </CardWrapper>
-              </motion.div>
-            )
-          })}
+              return <div key={index}>{content}</div>
+            })}
+          </div>
         </motion.div>
       </div>
     </section>

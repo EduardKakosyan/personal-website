@@ -2,9 +2,9 @@
 
 import { useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { MessageCircle, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
+import { EmbeddedChat } from '@/components/features/embedded-chat'
 
 const containerVariants = {
   hidden: {},
@@ -40,57 +40,34 @@ export function AIAssistantSection() {
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
-          className="text-center space-y-6"
+          className="space-y-6"
         >
-          <motion.div variants={itemVariants}>
-            <span className="text-sm font-mono text-[var(--accent-neon)] tracking-widest uppercase">
-              Interactive Demo
-            </span>
-          </motion.div>
+          <div className="text-center space-y-6">
+            <motion.div variants={itemVariants}>
+              <span className="text-sm font-mono text-[var(--accent-neon)] tracking-widest uppercase">
+                Interactive Demo
+              </span>
+            </motion.div>
 
-          <motion.div variants={itemVariants} className="flex items-center justify-center gap-3">
-            <Sparkles className="h-6 w-6 text-[var(--accent-neon)]" />
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
-              AI Assistant
-            </h2>
-          </motion.div>
+            <motion.div variants={itemVariants} className="flex items-center justify-center gap-3">
+              <Sparkles className="h-6 w-6 text-[var(--accent-neon)]" />
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
+                AI Assistant
+              </h2>
+            </motion.div>
 
-          <motion.p
-            variants={itemVariants}
-            className="text-muted-foreground text-lg max-w-2xl mx-auto"
-          >
-            Have questions about my projects or background? Chat with my local browser-hosted AI
-            assistant — no data leaves your device.
-          </motion.p>
+            <motion.p
+              variants={itemVariants}
+              className="text-muted-foreground text-lg max-w-2xl mx-auto"
+            >
+              Have questions about my projects or background? Chat with my local browser-hosted AI
+              assistant — no data leaves your device.
+            </motion.p>
+          </div>
 
-          {/* Mock chat preview */}
-          <motion.div
-            variants={itemVariants}
-            className="max-w-md mx-auto rounded-xl glass-card p-4 space-y-3"
-          >
-            <div className="flex gap-2 items-start">
-              <div className="h-6 w-6 rounded-full bg-[var(--accent-neon)]/20 flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="h-3 w-3 text-[var(--accent-neon)]" />
-              </div>
-              <div className="bg-muted/20 rounded-lg px-3 py-2 text-sm text-left">
-                Hey! Ask me anything about Eduard&apos;s projects or background.
-              </div>
-            </div>
-            <div className="flex gap-2 items-start justify-end">
-              <div className="bg-primary/20 rounded-lg px-3 py-2 text-sm text-right">
-                What did you build at the hackathon?
-              </div>
-            </div>
-            <div className="flex gap-2 items-start">
-              <div className="h-6 w-6 rounded-full bg-[var(--accent-neon)]/20 flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="h-3 w-3 text-[var(--accent-neon)]" />
-              </div>
-              <div className="bg-muted/20 rounded-lg px-3 py-2 text-sm text-left flex items-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-neon)] animate-pulse" />
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-neon)] animate-pulse [animation-delay:0.2s]" />
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-neon)] animate-pulse [animation-delay:0.4s]" />
-              </div>
-            </div>
+          {/* Embedded Chat */}
+          <motion.div variants={itemVariants} className="max-w-2xl mx-auto">
+            <EmbeddedChat />
           </motion.div>
 
           <motion.div
@@ -114,24 +91,7 @@ export function AIAssistantSection() {
             ))}
           </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <Button
-              size="lg"
-              className="mt-4 bg-[var(--accent-neon)] text-black hover:bg-[var(--accent-neon)]/90 font-semibold px-8"
-              onClick={() => {
-                // Click the floating chatbot button
-                const chatBtn = document.querySelector(
-                  '[aria-label="Open chat"]',
-                ) as HTMLButtonElement
-                chatBtn?.click()
-              }}
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Try It Now
-            </Button>
-          </motion.div>
-
-          <motion.p variants={itemVariants} className="text-xs text-muted-foreground">
+          <motion.p variants={itemVariants} className="text-xs text-muted-foreground text-center">
             Requires a WebGPU-compatible browser (Chromium, Edge)
           </motion.p>
         </motion.div>

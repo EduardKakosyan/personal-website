@@ -12,13 +12,12 @@ import {
 } from '@/components/ui/navigation-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Menu, Home, User, Briefcase, MessageSquare, Sparkles } from 'lucide-react'
+import { Menu, Home, Briefcase, MessageSquare, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, useScroll, useMotionValueEvent } from 'motion/react'
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/about', label: 'About', icon: User },
   { href: '/projects', label: 'Projects', icon: Briefcase },
   { href: '/contact', label: 'Contact', icon: MessageSquare },
 ]

@@ -6,7 +6,6 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   const navigationLinks = [
-    { name: 'About', href: '/about' },
     { name: 'Projects', href: '/projects' },
     { name: 'Contact', href: '/contact' },
   ]

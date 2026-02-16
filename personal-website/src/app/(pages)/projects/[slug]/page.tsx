@@ -1,19 +1,19 @@
-import { getProjectBySlug, getAllProjects } from '@/content/projects'
+import { getProjectBySlug, getAllProjects, getAdjacentProjects } from '@/content/projects'
 import { markdownToHtml } from '@/lib/markdown'
-import { Badge } from '@/components/ui/badge'
 import { ArrowLeftIcon } from 'lucide-react'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MarkdownContent } from '@/components/ui/secure-content'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { ProjectAnalytics } from '@/components/features/project-analytics'
 import { ProjectButtons } from '@/components/features/project-buttons'
+import { ProjectDetailHeader } from '@/components/features/project-detail-header'
+import { ProjectNavigation } from '@/components/features/project-navigation'
 
 export async function generateStaticParams() {
   const allProjects = await getAllProjects()
-  
+
   return allProjects.map((project) => ({
     slug: project.slug,
   }))
@@ -26,9 +26,7 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params
   const project = await getProjectBySlug(resolvedParams.slug)
 
@@ -38,20 +36,22 @@ export async function generateMetadata(
     }
   }
 
+  const ogImage = project.previewImageUrl || project.imageUrl
+
   return {
     title: `${project.title} | Project Details`,
     description: project.description,
     openGraph: {
       title: project.title,
       description: project.description,
-      images: project.imageUrl ? [{ url: project.imageUrl, alt: project.title }] : [],
+      images: ogImage ? [{ url: ogImage, alt: project.title }] : [],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title: project.title,
       description: project.description,
-      images: project.imageUrl ? [project.imageUrl] : [],
+      images: ogImage ? [ogImage] : [],
     },
   }
 }
@@ -61,61 +61,30 @@ export default async function ProjectDetailPage({ params }: Props) {
   const project = await getProjectBySlug(resolvedParams.slug)
 
   if (!project) {
-    notFound() // Triggers 404 page
+    notFound()
   }
-  
-  // Convert markdown to HTML with security
+
   const contentHtml = await markdownToHtml(project.longDescription)
+  const { prev, next } = getAdjacentProjects(project.slug)
 
   return (
     <ErrorBoundary>
       <ProjectAnalytics projectSlug={project.slug} />
-      <article className='container py-12 md:py-16'>
-        <div className='mb-8'>
+      <article className="container py-12 md:py-16">
+        <div className="mb-8">
           <Link
-            href='/projects'
-            className='inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors'
-            aria-label="Back to projects">
-            <ArrowLeftIcon className='mr-2 h-4 w-4' aria-hidden="true" />
+            href="/projects"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Back to projects"
+          >
+            <ArrowLeftIcon className="mr-2 h-4 w-4" aria-hidden="true" />
             <span>Back to Projects</span>
           </Link>
         </div>
-        
-        <header className='mb-8 md:mb-12'>
-          <h1 className='mb-3 text-4xl font-bold tracking-tighter sm:text-5xl lg:text-6xl'>
-            {project.title}
-          </h1>
-          {project.placement && (
-            <div className="mb-4">
-              <Badge variant="destructive" className="text-lg px-3 py-1">
-                {project.placement}
-              </Badge>
-            </div>
-          )}
-          <div className='flex flex-wrap gap-2' role="list">
-            {project.tags.map((tag) => (
-              <Badge key={tag} variant='outline' role="listitem">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </header>
-        
-        {project.imageUrl && (
-          <div className='mb-8 aspect-video w-full overflow-hidden rounded-lg md:mb-12'>
-            <Image
-              src={project.imageUrl}
-              alt={project.title}
-              width={1200}
-              height={675}
-              className='object-cover'
-              priority
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-            />
-          </div>
-        )}
-        
-        <MarkdownContent 
+
+        <ProjectDetailHeader project={project} />
+
+        <MarkdownContent
           content={contentHtml}
           className="prose prose-zinc max-w-3xl mx-auto
             prose-headings:my-4 prose-headings:font-bold prose-headings:tracking-tighter
@@ -133,35 +102,47 @@ export default async function ProjectDetailPage({ params }: Props) {
             prose-li:my-2 prose-li:marker:text-primary
             dark:prose-invert lg:prose-lg"
         />
-        
+
         <ProjectButtons
           projectSlug={project.slug}
           projectTitle={project.title}
           liveUrl={project.liveUrl}
           repoUrl={project.repoUrl}
         />
-        
+
+        <ProjectNavigation prev={prev} next={next} />
+
+        <div className="mt-8 text-center">
+          <Link
+            href="/projects"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeftIcon className="mr-2 h-4 w-4" aria-hidden="true" />
+            Back to All Projects
+          </Link>
+        </div>
+
         {/* Structured data for SEO */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              "name": project.title,
-              "description": project.description,
-              "image": project.imageUrl,
-              "url": project.liveUrl,
-              "applicationCategory": "WebApplication",
-              "operatingSystem": "Web",
-              "author": {
-                "@type": "Person",
-                "name": "Eduard Kakosyan"
-              }
-            })
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: project.title,
+              description: project.description,
+              image: project.previewImageUrl || project.imageUrl,
+              url: project.liveUrl,
+              applicationCategory: 'WebApplication',
+              operatingSystem: 'Web',
+              author: {
+                '@type': 'Person',
+                name: 'Eduard Kakosyan',
+              },
+            }),
           }}
         />
       </article>
     </ErrorBoundary>
-  );
-} 
+  )
+}

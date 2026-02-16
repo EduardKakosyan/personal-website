@@ -44,7 +44,6 @@ const FUNCTIONS: ChatbotFunction[] = [
 
 const PAGE_MAP: Record<string, string> = {
   home: '/',
-  about: '/about',
   projects: '/projects',
   contact: '/contact',
   blog: '/blog',

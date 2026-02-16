@@ -7,6 +7,7 @@ export interface Project {
   longDescription: string
   tags: string[]
   imageUrl?: string
+  previewImageUrl?: string
   liveUrl?: string
   repoUrl?: string
   placement?: string
@@ -29,6 +30,7 @@ const allProjects: Project[] = [
     description:
       'Full-stack consulting business health platform tracking Attract, Convert, Deliver, and Collect cycles. Combines CRM, BI analytics, time tracking, financial reporting, AI document extraction, and LinkedIn content generation into a single unified dashboard.',
     longDescription: getProjectMarkdown('acdc-dashboard'),
+    previewImageUrl: undefined,
     tags: [
       'Next.js 16',
       'React 19',
@@ -61,6 +63,7 @@ const allProjects: Project[] = [
     description:
       'Open source tooling-only starter template optimized for agentic AI development. Pre-configured with 6 specialized Claude Code sub-agents, 30+ slash commands, three-layer git hook protection, CI/CD, and a persistent AI knowledge base.',
     longDescription: getProjectMarkdown('dev-template'),
+    previewImageUrl: 'https://opengraph.githubassets.com/1/AI-First-Consulting/dev-template',
     tags: [
       'TypeScript',
       'Claude Code',
@@ -93,6 +96,7 @@ const allProjects: Project[] = [
     description:
       'Voice-first personal assistant embodied in a Reachy Mini robot. Uses multi-agent AI orchestration with 7 specialist agents to manage email, calendar, project management, and meeting transcripts — all through natural voice commands running locally on Apple Silicon.',
     longDescription: getProjectMarkdown('hugo'),
+    previewImageUrl: 'https://opengraph.githubassets.com/1/EduardKakosyan/hugo',
     tags: [
       'Python',
       'CrewAI',
@@ -125,6 +129,7 @@ const allProjects: Project[] = [
     description:
       'AI-powered platform that combats healthcare misinformation by simulating public reactions to medical content before publication. Uses reinforcement learning agents to optimize messaging for diverse demographics.',
     longDescription: getProjectMarkdown('healthbyte'),
+    previewImageUrl: 'https://healthbyte-dashboard.vercel.app/og-image.png',
     tags: [
       'Python',
       'OpenAI o4-mini',
@@ -154,6 +159,7 @@ const allProjects: Project[] = [
     description:
       'Intelligent time management and learning assistant designed for university students. Integrates with Google Drive and calendar systems to automatically process academic documents and schedule study sessions.',
     longDescription: getProjectMarkdown('second-brain'),
+    previewImageUrl: 'https://opengraph.githubassets.com/1/EduardKakosyan/volta_hackathon',
     tags: [
       'n8n',
       'Pinecone',
@@ -184,6 +190,7 @@ const allProjects: Project[] = [
     description:
       'AI-driven car recommendation platform that transforms the overwhelming car-buying experience into a personalized journey. Features real-time market monitoring and intelligent matching algorithms.',
     longDescription: getProjectMarkdown('cargrep'),
+    previewImageUrl: 'https://www.cargrep.com/og-image.png',
     tags: [
       'Next.js 15',
       'Vercel AI SDK',
@@ -216,6 +223,7 @@ const allProjects: Project[] = [
     description:
       'Comprehensive network simulation platform comparing reinforcement learning-based routing (Q-routing) against traditional algorithms like Dijkstra and OSPF in dynamic network environments.',
     longDescription: getProjectMarkdown('network-sim'),
+    previewImageUrl: 'https://opengraph.githubassets.com/1/EduardKakosyan/q-learning-network-sim',
     tags: [
       'Python 3.13',
       'SimPy',
@@ -262,6 +270,20 @@ export async function getProjectsByCategory(category: string): Promise<Project[]
 
 export async function getCompetitionProjects(): Promise<Project[]> {
   return allProjects.filter((project) => project.placement)
+}
+
+export function getCategories(): string[] {
+  const categories = new Set(allProjects.map((p) => p.category).filter(Boolean) as string[])
+  return ['All', ...Array.from(categories)]
+}
+
+export function getAdjacentProjects(slug: string): { prev: Project | null; next: Project | null } {
+  const index = allProjects.findIndex((p) => p.slug === slug)
+  if (index === -1) return { prev: null, next: null }
+  return {
+    prev: index > 0 ? allProjects[index - 1] : null,
+    next: index < allProjects.length - 1 ? allProjects[index + 1] : null,
+  }
 }
 
 export default allProjects

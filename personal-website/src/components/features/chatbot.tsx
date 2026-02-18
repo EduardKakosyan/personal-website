@@ -19,10 +19,11 @@ import {
   Zap,
   Scale,
   Sparkles,
+  Smartphone,
 } from 'lucide-react'
 import { useWebLLMContext, MODEL_TIERS } from '@/components/providers/webllm-provider'
 import { useChatbotActions } from '@/lib/hooks/use-chatbot-actions'
-import { detectFunctionCall } from '@/lib/chatbot-functions'
+import { TOOL_SYSTEM_PROMPT, parseToolCallFromOutput } from '@/lib/chatbot-functions'
 import { validateChatMessage } from '@/lib/validation'
 import { sanitizeUserInput } from '@/lib/sanitizer'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -49,11 +50,6 @@ interface Message {
     name: string
     displayText: string
   }
-}
-
-interface RateLimit {
-  count: number
-  resetTime: number
 }
 
 const BASE_CHATBOT_CONTEXT = `You are Eduard's personal website assistant. Keep responses short, friendly, and conversational. Never use markdown formatting - just plain text.
@@ -106,10 +102,7 @@ RESPONSE STYLE:
 - Do not engage in political, religious, or other controversial discussions.
 `
 
-const CHATBOT_CONTEXT = getEnhancedContext(BASE_CHATBOT_CONTEXT)
-
-const RATE_LIMIT_MAX = 10
-const RATE_LIMIT_WINDOW = 60000
+const CHATBOT_CONTEXT = getEnhancedContext(BASE_CHATBOT_CONTEXT) + TOOL_SYSTEM_PROMPT
 
 const MODEL_ICONS = {
   fast: Zap,
@@ -124,10 +117,6 @@ export function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [rateLimit, setRateLimit] = useState<RateLimit>({
-    count: 0,
-    resetTime: Date.now() + RATE_LIMIT_WINDOW,
-  })
   const [inputError, setInputError] = useState('')
   const [isOffTopicInput, setIsOffTopicInput] = useState(false)
   const [showModelSelector, setShowModelSelector] = useState(false)
@@ -159,6 +148,7 @@ export function Chatbot() {
     engine,
     isInitializing,
     isSupported,
+    isMobile,
     currentModel,
     downloadProgress,
     estimatedTimeRemaining,
@@ -198,18 +188,6 @@ export function Chatbot() {
       ])
     }
   }, [engineError, messages.length])
-
-  const checkRateLimit = (): boolean => {
-    const now = Date.now()
-    if (now > rateLimit.resetTime) {
-      setRateLimit({ count: 0, resetTime: now + RATE_LIMIT_WINDOW })
-      return true
-    }
-    if (rateLimit.count >= RATE_LIMIT_MAX) {
-      return false
-    }
-    return true
-  }
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -275,11 +253,8 @@ export function Chatbot() {
       return
     }
 
-    // Check for function calls
-    const functionCall = detectFunctionCall(inputMessage.trim())
-
     const guardrailCheck = validateUserInput(inputMessage.trim())
-    if (!guardrailCheck.allowed && !functionCall) {
+    if (!guardrailCheck.allowed) {
       const guardrailMessage: Message = {
         id: generateMessageId(),
         role: 'assistant',
@@ -300,13 +275,6 @@ export function Chatbot() {
       return
     }
 
-    if (!checkRateLimit()) {
-      setInputError('Rate limit exceeded. Please wait before sending another message.')
-      return
-    }
-
-    setRateLimit((prev) => ({ ...prev, count: prev.count + 1 }))
-
     const sanitizedContent = sanitizeUserInput(validation.data.content)
 
     const userMessage: Message = {
@@ -318,26 +286,6 @@ export function Chatbot() {
 
     setMessages((prev) => [...prev, userMessage])
     setInputMessage('')
-
-    // Handle function call
-    if (functionCall) {
-      const actionMessage: Message = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: functionCall.displayText,
-        timestamp: new Date(),
-        functionCall: {
-          name: functionCall.function,
-          displayText: functionCall.displayText,
-        },
-      }
-      setMessages((prev) => [...prev, actionMessage])
-      addMessage(userMessage.content, actionMessage.content)
-
-      // Execute the action after a brief delay
-      setTimeout(() => executeAction(functionCall), 500)
-      return
-    }
 
     setIsLoading(true)
 
@@ -367,30 +315,56 @@ export function Chatbot() {
           content: typeof msg.content === 'string' ? msg.content : '',
         })),
         (chunk) => {
+          // Hide <function> tags from streaming display
+          const displayChunk = chunk.replace(/<function>[\s\S]*$/, '').trim()
           setMessages((prev) =>
-            prev.map((msg) => (msg.id === streamingId ? { ...msg, content: chunk } : msg)),
+            prev.map((msg) => (msg.id === streamingId ? { ...msg, content: displayChunk } : msg)),
           )
         },
       )
 
-      // Validate final response
-      const responseValidation = validateAIResponse(responseContent)
-      let finalResponse = responseContent
+      // Check if the LLM output a tool call
+      const toolCall = parseToolCallFromOutput(responseContent, userMessage.content)
 
-      if (!responseValidation.allowed) {
-        finalResponse =
-          responseValidation.suggestedResponse ||
-          "I'm sorry, I can only answer questions about Eduard. What would you like to know about his projects or background?"
+      if (toolCall) {
+        // Replace streaming message with action card
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === streamingId
+              ? {
+                  ...msg,
+                  content: toolCall.displayText,
+                  isStreaming: false,
+                  functionCall: {
+                    name: toolCall.function,
+                    displayText: toolCall.displayText,
+                  },
+                }
+              : msg,
+          ),
+        )
+        addMessage(userMessage.content, toolCall.displayText)
+        setTimeout(() => executeAction(toolCall), 500)
+      } else {
+        // Validate final text response
+        const responseValidation = validateAIResponse(responseContent)
+        let finalResponse = responseContent
+
+        if (!responseValidation.allowed) {
+          finalResponse =
+            responseValidation.suggestedResponse ||
+            "I'm sorry, I can only answer questions about Eduard. What would you like to know about his projects or background?"
+        }
+
+        // Finalize the streaming message
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === streamingId ? { ...msg, content: finalResponse, isStreaming: false } : msg,
+          ),
+        )
+
+        addMessage(userMessage.content, finalResponse)
       }
-
-      // Finalize the streaming message
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === streamingId ? { ...msg, content: finalResponse, isStreaming: false } : msg,
-        ),
-      )
-
-      addMessage(userMessage.content, finalResponse)
     } catch (error) {
       console.error('Error generating response:', error)
       setMessages((prev) =>
@@ -622,8 +596,12 @@ export function Chatbot() {
                     )}
                     {!isSupported && (
                       <div className="flex items-center gap-2 text-sm text-destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        WebGPU not supported
+                        {isMobile ? (
+                          <Smartphone className="h-4 w-4" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4" />
+                        )}
+                        {isMobile ? 'Not supported on this mobile browser' : 'WebGPU not supported'}
                       </div>
                     )}
                   </>
@@ -635,13 +613,40 @@ export function Chatbot() {
                 <>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {!isSupported && messages.length === 0 && (
-                      <div className="text-center text-sm text-muted-foreground p-4">
-                        <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
-                        <p className="font-medium">WebGPU Required</p>
-                        <p>
-                          This AI assistant requires a WebGPU-compatible browser like Chrome or
-                          Edge.
-                        </p>
+                      <div className="text-center text-sm text-muted-foreground p-4 space-y-2">
+                        {isMobile ? (
+                          <>
+                            <Smartphone className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                            <p className="font-medium text-foreground">
+                              Not available on this device yet
+                            </p>
+                            <p>
+                              This AI assistant runs entirely in your browser using WebGPU, which
+                              your mobile browser doesn&apos;t support yet.
+                            </p>
+                            <div className="text-xs space-y-1 pt-2">
+                              <p className="font-medium text-foreground">How to use it:</p>
+                              <p>
+                                <strong>Android:</strong> Update Chrome to version 121+
+                              </p>
+                              <p>
+                                <strong>iPhone/iPad:</strong> Requires iOS 26+ with Safari
+                              </p>
+                              <p>
+                                <strong>Desktop:</strong> Works on Chrome, Edge, Firefox, or Safari
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+                            <p className="font-medium text-foreground">WebGPU Required</p>
+                            <p>
+                              This AI assistant runs entirely in your browser and requires WebGPU.
+                              Please use a recent version of Chrome, Edge, Firefox, or Safari.
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -794,14 +799,6 @@ export function Chatbot() {
                         </div>
                       )}
                     </div>
-
-                    {rateLimit.count > 0 && (
-                      <div className="flex justify-end mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          Messages: {rateLimit.count}/{RATE_LIMIT_MAX}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </>
               )}

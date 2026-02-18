@@ -21,6 +21,7 @@ interface WebLLMContextValue {
   engine: MLCEngine | null
   isInitializing: boolean
   isSupported: boolean
+  isMobile: boolean
   currentModel: string
   downloadProgress: number
   estimatedTimeRemaining: string | null
@@ -42,7 +43,13 @@ export function useWebLLMContext(): WebLLMContextValue {
   return ctx
 }
 
-const DEFAULT_MODEL = 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
+function getIsMobile(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+const MOBILE_MODEL = MODEL_TIERS[0].modelId // Fast (~200MB) - best for mobile
+const DESKTOP_MODEL = MODEL_TIERS[1].modelId // Balanced (~500MB)
 
 function formatTimeRemaining(seconds: number): string {
   if (seconds < 5) return 'almost done'
@@ -57,7 +64,10 @@ export function WebLLMProvider({ children }: { children: ReactNode }) {
   const [engine, setEngine] = useState<MLCEngine | null>(null)
   const [isInitializing, setIsInitializing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [currentModel, setCurrentModel] = useState(DEFAULT_MODEL)
+  const [isMobile] = useState(getIsMobile)
+  const [currentModel, setCurrentModel] = useState(() =>
+    getIsMobile() ? MOBILE_MODEL : DESKTOP_MODEL,
+  )
   const [downloadProgress, setDownloadProgress] = useState(0)
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<string | null>(null)
 
@@ -116,7 +126,11 @@ export function WebLLMProvider({ children }: { children: ReactNode }) {
   const initializeEngine = useCallback(
     async (modelId: string) => {
       if (!isSupported) {
-        setError('WebGPU is not supported in this browser. Please use Chrome or Edge.')
+        setError(
+          isMobile
+            ? 'WebGPU is not supported on this mobile browser. Try Chrome 121+ on Android or Safari on iOS 26+.'
+            : 'WebGPU is not supported in this browser. Please use a recent version of Chrome, Edge, Firefox, or Safari.',
+        )
         return
       }
 
@@ -152,14 +166,15 @@ export function WebLLMProvider({ children }: { children: ReactNode }) {
         setIsInitializing(false)
       }
     },
-    [isSupported, updateTimeEstimate],
+    [isSupported, isMobile, updateTimeEstimate],
   )
 
-  // Auto-initialize on mount
+  // Auto-initialize on mount with the appropriate model for device
   useEffect(() => {
     if (initRef.current || !isSupported) return
     initRef.current = true
-    initializeEngine(DEFAULT_MODEL)
+    initializeEngine(currentModel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run once on mount
   }, [isSupported, initializeEngine])
 
   const switchModel = useCallback(
@@ -213,6 +228,7 @@ export function WebLLMProvider({ children }: { children: ReactNode }) {
         engine,
         isInitializing,
         isSupported,
+        isMobile,
         currentModel,
         downloadProgress,
         estimatedTimeRemaining,

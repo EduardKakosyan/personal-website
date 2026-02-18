@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChatCompletionMessageParam } from '@mlc-ai/web-llm'
 import { Button } from '@/components/ui/button'
-import { Send, Bot, User, AlertTriangle, ArrowRight } from 'lucide-react'
+import { Send, Bot, User, AlertTriangle, ArrowRight, Smartphone } from 'lucide-react'
 import { useWebLLMContext } from '@/components/providers/webllm-provider'
 import { useChatbotActions } from '@/lib/hooks/use-chatbot-actions'
-import { detectFunctionCall } from '@/lib/chatbot-functions'
+import { TOOL_SYSTEM_PROMPT, parseToolCallFromOutput } from '@/lib/chatbot-functions'
 import { validateChatMessage } from '@/lib/validation'
 import { sanitizeUserInput } from '@/lib/sanitizer'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -82,10 +82,7 @@ RESPONSE STYLE:
 - Do not engage in political, religious, or other controversial discussions.
 `
 
-const CHATBOT_CONTEXT = getEnhancedContext(BASE_CHATBOT_CONTEXT)
-
-const RATE_LIMIT_MAX = 10
-const RATE_LIMIT_WINDOW = 60000
+const CHATBOT_CONTEXT = getEnhancedContext(BASE_CHATBOT_CONTEXT) + TOOL_SYSTEM_PROMPT
 
 const generateMessageId = () => `emsg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
@@ -94,6 +91,7 @@ export function EmbeddedChat() {
     engine,
     isInitializing,
     isSupported,
+    isMobile,
     downloadProgress,
     estimatedTimeRemaining,
     error,
@@ -107,10 +105,6 @@ export function EmbeddedChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [inputError, setInputError] = useState('')
   const [isOffTopicInput, setIsOffTopicInput] = useState(false)
-  const [rateLimit, setRateLimit] = useState({
-    count: 0,
-    resetTime: Date.now() + RATE_LIMIT_WINDOW,
-  })
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const welcomeSet = useRef(false)
@@ -143,15 +137,6 @@ export function EmbeddedChat() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
-  const checkRateLimit = (): boolean => {
-    const now = Date.now()
-    if (now > rateLimit.resetTime) {
-      setRateLimit({ count: 0, resetTime: now + RATE_LIMIT_WINDOW })
-      return true
-    }
-    return rateLimit.count < RATE_LIMIT_MAX
-  }
-
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading || !engine) return
 
@@ -163,10 +148,8 @@ export function EmbeddedChat() {
       return
     }
 
-    const functionCall = detectFunctionCall(inputMessage.trim())
-
     const guardrailCheck = validateUserInput(inputMessage.trim())
-    if (!guardrailCheck.allowed && !functionCall) {
+    if (!guardrailCheck.allowed) {
       const userMsg: Message = {
         id: generateMessageId(),
         role: 'user',
@@ -186,13 +169,6 @@ export function EmbeddedChat() {
       return
     }
 
-    if (!checkRateLimit()) {
-      setInputError('Rate limit exceeded. Please wait before sending another message.')
-      return
-    }
-
-    setRateLimit((prev) => ({ ...prev, count: prev.count + 1 }))
-
     const sanitizedContent = sanitizeUserInput(validation.data.content)
 
     const userMessage: Message = {
@@ -204,23 +180,6 @@ export function EmbeddedChat() {
 
     setMessages((prev) => [...prev, userMessage])
     setInputMessage('')
-
-    // Handle function call
-    if (functionCall) {
-      const actionMessage: Message = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: functionCall.displayText,
-        timestamp: new Date(),
-        functionCall: {
-          name: functionCall.function,
-          displayText: functionCall.displayText,
-        },
-      }
-      setMessages((prev) => [...prev, actionMessage])
-      setTimeout(() => executeAction(functionCall), 500)
-      return
-    }
 
     setIsLoading(true)
 
@@ -249,26 +208,51 @@ export function EmbeddedChat() {
           content: typeof msg.content === 'string' ? msg.content : '',
         })),
         (chunk) => {
+          // Hide <function> tags from streaming display
+          const displayChunk = chunk.replace(/<function>[\s\S]*$/, '').trim()
           setMessages((prev) =>
-            prev.map((msg) => (msg.id === streamingId ? { ...msg, content: chunk } : msg)),
+            prev.map((msg) => (msg.id === streamingId ? { ...msg, content: displayChunk } : msg)),
           )
         },
       )
 
-      const responseValidation = validateAIResponse(responseContent)
-      let finalResponse = responseContent
+      // Check if the LLM output a tool call
+      const toolCall = parseToolCallFromOutput(responseContent, userMessage.content)
 
-      if (!responseValidation.allowed) {
-        finalResponse =
-          responseValidation.suggestedResponse ||
-          "I'm sorry, I can only answer questions about Eduard. What would you like to know about his projects or background?"
+      if (toolCall) {
+        // Replace streaming message with action card
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === streamingId
+              ? {
+                  ...msg,
+                  content: toolCall.displayText,
+                  isStreaming: false,
+                  functionCall: {
+                    name: toolCall.function,
+                    displayText: toolCall.displayText,
+                  },
+                }
+              : msg,
+          ),
+        )
+        setTimeout(() => executeAction(toolCall), 500)
+      } else {
+        const responseValidation = validateAIResponse(responseContent)
+        let finalResponse = responseContent
+
+        if (!responseValidation.allowed) {
+          finalResponse =
+            responseValidation.suggestedResponse ||
+            "I'm sorry, I can only answer questions about Eduard. What would you like to know about his projects or background?"
+        }
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === streamingId ? { ...msg, content: finalResponse, isStreaming: false } : msg,
+          ),
+        )
       }
-
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === streamingId ? { ...msg, content: finalResponse, isStreaming: false } : msg,
-        ),
-      )
     } catch {
       setMessages((prev) =>
         prev.map((msg) =>
@@ -346,13 +330,36 @@ export function EmbeddedChat() {
       {/* Not supported state */}
       {!isSupported && (
         <div className="flex-1 flex items-center justify-center p-6 text-center">
-          <div>
-            <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
-            <p className="font-medium text-sm">WebGPU Required</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              This AI assistant requires a WebGPU-compatible browser like Chrome or Edge.
-            </p>
-          </div>
+          {isMobile ? (
+            <div className="space-y-2">
+              <Smartphone className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="font-medium text-sm">Not available on this device yet</p>
+              <p className="text-xs text-muted-foreground">
+                This AI runs entirely in your browser using WebGPU, which your mobile browser
+                doesn&apos;t support yet.
+              </p>
+              <div className="text-xs text-muted-foreground space-y-1 pt-1">
+                <p>
+                  <strong>Android:</strong> Update Chrome to 121+
+                </p>
+                <p>
+                  <strong>iPhone/iPad:</strong> Requires iOS 26+ with Safari
+                </p>
+                <p>
+                  <strong>Desktop:</strong> Works on Chrome, Edge, Firefox, or Safari
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+              <p className="font-medium text-sm">WebGPU Required</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This AI assistant runs entirely in your browser and requires WebGPU. Please use a
+                recent version of Chrome, Edge, Firefox, or Safari.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

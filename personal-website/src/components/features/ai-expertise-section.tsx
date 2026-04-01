@@ -15,57 +15,54 @@ interface ExpertiseArea {
 
 const expertiseAreas: ExpertiseArea[] = [
   {
-    title: 'Large Language Models',
-    description: 'Building conversational systems and content generation platforms',
+    title: 'Agents & LLMs',
+    description:
+      'Building tool-calling agents for document processing, RFP sorting, and knowledge-base Q&A across 20+ client deployments',
     technologies: [
-      'Vercel Agents SDK',
+      'Claude Code',
       'Anthropic Claude',
       'LangChain',
-      'Google AI Studio',
       'CrewAI',
       'n8n',
+      'Google AI Studio',
     ],
-    applications: ['Content Generation', 'Code Assistance', 'Document Analysis', 'Agentic Systems'],
+    applications: [
+      'Client Agents',
+      'Document Processing',
+      'Autonomous Workflows',
+      'Multi-Agent Systems',
+    ],
   },
   {
-    title: 'Local AI Deployment',
-    description: 'Hosting and optimizing AI models for privacy-focused and offline applications',
+    title: 'Voice & Local AI',
+    description:
+      'Running voice pipelines and LLMs entirely on-device with sub-800ms latency — no cloud dependency',
     technologies: [
       'Ollama',
       'llama.cpp',
       'MLX',
-      'Whisper',
-      'HuggingFace',
-      'Raspberry Pi',
+      'Silero VAD',
+      'Kokoro TTS',
       'WebLLM',
-      'MLC-AI',
+      'ONNX Runtime',
     ],
-    applications: [
-      'Privacy-First Solutions',
-      'Edge Computing',
-      'Rapid Prototyping',
-      'Custom Fine-tuning',
-    ],
+    applications: ['Voice Agents', 'On-Device Inference', 'Speech-to-Text', 'Overlapped Streaming'],
   },
   {
-    title: 'Tech Stack',
-    description: 'Designing scalable, production-ready AI systems with modern frameworks',
+    title: 'Full-Stack & Infra',
+    description:
+      'TypeScript and Go for dashboards, APIs, and developer tooling — from Supabase schemas to Docker orchestration',
     technologies: [
       'Next.js',
-      'Python',
-      'Typescript',
-      'Azure',
+      'Go',
+      'TypeScript',
+      'Supabase',
       'Docker',
+      'Python',
       'FastAPI',
-      'N8N',
-      'Power Automate',
+      'Azure',
     ],
-    applications: [
-      'Enterprise Solutions',
-      'Real-time Systems',
-      'API Development',
-      'Cloud Deployment',
-    ],
+    applications: ['Business Dashboards', 'API Integrations', 'Developer Tools', 'CI/CD Pipelines'],
   },
 ]
 
@@ -114,7 +111,8 @@ export function AIExpertiseSection() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-muted-foreground md:text-lg max-w-3xl mx-auto mt-4"
           >
-            Experimenting with AI technologies, from local model agents to enterprise-scale systems
+            From client-facing agents to offline voice pipelines — here&apos;s what I work with day
+            to day
           </motion.p>
         </div>
 

@@ -52,7 +52,7 @@ const EDUARD_RELATED_PATTERNS = [
   /\b(hiking|camping|photography|hobbies|interests)\b/i,
   /\b(atlantic|canada|canadian|halifax|nova scotia)\b/i,
   /\b(navigate|go to|show me|take me|open|visit|scroll)\b/i,
-  /\b(page|section|home|blog)\b/i,
+  /\b(page|section|home)\b/i,
 ]
 
 // System prompt extraction attempts (more specific)

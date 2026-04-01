@@ -67,7 +67,7 @@ export function HeroText() {
         variants={itemVariants}
         className="max-w-2xl mx-auto text-base md:text-lg text-muted-foreground/80 leading-relaxed"
       >
-        I work as an AI Developer at{' '}
+        I build AI agents, voice pipelines, and full-stack tools at{' '}
         <Link
           href="https://www.ai-first.ca/"
           className="text-[var(--accent-neon)] font-semibold hover:underline transition-colors"
@@ -76,7 +76,7 @@ export function HeroText() {
         >
           AI-First Consulting
         </Link>
-        , focusing on practical AI implementations. 3+ years of experience in automation and AI.
+        . I also teach AI courses and compete in hackathons around Atlantic Canada.
       </motion.p>
 
       {/* CTAs */}

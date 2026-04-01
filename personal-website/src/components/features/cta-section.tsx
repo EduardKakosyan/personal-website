@@ -47,8 +47,8 @@ export function CTASection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
           >
-            Whether you need AI integration for your business, consultation on AI projects, or want
-            to collaborate and build something cool — I&apos;m available to chat.
+            Have a project that could use AI, or looking for a hackathon teammate? Reach out —
+            I&apos;m always happy to talk shop.
           </motion.p>
 
           <motion.div

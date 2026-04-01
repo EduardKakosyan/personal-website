@@ -8,7 +8,6 @@ const PAGE_MAP: Record<string, string> = {
   home: '/',
   projects: '/projects',
   contact: '/contact',
-  blog: '/blog',
 }
 
 const PROJECT_MAP: Record<string, string> = {

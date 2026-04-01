@@ -51,9 +51,6 @@ export const analyticsEvents = {
   projectCategoryFiltered: (category: string) =>
     trackEvent('Project Category Filtered', { category }),
 
-  // Blog interactions
-  blogPostViewed: (postSlug: string) => trackEvent('Blog Post Viewed', { post: postSlug }),
-
   // Download events
   resumeDownloaded: () => trackEvent('Resume Downloaded'),
 

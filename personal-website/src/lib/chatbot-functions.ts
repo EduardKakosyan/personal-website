@@ -74,7 +74,8 @@ Respond with JSON: {"action": "navigate_to_page"|"show_project"|"scroll_to_secti
 
 If the user is NOT asking to navigate, set action to "none" and target to "".`
 
-const NAV_INTENT = /\b(show me|go to|take me|navigate|open|visit|scroll to|see|check out)\b/i
+const NAV_INTENT =
+  /\b(show me|go to|take me to|navigate\s*(?:me\s+)?to|open|visit|scroll to|check out|bring me to)\b/i
 
 /**
  * Detect navigation intent from user input using keyword matching.

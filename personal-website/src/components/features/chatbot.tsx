@@ -23,7 +23,11 @@ import {
 } from 'lucide-react'
 import { useWebLLMContext, MODEL_TIERS } from '@/components/providers/webllm-provider'
 import { useChatbotActions } from '@/lib/hooks/use-chatbot-actions'
-import { TOOL_SYSTEM_PROMPT, parseToolCallFromOutput } from '@/lib/chatbot-functions'
+import {
+  TOOL_SYSTEM_PROMPT,
+  parseToolCallFromOutput,
+  detectNavIntent,
+} from '@/lib/chatbot-functions'
 import { validateChatMessage } from '@/lib/validation'
 import { sanitizeUserInput } from '@/lib/sanitizer'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -291,6 +295,25 @@ export function Chatbot() {
     setMessages((prev) => [...prev, userMessage])
     setInputMessage('')
 
+    // Check for navigation intent BEFORE calling the LLM — instant response
+    const immediateNav = detectNavIntent(sanitizedContent)
+    if (immediateNav) {
+      const navMessage: Message = {
+        id: generateMessageId(),
+        role: 'assistant',
+        content: immediateNav.displayText,
+        timestamp: new Date(),
+        functionCall: {
+          name: immediateNav.function,
+          displayText: immediateNav.displayText,
+        },
+      }
+      setMessages((prev) => [...prev, navMessage])
+      addMessage(sanitizedContent, immediateNav.displayText)
+      setTimeout(() => executeAction(immediateNav), 500)
+      return
+    }
+
     setIsLoading(true)
 
     // Create a streaming message placeholder
@@ -327,7 +350,7 @@ export function Chatbot() {
         },
       )
 
-      // Check if the LLM output a tool call
+      // Check if the LLM output a tool call (fallback for LLM-initiated navigation)
       const toolCall = parseToolCallFromOutput(responseContent, userMessage.content)
 
       if (toolCall) {

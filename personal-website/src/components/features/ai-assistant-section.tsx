@@ -78,7 +78,7 @@ export function AIAssistantSection() {
               'Powered by WebLLM',
               'Runs Locally in Browser',
               'No Data Sent to Servers',
-              'Llama-3.2-1B',
+              'Qwen2.5 / Hermes-3',
             ].map((label) => (
               <motion.div key={label} variants={itemVariants}>
                 <Badge

@@ -18,6 +18,8 @@ const PROJECT_MAP: Record<string, string> = {
   hugo: '/projects/hugo',
   'acdc-dashboard': '/projects/acdc-dashboard',
   'dev-template': '/projects/dev-template',
+  voxcoach: '/projects/voxcoach',
+  'claude-autonomous': '/projects/claude-autonomous',
 }
 
 const SECTION_MAP: Record<string, string> = {
@@ -32,96 +34,53 @@ const pageNames = Object.keys(PAGE_MAP).join(', ')
 const projectNames = Object.keys(PROJECT_MAP).join(', ')
 const sectionNames = Object.keys(SECTION_MAP).join(', ')
 
+/**
+ * System prompt fragment that teaches the LLM about available navigation.
+ * Used for conversational awareness — the LLM can mention pages/projects
+ * naturally, and intent detection handles the actual navigation.
+ */
 export const TOOL_SYSTEM_PROMPT = `
-You have access to navigation tools on this website. When the user wants to navigate somewhere, output a tool call using the exact format below. Do NOT include any other text when calling a tool.
-
-TOOLS:
-
-1. navigate_to_page - Navigate to a page on the website
-   Parameters: { "page": one of [${pageNames}] }
-
-2. show_project - Open a specific project page
-   Parameters: { "project": one of [${projectNames}] }
-
-3. scroll_to_section - Scroll to a section on the homepage
-   Parameters: { "section": one of [${sectionNames}] }
-
-FORMAT: When you decide to use a tool, output ONLY:
-<function>{"name":"TOOL_NAME","parameters":{...}}</function>
-
-EXAMPLES:
-- User says "take me to your projects" -> <function>{"name":"navigate_to_page","parameters":{"page":"projects"}}</function>
-- User says "show me the healthbyte project" -> <function>{"name":"show_project","parameters":{"project":"healthbyte"}}</function>
-- User says "scroll to expertise" -> <function>{"name":"scroll_to_section","parameters":{"section":"expertise"}}</function>
-
-IMPORTANT: Only use tools for navigation requests. For questions about Eduard, respond with normal text.
+You can help users navigate this website. Available pages: ${pageNames}. Available projects: ${projectNames}. Available sections: ${sectionNames}.
+When a user wants to navigate, tell them you're taking them there. The site will handle the navigation automatically.
 `
 
-interface ToolCall {
-  name: string
-  parameters: Record<string, string>
-}
+/**
+ * JSON schema for structured tool call output via response_format.
+ * Used with WebLLM's grammar-constrained generation for reliable parsing.
+ */
+export const TOOL_CALL_SCHEMA = JSON.stringify({
+  type: 'object',
+  properties: {
+    action: {
+      type: 'string',
+      enum: ['navigate_to_page', 'show_project', 'scroll_to_section', 'none'],
+    },
+    target: { type: 'string' },
+    reply: { type: 'string' },
+  },
+  required: ['action', 'target', 'reply'],
+})
 
 /**
- * Try to parse a structured <function> tool call from the LLM output.
+ * System prompt used when generating a structured tool call response.
  */
-function parseStructuredToolCall(output: string): FunctionCallResult | null {
-  const match = output.match(/<function>([\s\S]*?)<\/function>/)
-  if (!match) return null
+export const TOOL_CALL_SYSTEM_PROMPT = `You are a navigation assistant. Given the user's message, decide if they want to navigate somewhere on the website.
 
-  let parsed: ToolCall
-  try {
-    parsed = JSON.parse(match[1])
-  } catch {
-    return null
-  }
+Available pages: ${pageNames}
+Available projects: ${projectNames}
+Available sections: ${sectionNames}
 
-  if (!parsed.name || !parsed.parameters) return null
+Respond with JSON: {"action": "navigate_to_page"|"show_project"|"scroll_to_section"|"none", "target": "<target name>", "reply": "<short friendly message>"}
 
-  switch (parsed.name) {
-    case 'navigate_to_page': {
-      const page = parsed.parameters.page
-      const path = PAGE_MAP[page]
-      if (!path) return null
-      return {
-        function: 'navigate_to_page',
-        args: { page: path },
-        displayText: `Navigating to ${page}`,
-      }
-    }
-    case 'show_project': {
-      const project = parsed.parameters.project
-      const path = PROJECT_MAP[project]
-      if (!path) return null
-      return {
-        function: 'show_project',
-        args: { project: path },
-        displayText: `Opening ${project} project`,
-      }
-    }
-    case 'scroll_to_section': {
-      const section = parsed.parameters.section
-      const selector = SECTION_MAP[section]
-      if (!selector) return null
-      return {
-        function: 'scroll_to_section',
-        args: { selector },
-        displayText: `Scrolling to ${section}`,
-      }
-    }
-    default:
-      return null
-  }
-}
+If the user is NOT asking to navigate, set action to "none" and target to "".`
 
-const NAV_INTENT = /\b(show me|go to|take me|navigate|open|visit|scroll to)\b/i
+const NAV_INTENT = /\b(show me|go to|take me|navigate|open|visit|scroll to|see|check out)\b/i
 
 /**
- * Fallback: detect navigation intent from the user's input when the LLM
- * doesn't use the structured <function> format. Requires a navigation verb
- * plus a known target in the user message.
+ * Detect navigation intent from user input using keyword matching.
+ * This is the primary, most reliable detection method.
  */
-function parseFallbackFromUserInput(userMessage: string): FunctionCallResult | null {
+export function detectNavIntent(userMessage: string): FunctionCallResult | null {
   const lower = userMessage.toLowerCase()
   if (!NAV_INTENT.test(lower)) return null
 
@@ -138,7 +97,6 @@ function parseFallbackFromUserInput(userMessage: string): FunctionCallResult | n
 
   // Check projects (match slug or common name variants)
   for (const [projectName, path] of Object.entries(PROJECT_MAP)) {
-    // Match "healthbyte", "second-brain" / "second brain", "network-sim" / "network sim", etc.
     const nameVariant = projectName.replace(/-/g, '[\\s-]?')
     if (new RegExp(`\\b${nameVariant}\\b`, 'i').test(lower)) {
       return {
@@ -165,13 +123,101 @@ function parseFallbackFromUserInput(userMessage: string): FunctionCallResult | n
 }
 
 /**
- * Parse a tool call from LLM output. Tries structured <function> tags first,
- * then falls back to user-input intent detection for small models that don't
- * follow the structured format.
+ * Parse a structured JSON tool call from LLM output (used with response_format: json_object).
+ */
+export function parseJsonToolCall(jsonString: string): FunctionCallResult | null {
+  try {
+    const parsed = JSON.parse(jsonString)
+    if (!parsed.action || parsed.action === 'none') return null
+
+    switch (parsed.action) {
+      case 'navigate_to_page': {
+        const path = PAGE_MAP[parsed.target]
+        if (!path) return null
+        return {
+          function: 'navigate_to_page',
+          args: { page: path },
+          displayText: parsed.reply || `Navigating to ${parsed.target}`,
+        }
+      }
+      case 'show_project': {
+        const path = PROJECT_MAP[parsed.target]
+        if (!path) return null
+        return {
+          function: 'show_project',
+          args: { project: path },
+          displayText: parsed.reply || `Opening ${parsed.target}`,
+        }
+      }
+      case 'scroll_to_section': {
+        const selector = SECTION_MAP[parsed.target]
+        if (!selector) return null
+        return {
+          function: 'scroll_to_section',
+          args: { selector },
+          displayText: parsed.reply || `Scrolling to ${parsed.target}`,
+        }
+      }
+      default:
+        return null
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Legacy parser for <function> tags in LLM output. Kept as a fallback
+ * for models that still use the old format.
  */
 export function parseToolCallFromOutput(
   output: string,
   userMessage: string,
 ): FunctionCallResult | null {
-  return parseStructuredToolCall(output) ?? parseFallbackFromUserInput(userMessage)
+  // Try structured <function> tag parsing
+  const match = output.match(/<function>([\s\S]*?)<\/function>/)
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1])
+      if (parsed.name && parsed.parameters) {
+        switch (parsed.name) {
+          case 'navigate_to_page': {
+            const path = PAGE_MAP[parsed.parameters.page]
+            if (path)
+              return {
+                function: 'navigate_to_page',
+                args: { page: path },
+                displayText: `Navigating to ${parsed.parameters.page}`,
+              }
+            break
+          }
+          case 'show_project': {
+            const path = PROJECT_MAP[parsed.parameters.project]
+            if (path)
+              return {
+                function: 'show_project',
+                args: { project: path },
+                displayText: `Opening ${parsed.parameters.project}`,
+              }
+            break
+          }
+          case 'scroll_to_section': {
+            const selector = SECTION_MAP[parsed.parameters.section]
+            if (selector)
+              return {
+                function: 'scroll_to_section',
+                args: { selector },
+                displayText: `Scrolling to ${parsed.parameters.section}`,
+              }
+            break
+          }
+        }
+      }
+    } catch {
+      // Fall through to keyword detection
+    }
+  }
+
+  // Fallback: keyword-based intent detection
+  return detectNavIntent(userMessage)
 }

@@ -1,7 +1,12 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { ChatCompletionMessageParam, CreateMLCEngine, MLCEngine } from '@mlc-ai/web-llm'
+import {
+  ChatCompletionMessageParam,
+  CreateMLCEngine,
+  MLCEngine,
+  ResponseFormat,
+} from '@mlc-ai/web-llm'
 
 export interface ModelTier {
   id: string
@@ -20,14 +25,14 @@ export const MODEL_TIERS: ModelTier[] = [
   {
     id: 'balanced',
     label: 'Balanced',
-    description: '~500MB, good quality',
-    modelId: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
+    description: '~800MB, good quality',
+    modelId: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
   },
   {
     id: 'quality',
     label: 'Quality',
-    description: '~2GB, best responses',
-    modelId: 'Phi-3.5-mini-instruct-q4f16_1-MLC',
+    description: '~1.7GB, best responses',
+    modelId: 'Hermes-3-Llama-3.2-3B-q4f16_1-MLC',
   },
 ]
 
@@ -45,16 +50,20 @@ interface UseWebLLMReturn {
   downloadProgress: number
   initialize: () => Promise<void>
   switchModel: (modelId: string) => Promise<void>
-  generateResponse: (messages: Array<{ role: string; content: string }>) => Promise<string>
+  generateResponse: (
+    messages: Array<{ role: string; content: string }>,
+    options?: { maxTokens?: number; responseFormat?: ResponseFormat },
+  ) => Promise<string>
   generateStreamingResponse: (
     messages: Array<{ role: string; content: string }>,
     onChunk: (chunk: string) => void,
+    options?: { maxTokens?: number },
   ) => Promise<string>
   error: string | null
 }
 
 export function useWebLLM({
-  model = 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
+  model = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
   onInitialized,
   onError,
 }: UseWebLLMOptions = {}): UseWebLLMReturn {
@@ -149,7 +158,10 @@ export function useWebLLM({
   )
 
   const generateResponse = useCallback(
-    async (messages: Array<{ role: string; content: string }>): Promise<string> => {
+    async (
+      messages: Array<{ role: string; content: string }>,
+      options?: { maxTokens?: number; responseFormat?: ResponseFormat },
+    ): Promise<string> => {
       if (!engine) {
         throw new Error('Engine not initialized')
       }
@@ -158,7 +170,8 @@ export function useWebLLM({
         const response = await engine.chatCompletion({
           messages: messages as ChatCompletionMessageParam[],
           temperature: 0.7,
-          max_tokens: 512,
+          max_tokens: options?.maxTokens ?? 256,
+          ...(options?.responseFormat ? { response_format: options.responseFormat } : {}),
         })
 
         return response.choices[0].message.content || "I'm sorry, I couldn't generate a response."
@@ -174,6 +187,7 @@ export function useWebLLM({
     async (
       messages: Array<{ role: string; content: string }>,
       onChunk: (chunk: string) => void,
+      options?: { maxTokens?: number },
     ): Promise<string> => {
       if (!engine) {
         throw new Error('Engine not initialized')
@@ -183,7 +197,7 @@ export function useWebLLM({
         const stream = await engine.chatCompletion({
           messages: messages as ChatCompletionMessageParam[],
           temperature: 0.7,
-          max_tokens: 512,
+          max_tokens: options?.maxTokens ?? 256,
           stream: true,
         })
 

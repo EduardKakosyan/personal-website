@@ -204,7 +204,7 @@ export function WebLLMProvider({ children }: { children: ReactNode }) {
       const stream = await engine.chatCompletion({
         messages: messages as ChatCompletionMessageParam[],
         temperature: 0.7,
-        max_tokens: 512,
+        max_tokens: 256,
         stream: true,
       })
 

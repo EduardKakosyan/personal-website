@@ -1,87 +1,74 @@
 # HUGO - Helpful Universal Guide & Organizer
 
-**Voice-First Personal Assistant Embodied in a Reachy Mini Robot**
+**Voice-First Agent Platform for Reachy Mini Robot**
 
 ---
 
 ## Project Overview
 
-HUGO is a voice-first personal assistant that lives inside a Reachy Mini desktop robot. It uses multi-agent AI orchestration to help manage email, calendar, project management, meeting transcripts, and general conversation — all controlled through natural voice commands.
+HUGO is a voice-first agent platform written in Go that orchestrates tools, controls a Reachy Mini robot, and communicates primarily through speech. The agent talks to you while it works — not after it's done.
 
-**The Idea:** Instead of switching between a dozen apps and tabs throughout the day, just talk to a robot on your desk. HUGO listens, understands what you need, routes your request to the right specialist agent, and responds with both voice and physical robot expressions.
+**The Idea:** A physical desktop companion that listens, acts on your behalf, and responds with voice — all through natural conversation in a browser-based interface.
 
-**The Interaction Loop:** Voice Input → Voice Activity Detection → Speech-to-Text → Semantic Intent Routing → Specialist AI Agent → Text-to-Speech → Robot Expression & Animation
+**The Architecture:** Browser Mic → WebSocket → VAD → STT → LLM Agent (Claude) → Tool Execution → TTS → Audio Playback
 
 ## Technical Architecture
 
-### 7 Specialist AI Agents (CrewAI)
+### Core (tRPC-agent-go)
 
-Each user utterance gets classified by a semantic router and dispatched to the right agent:
+Single agent powered by Claude Sonnet 4 via tRPC-agent-go, a production-grade orchestration framework supporting:
 
-- **Email Agent** — Read, search, summarize, draft, and send emails via Microsoft Graph
-- **Calendar Agent** — View schedule, check availability, create events via Microsoft Graph
-- **Linear Agent** — View assigned issues, create tickets, update status via Linear GraphQL API
-- **Fireflies Agent** — Search meeting transcripts, extract action items and decisions via Fireflies.ai
-- **Vision Agent** — Analyze camera feed, describe scenes, read text using Qwen3-VL
-- **General Agent** — Conversation, general knowledge, small talk
-- **Orchestrator** — Routes and synthesizes across all agents for complex multi-domain requests
+- **Streaming ReAct loop** — Observe, think, act, with real-time event emission
+- **Tool calling** — `current_time`, `calculator`, `look_at` (robot control)
+- **Concurrent event consumer** — Agent runner and voice pipeline operate independently via goroutine channels
 
-### Local-First Voice Pipeline (Apple Silicon / MLX)
+### Voice Pipeline (All Local)
 
-~90% of all inference runs entirely on-device:
+Full speech processing running on-device with no cloud dependency:
 
-- **Voice Activity Detection**: Silero VAD via PyTorch
-- **Speech-to-Text**: Whisper V3 Turbo via mlx-audio
-- **Text-to-Speech**: Kokoro-82M via mlx-audio
-- **Voice Pipeline Framework**: Pipecat
+- **Voice Activity Detection**: Silero VAD (ONNX Runtime, <20ms)
+- **Speech-to-Text**: Moonshine Tiny (sherpa-onnx, quantized, local)
+- **Text-to-Speech**: Kokoro-82M (MLX) with OpenAI API fallback
+- **Speech Queue**: Non-blocking buffered channel with barge-in support
 
-### LLM Inference with Fallback Chain
+### WebSocket Server
 
-1. **Primary (local)**: Qwen3-32B via mlx-lm (4-bit quantized on Apple Silicon)
-2. **Cloud fallback tier 1**: Gemini 2.5 Flash
-3. **Cloud fallback tier 2**: Claude Sonnet 4.5 (for the hardest tasks)
+Real-time browser communication with structured message protocol:
 
-### Sub-Millisecond Intent Routing
+- Streaming response chunks, tool call events, and tool results
+- Goroutine-isolated per-connection handlers
+- JSON message protocol for extensibility
 
-Uses nomic-embed-text V2 (Mixture of Experts) semantic embeddings via the semantic-router library to classify user utterances into 7 categories before any LLM call — making routing nearly instantaneous.
+### Concurrent Design
 
-### MCP (Model Context Protocol) Servers
+The core UX innovation is **overlapped execution**:
 
-Each external service is implemented as a standalone FastMCP server:
-
-- **Microsoft Graph** — Email, calendar, files via Azure Identity + msgraph-sdk
-- **Linear** — Issue and project management via Linear GraphQL API
-- **Fireflies.ai** — Meeting transcript search via Fireflies GraphQL API
-
-### Robot Control
-
-- **Reachy Mini SDK** — Head movement, antenna-based emotional expressions (happy, sad, thinking, surprised, wiggle), body rotation, camera capture
-- **Simulation mode** (`--sim`) for development without hardware
-- **Text-only mode** (`--no-voice`) for testing agent logic
+- Agent keeps thinking while TTS synthesizes previous sentences
+- User can barge-in (interrupt) — context cancellation propagates through runner, consumer, and speech queue
+- Non-blocking speech queue means the agent never waits for audio playback
 
 ## Technology Stack
 
-- **Language**: Python 3.12 with strict mypy typing
-- **Agent Framework**: CrewAI with YAML-configured agents and tasks
-- **Voice**: Silero VAD, Whisper V3 Turbo, Kokoro-82M, Pipecat (all via MLX)
-- **LLMs**: Qwen3-32B (local), Qwen3-VL 4B (vision), Gemini 2.5 Flash, Claude Sonnet 4.5
-- **Semantic Routing**: nomic-embed-text V2 via semantic-router
-- **MCP Servers**: FastMCP for Microsoft Graph, Linear, Fireflies.ai
-- **Robot**: Reachy Mini SDK (Pollen Robotics)
-- **Data Modeling**: Pydantic v2 for structured outputs
-- **Package Management**: uv with hatchling build backend
-- **CI/CD**: GitHub Actions, Ruff, mypy (strict), pytest, Bandit, Gitleaks, commitlint
+- **Language**: Go 1.25
+- **Agent Framework**: tRPC-agent-go v1.6.0 (streaming ReAct loop)
+- **LLM**: Claude Sonnet 4 (via OpenAI-compatible endpoint)
+- **VAD**: Silero ONNX
+- **STT**: Moonshine Tiny (sherpa-onnx, quantized)
+- **TTS**: Kokoro-82M (MLX), OpenAI TTS fallback
+- **Audio**: gen2brain/malgo (miniaudio, cross-platform)
+- **Server**: gorilla/websocket + net/http
+- **Robot**: Reachy Mini (integration in progress)
 
-## Key Features
+## What's Been Built
 
-- **Voice-First Interaction** — Speak naturally; the robot listens, processes, and responds with voice and physical expressions
-- **Privacy-First** — 90% of inference runs locally on Apple Silicon, no data sent to cloud unless the local model can't handle it
-- **Approval Gates** — Safety mechanism requiring explicit confirmation before sending emails, creating issues, or scheduling events
-- **Physical Embodiment** — Robot antenna emotions and head movements give the assistant personality and presence
-- **Simulation Mode** — Full development experience without robot hardware
+- **Text Agent** — Full agentic conversation with tool calling and streaming responses
+- **Tool System** — Extensible tool registration with current_time, calculator, look_at
+- **WebSocket Server** — Browser-based real-time communication with structured protocol
+- **Voice Pipeline** — VAD, STT, TTS interfaces and implementations with speech queue
+- **Concurrent Architecture** — Event consumer pattern enabling overlapped agent/voice execution
 
 ---
 
 **Links:**
 
-- 📁 [GitHub Repository](https://github.com/EduardKakosyan/hugo)
+- [GitHub Repository](https://github.com/EduardKakosyan/hugo)

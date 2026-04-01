@@ -31,9 +31,9 @@ const activities: Activity[] = [
   {
     title: 'Digital Nova Scotia SFHA-DS & ML',
     type: 'teaching',
-    date: 'Nov 2025 – Present',
+    date: 'Nov 2025 – Mar 2026',
     description:
-      'Developing the Advanced Data Science & Machine Learning curriculum for 150+ participants. Handcrafted courses and assignments inspired by the Dalhousie course, in collaboration with Shiftkey Labs.',
+      'Developed the Advanced Data Science & Machine Learning curriculum for 150+ participants. Handcrafted courses and assignments inspired by the Dalhousie course, in collaboration with Shiftkey Labs.',
   },
   {
     title: 'Agentic AI Course @ Dalhousie',

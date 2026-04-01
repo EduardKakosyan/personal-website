@@ -10,7 +10,7 @@ The ACDC Dashboard is a full-stack business health platform built for AI-First C
 
 **The Problem:** Consulting firms juggle a dozen disconnected tools for pipeline, time tracking, finances, and analytics. Context-switching kills productivity and makes it hard to see the full picture of business health.
 
-**The Solution:** A single dashboard that unifies all consulting operations with real-time metrics, AI-powered document extraction, and automated reporting.
+**The Solution:** A single dashboard that unifies all consulting operations with real-time metrics, automated document extraction, and weekly reporting.
 
 ## Core Features
 
@@ -29,9 +29,9 @@ Each gauge includes 4-week rolling averages, YTD trends, and color-coded zones. 
 
 Full opportunity pipeline with stages from cold through to won/unsuccessful. Includes thread-based discussions, file attachments, RFP document upload, and contact tracking per opportunity.
 
-### AI-Powered Document Extraction
+### Document Extraction
 
-Upload RFP/RFQ documents (PDF or DOCX) and Claude Sonnet 4 automatically extracts proposal deadlines, contacts, scope summaries, requirements, and estimated values — with confidence scores per field. One-click application of extracted data to opportunity fields.
+Upload RFP/RFQ documents (PDF or DOCX) and Claude Sonnet 4 extracts proposal deadlines, contacts, scope summaries, requirements, and estimated values — with confidence scores per field. One-click application of extracted data to opportunity fields.
 
 ### Financial Reporting
 
@@ -47,7 +47,7 @@ Per-employee capacity views with allocation grids, benchmark targets, and utiliz
 
 ### LinkedIn Content Generation
 
-AI-powered LinkedIn post generation using both Claude 3.5 Sonnet and Azure OpenAI GPT-5.1. Analyzes voice profile from historical posts and grounds content in real-time news from Perplexity AI, NewsAPI, and GNews.
+LinkedIn post generation using Claude 3.5 Sonnet and Azure OpenAI GPT-5.1. Matches voice profile from historical posts and grounds content in recent news from Perplexity AI, NewsAPI, and GNews.
 
 ### Additional Features
 
@@ -83,4 +83,6 @@ QuickBooks Online (OAuth with DB-persisted tokens), LinkedIn (org + member), Mic
 
 ---
 
-_Demo coming soon. This is currently an internal tool used daily by AI-First Consulting._
+**Links:**
+
+- [Live Demo](https://dashboard-demo-aifirst.vercel.app/) (sample data)

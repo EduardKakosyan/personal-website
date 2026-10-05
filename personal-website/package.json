@@ -14,7 +14,8 @@
     "type-check": "tsc --noEmit",
     "secrets:check": "gitleaks protect --staged --verbose --config=../.gitleaks.toml",
     "secrets:scan": "gitleaks detect --verbose --config=../.gitleaks.toml",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "test:guide": "node --test tests/portfolio-guide.test.mjs tests/agent-layout.test.mjs tests/webgpu-support.test.mjs"
   },
   "dependencies": {
     "@axe-core/react": "^4.10.1",

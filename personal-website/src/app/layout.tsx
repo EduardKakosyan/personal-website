@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     template: '%s | Eduard Kakosyan',
   },
   description:
-    'Lead AI Developer specializing in LLMs, agentic systems, and AI education. Winner of Atlantic AI Summit 2025. Based in Halifax, Nova Scotia.',
+    'I’m Eduard, an AI developer in Halifax. Here are my projects with local models, coding agents, and a small robot, along with some earlier work.',
   keywords: [
     'AI Developer',
     'Machine Learning',
@@ -46,7 +46,6 @@ export const metadata: Metadata = {
     'Ollama',
     'Halifax',
     'Nova Scotia',
-    'Hackathon Winner',
     'HealthByte',
     'CarGrep',
     'Dalhousie University',
@@ -84,7 +83,7 @@ export const metadata: Metadata = {
     url: 'https://kakosyaneduard.ca',
     title: 'Eduard Kakosyan | AI Developer',
     description:
-      'Lead AI Developer specializing in LLMs, agentic systems, and AI education. Winner of Atlantic AI Summit 2025.',
+      'I’m Eduard, an AI developer in Halifax. These are my projects with local models, coding agents, and a small robot.',
     siteName: 'Eduard Kakosyan Portfolio',
     images: [
       {
@@ -98,7 +97,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Eduard Kakosyan | AI Developer',
-    description: 'Lead AI Developer specializing in LLMs, agentic systems, and AI education.',
+    description:
+      'Local AI, coding agents, and a small robot. Projects and notes from Eduard Kakosyan in Halifax.',
     images: ['/images/og-image.jpg'],
   },
   verification: {
@@ -131,8 +131,7 @@ export default function RootLayout({
               '@type': 'Person',
               name: 'Eduard Kakosyan',
               jobTitle: 'Lead AI Developer',
-              description:
-                'Lead AI Developer specializing in LLMs, agentic systems, and AI education',
+              description: 'AI developer and educator based in Halifax, Nova Scotia',
               url: 'https://kakosyaneduard.ca',
               sameAs: [
                 'https://www.linkedin.com/in/eduard-kakosyan',

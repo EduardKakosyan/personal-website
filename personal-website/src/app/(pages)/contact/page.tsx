@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Contact Me | Eduard Kakosyan',
+  title: 'Contact',
   description: 'Get in touch with me. Send a message or find me on other platforms.',
 }
 
@@ -13,48 +13,49 @@ const contactDetails = [
     text: 'eduard@ai-first.ca',
     href: 'mailto:eduard@ai-first.ca',
     label: 'Email',
-    description: 'Best way to reach me for business inquiries',
+    description: 'For questions about my work or a project',
   },
   {
     icon: Linkedin,
     text: 'eduard-kakosyan',
     href: 'https://linkedin.com/in/eduard-kakosyan',
     label: 'LinkedIn',
-    description: 'Professional networking and updates',
+    description: 'You can message me here too',
   },
   {
     icon: Github,
     text: 'eduardkakosyan',
     href: 'https://github.com/eduardkakosyan',
     label: 'GitHub',
-    description: 'Open source projects and code samples',
+    description: 'Code for the projects on this site',
   },
   {
     icon: MapPin,
     text: 'Halifax, Nova Scotia',
     href: 'https://maps.google.com?q=Halifax,Nova Scotia',
     label: 'Location',
-    description: 'Available for local meetups and remote work',
+    description: 'Where I’m based',
   },
 ]
 
 const collaborationOptions = [
   {
     icon: Coffee,
-    title: 'AI Consultation',
+    title: 'AI at work',
     description:
-      'I help businesses figure out where AI actually fits — from agent prototypes to production deployments.',
+      'At AI-First Consulting, I build AI tools for businesses. Get in touch if you have a workflow you want help with.',
   },
   {
     icon: Calendar,
-    title: 'Hackathon Partner',
+    title: 'Hackathons',
     description:
-      'I compete in hackathons regularly around Atlantic Canada. If you need a teammate, reach out.',
+      'I take part in hackathons around Atlantic Canada. Let me know if you’re putting a team together.',
   },
   {
     icon: Github,
-    title: 'Open Source',
-    description: 'Most of my projects are public on GitHub. PRs and ideas are always welcome.',
+    title: 'Open source',
+    description:
+      'If you’ve tried one of my projects, I’d like to hear how it went. You can open an issue or a pull request on GitHub.',
   },
 ]
 
@@ -62,9 +63,9 @@ export default function ContactPage() {
   return (
     <div className="container py-12 md:py-16 max-w-4xl mx-auto">
       <div className="mb-12 text-center">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">Contact & Collaboration</h1>
+        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">Say hello</h1>
         <p className="mt-3 max-w-3xl mx-auto text-lg text-muted-foreground md:text-xl">
-          The best way to reach me is through{' '}
+          You can find me on{' '}
           <a
             href="https://linkedin.com/in/eduard-kakosyan"
             target="_blank"
@@ -72,8 +73,8 @@ export default function ContactPage() {
             className="text-primary hover:underline font-semibold"
           >
             LinkedIn
-          </a>
-          . I&apos;m always open to chatting about AI projects, hackathons, or new ideas.
+          </a>{' '}
+          or send me an email. Questions about a project, hackathon plans, and ideas are welcome.
         </p>
       </div>
 
@@ -81,7 +82,7 @@ export default function ContactPage() {
         {/* Contact Information */}
         <div className="space-y-8">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
+            <h2 className="text-2xl font-semibold mb-6">Where to find me</h2>
             <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
               {contactDetails.map((item) => (
                 <Card key={item.label} className="p-4">
@@ -109,7 +110,7 @@ export default function ContactPage() {
         {/* Collaboration Options */}
         <div className="space-y-8">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-6">Collaboration Areas</h2>
+            <h2 className="text-2xl font-semibold mb-6">A few things we could work on</h2>
             <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3 max-w-4xl mx-auto">
               {collaborationOptions.map((option, index) => (
                 <Card key={index}>

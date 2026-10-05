@@ -17,7 +17,10 @@ export function ProjectsPageContent({
       <header className="projects-intro">
         <span className="eyebrow">LOCAL AI / AGENTS / SOFTWARE</span>
         <h1>Projects</h1>
-        <p>My recent work, followed by earlier projects and hackathon collaborations.</p>
+        <p>
+          Things I’ve been building lately, plus some earlier work and projects built with teammates
+          at hackathons.
+        </p>
       </header>
       <div className="projects-filter" aria-label="Filter projects">
         {categories.map((item) => (

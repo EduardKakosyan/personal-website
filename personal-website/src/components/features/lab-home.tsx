@@ -62,12 +62,12 @@ export function LabHome() {
                 <em>local AI.</em>
               </h1>
               <p>
-                I’m an AI developer in Halifax. I build coding agents, voice assistants, and
-                business software. Here are some of my recent projects.
+                I’m a developer in Halifax. Lately, I’ve been working on coding agents and a little
+                robot I can talk to, with the models running on my own hardware.
               </p>
               <div className="hero-actions">
                 <a className="workshop-primary" href="#selected-work" onClick={() => pointAt(null)}>
-                  Explore my work <ArrowDown size={17} />
+                  See what I’ve been building <ArrowDown size={17} />
                 </a>
                 <button
                   className="workshop-secondary"
@@ -77,9 +77,9 @@ export function LabHome() {
                 </button>
               </div>
               <div className="hero-signature">
-                <span>AI ENGINEERING</span>
+                <span>CODING AGENTS</span>
                 <i />
-                <span>AGENTS, VOICE & DEVELOPER TOOLS</span>
+                <span>ROBOTS & SIDE PROJECTS</span>
               </div>
             </div>
             <div className="workshop-exhibit" aria-label="Interactive 3D local AI workshop">
@@ -191,8 +191,8 @@ export function LabHome() {
             </span>
             <h3>dgx-autonomy</h3>
             <p>
-              I built a system that lets a local coding agent work across long runs, save its
-              progress, and submit code to tests it can’t edit.
+              This is how I run a coding agent on my own hardware. It can pick up where it left off,
+              keep working across conversations, and submit its code to a separate set of tests.
             </p>
             <div className="studio-project-stats">
               <div>
@@ -272,11 +272,11 @@ export function LabHome() {
                 Weather, tides & fishing.
               </h3>
               <p>
-                My local coding agent built this app over three runs, using product briefs and
-                review feedback.
+                An app for checking the weather and tides before a day at the water. My local coding
+                agent built it over three runs, with briefs and review feedback along the way.
               </p>
               <span className="studio-project-cta">
-                Explore Shoreline <ArrowRight size={17} />
+                See Shoreline <ArrowRight size={17} />
               </span>
             </div>
           </Link>
@@ -306,11 +306,11 @@ export function LabHome() {
               <em>me.</em>
             </h2>
             <p>
-              I lead AI development at AI-First Consulting and teach AI courses and workshops. In my
-              own projects, I work on running models locally and connecting them to software tools
-              and robots.
+              I work at AI-First Consulting, where I lead AI development and teach courses and
+              workshops. Outside that work, I’ve been spending time with local models, coding tools,
+              and my Reachy Mini robot.
             </p>
-            <p>Away from work, I enjoy hiking, camping, and photography.</p>
+            <p>I also like hiking, camping, and taking photos.</p>
             <div className="studio-about-links">
               <a href={identity.github} target="_blank" rel="noopener noreferrer">
                 <Github size={17} /> GitHub <ArrowUpRight size={15} />
@@ -334,7 +334,9 @@ export function LabHome() {
             <ArrowUpRight />
           </span>
         </Link>
-        <p>For consulting, collaborations, or questions about a project.</p>
+        <p>
+          Have a question about something here, or an idea to work on together? I’d like to hear it.
+        </p>
       </section>
     </div>
   )

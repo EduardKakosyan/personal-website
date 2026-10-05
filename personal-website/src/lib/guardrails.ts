@@ -46,7 +46,7 @@ const OFF_TOPIC_PATTERNS = [
 const EDUARD_RELATED_PATTERNS = [
   /\b(eduard|kakosyan|his|he|him)\b/i,
   /\b(projects?|work|experience|background|skills?|education|university|dalhousie)\b/i,
-  /\b(healthbyte|cargrep|second brain|q-learning|hackathon|ai first|hugo|acdc|dev template|voxcoach|claude autonomous)\b/i,
+  /\b(healthbyte|cargrep|second brain|q-learning|hackathon|ai first|hugo|dev template|claude autonomous|dgx|autonomy|qwen|shoreline|yahtzee|spark|agents?|verification|checks|handoff|loop)\b/i,
   /\b(python|javascript|react|next\.?js|ai|machine learning|developer|programmer)\b/i,
   /\b(contact|reach|email|website|portfolio)\b/i,
   /\b(hiking|camping|photography|hobbies|interests)\b/i,
@@ -222,12 +222,12 @@ export const isLikelyEduardRelated = (input: string): boolean => {
 export const getSuggestedPrompts = (): string[] => {
   return [
     'What projects has Eduard built?',
-    'Tell me about VoxCoach',
+    'Tell me about dgx-autonomy',
     'What does Eduard do at AI First?',
-    'Show me the ACDC Dashboard',
+    'Show me Shoreline',
     'What hackathons has Eduard won?',
     "What are Eduard's technical skills?",
     'How can I contact Eduard?',
-    'Tell me about Claude Autonomous',
+    'How does the build loop verify its work?',
   ]
 }

@@ -1,4 +1,5 @@
 import { getMarkdownContent } from '../lib/markdown'
+import { portfolioWorks } from './portfolio'
 
 export interface Project {
   slug: string
@@ -23,41 +24,42 @@ const getProjectMarkdown = (slug: string): string => {
   return getMarkdownContent(`src/content/project-descriptions/${slug}.md`)
 }
 
+const newProjects: Project[] = portfolioWorks
+  .filter((work) => ['dgx-autonomy', 'shoreline', 'yahtzee'].includes(work.slug))
+  .map((work) => ({
+    slug: work.slug,
+    title: work.title,
+    description: work.summary,
+    longDescription: getProjectMarkdown(work.slug),
+    tags: [...work.tags],
+    repoUrl: work.repo,
+    featured: work.featured,
+    completionDate: 'September 2026',
+    category: work.slug === 'dgx-autonomy' ? 'AI/ML' : 'Agent-built Apps',
+    previewImageUrl:
+      work.slug === 'shoreline'
+        ? '/images/shoreline.png'
+        : work.slug === 'yahtzee'
+          ? '/images/yahtzee.png'
+          : undefined,
+    liveUrl:
+      work.slug === 'shoreline'
+        ? 'https://eduardkakosyan.github.io/shoreline/'
+        : work.slug === 'yahtzee'
+          ? 'https://eduardkakosyan.github.io/yahtzee/'
+          : undefined,
+    highlights:
+      work.slug === 'dgx-autonomy'
+        ? [
+            'Independent evaluation against frozen checks',
+            'Validated handoffs across conversations',
+            'Isolated builder and evaluator containers',
+          ]
+        : undefined,
+  }))
+
 const allProjects: Project[] = [
-  {
-    slug: 'acdc-dashboard',
-    title: 'ACDC Dashboard',
-    description:
-      'Full-stack consulting business health platform tracking Attract, Convert, Deliver, and Collect cycles with real-time gauges, pipeline financials, team utilization, website analytics, LinkedIn analytics, and client sentiment — all in one unified dashboard.',
-    longDescription: getProjectMarkdown('acdc-dashboard'),
-    previewImageUrl: '/images/acdc-dashboard.png',
-    liveUrl: 'https://dashboard-demo-aifirst.vercel.app/',
-    tags: [
-      'Next.js 16',
-      'React 19',
-      'TypeScript',
-      'Supabase',
-      'Claude Sonnet 4',
-      'Azure OpenAI',
-      'QuickBooks API',
-      'Microsoft Graph',
-      'LinkedIn API',
-      'PostHog',
-      'Tailwind CSS',
-    ],
-    featured: true,
-    category: 'Full-Stack',
-    completionDate: '2025',
-    teamSize: 1,
-    duration: 'Ongoing',
-    highlights: [
-      '8 modules: Dashboard, Team & Calendar, Network, Organizations, Opportunities, Projects, Time Entries, Finances',
-      'Real-time ACDC health gauges with 4-week and YTD trend tracking',
-      'Pipeline financials with pre/post-proposal expected value',
-      'Team utilization overview with client & category breakdowns',
-      'Website analytics (PostHog) and LinkedIn analytics in one view',
-    ],
-  },
+  ...newProjects,
   {
     slug: 'claude-autonomous',
     title: 'Claude Autonomous',
@@ -109,7 +111,7 @@ const allProjects: Project[] = [
       'Metal GPU',
     ],
     repoUrl: 'https://github.com/EduardKakosyan/voxcoach',
-    featured: true,
+    featured: false,
     category: 'AI/ML',
     completionDate: 'March 2026',
     teamSize: 1,
@@ -159,19 +161,18 @@ const allProjects: Project[] = [
     slug: 'hugo',
     title: 'HUGO',
     description:
-      'Voice-first agent platform written in Go for Reachy Mini robot. Concurrent voice pipeline where the agent talks to you while it works, not after. Local VAD, STT, and TTS with barge-in support.',
+      'A voice assistant for my Reachy Mini robot, with speech recognition, language models, tool calls, and speech synthesis running locally on a DGX Spark.',
     longDescription: getProjectMarkdown('hugo'),
     previewImageUrl: undefined,
     tags: [
-      'Go',
-      'tRPC-agent-go',
-      'Claude Sonnet 4',
-      'Silero VAD',
-      'Moonshine STT',
-      'Kokoro TTS',
-      'WebSocket',
+      'Python',
+      'DGX Spark',
       'Reachy Mini',
-      'ONNX Runtime',
+      'vLLM',
+      'Nemotron',
+      'Parakeet',
+      'Qwen3-TTS',
+      'Silero VAD',
     ],
     repoUrl: 'https://github.com/EduardKakosyan/hugo',
     featured: true,
@@ -180,11 +181,10 @@ const allProjects: Project[] = [
     teamSize: 1,
     duration: 'Ongoing',
     highlights: [
-      'Streaming ReAct agent with concurrent voice pipeline in Go',
-      'All-local voice processing: Silero VAD, Moonshine STT, Kokoro TTS',
-      'Overlapped execution — agent thinks while TTS synthesizes',
-      'WebSocket server with structured message protocol',
-      'Barge-in support via context cancellation propagation',
+      'Local speech recognition, reasoning, tools and synthesis',
+      'Streaming voice loop with follow-up conversation',
+      'Wake-word and voice-activity detection',
+      'Integration with a Reachy Mini robot body',
     ],
   },
   {

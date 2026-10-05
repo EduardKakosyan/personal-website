@@ -1,3 +1,5 @@
+import { portfolioWorks } from '@/content/portfolio'
+
 export interface FunctionCallResult {
   function: string
   args: Record<string, string>
@@ -10,17 +12,9 @@ const PAGE_MAP: Record<string, string> = {
   contact: '/contact',
 }
 
-const PROJECT_MAP: Record<string, string> = {
-  healthbyte: '/projects/healthbyte',
-  cargrep: '/projects/cargrep',
-  'second-brain': '/projects/second-brain',
-  'network-sim': '/projects/network-sim',
-  hugo: '/projects/hugo',
-  'acdc-dashboard': '/projects/acdc-dashboard',
-  'dev-template': '/projects/dev-template',
-  voxcoach: '/projects/voxcoach',
-  'claude-autonomous': '/projects/claude-autonomous',
-}
+const PROJECT_MAP: Record<string, string> = Object.fromEntries(
+  portfolioWorks.map((work) => [work.slug, `/projects/${work.slug}`]),
+)
 
 const SECTION_MAP: Record<string, string> = {
   hero: '[data-section="hero"]',

@@ -1,26 +1,11 @@
-import { HeroSection } from '@/components/features/hero-section'
-import { AIExpertiseSection } from '@/components/features/ai-expertise-section'
-import { AIAssistantSection } from '@/components/features/ai-assistant-section'
-import { AchievementsSection } from '@/components/features/achievements-section'
-import { BioSection } from '@/components/features/bio-section'
-import { CTASection } from '@/components/features/cta-section'
+import { LabHome } from '@/components/features/lab-home'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Home | Eduard Kakosyan - Lead AI Developer',
+  title: 'Eduard Kakosyan — Local AI & Autonomous Systems',
   description:
-    'Eduard Kakosyan — Lead AI Developer at AI-First Consulting. Building agents, voice pipelines, and full-stack tools in Halifax, NS.',
+    'Eduard Kakosyan is an AI developer in Halifax. Projects include local coding agents, a voice-controlled robot, and business software.',
 }
-
 export default function HomePage() {
-  return (
-    <>
-      <HeroSection />
-      <AIExpertiseSection />
-      <AchievementsSection />
-      <BioSection />
-      <AIAssistantSection />
-      <CTASection />
-    </>
-  )
+  return <LabHome />
 }

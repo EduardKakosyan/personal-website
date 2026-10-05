@@ -1,16 +1,19 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import './lab.css'
+import './agent.css'
+import './workshop.css'
 import { cn } from '@/lib/utils'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/layouts/header'
 import { Footer } from '@/components/layouts/footer'
-import { Chatbot } from '@/components/features/chatbot'
+import { PortfolioGuide } from '@/components/features/portfolio-guide'
+import { GuideProvider } from '@/components/providers/guide-provider'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { SmoothScrollProvider } from '@/components/providers/smooth-scroll-provider'
 import { WebLLMProvider } from '@/components/providers/webllm-provider'
 import { PageTransitionProvider } from '@/components/providers/page-transition-provider'
-import { CustomCursor } from '@/components/ui/custom-cursor'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { WebVitals } from '@/components/features/web-vitals'
@@ -28,7 +31,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://eduardkakosyan.com'),
+  metadataBase: new URL('https://kakosyaneduard.ca'),
   title: {
     default: 'Eduard Kakosyan | AI Developer',
     template: '%s | Eduard Kakosyan',
@@ -52,7 +55,7 @@ export const metadata: Metadata = {
     'Digital Nova Scotia',
     'Shiftkey Labs',
   ],
-  authors: [{ name: 'Eduard Kakosyan', url: 'https://eduardkakosyan.com' }],
+  authors: [{ name: 'Eduard Kakosyan', url: 'https://kakosyaneduard.ca' }],
   creator: 'Eduard Kakosyan',
   publisher: 'Eduard Kakosyan',
   robots: {
@@ -78,7 +81,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://eduardkakosyan.com',
+    url: 'https://kakosyaneduard.ca',
     title: 'Eduard Kakosyan | AI Developer',
     description:
       'Lead AI Developer specializing in LLMs, agentic systems, and AI education. Winner of Atlantic AI Summit 2025.',
@@ -102,7 +105,7 @@ export const metadata: Metadata = {
     google: process.env.GOOGLE_SITE_VERIFICATION,
   },
   alternates: {
-    canonical: 'https://eduardkakosyan.com',
+    canonical: 'https://kakosyaneduard.ca',
   },
   category: 'technology',
 }
@@ -130,9 +133,9 @@ export default function RootLayout({
               jobTitle: 'Lead AI Developer',
               description:
                 'Lead AI Developer specializing in LLMs, agentic systems, and AI education',
-              url: 'https://eduardkakosyan.com',
+              url: 'https://kakosyaneduard.ca',
               sameAs: [
-                'https://linkedin.com/in/eduardkakosyan',
+                'https://www.linkedin.com/in/eduard-kakosyan',
                 'https://github.com/eduardkakosyan',
               ],
               worksFor: {
@@ -182,21 +185,22 @@ export default function RootLayout({
             </a>
 
             <WebLLMProvider>
-              <SmoothScrollProvider>
-                <div className="relative flex min-h-dvh flex-col bg-background">
-                  <Header />
-                  <main
-                    id="main-content"
-                    className="flex-1 flex flex-col items-center w-full"
-                    role="main"
-                  >
-                    <PageTransitionProvider>{children}</PageTransitionProvider>
-                  </main>
-                  <Footer />
-                  <Chatbot />
-                </div>
-                <CustomCursor />
-              </SmoothScrollProvider>
+              <GuideProvider>
+                <SmoothScrollProvider>
+                  <div className="relative flex min-h-dvh flex-col bg-background">
+                    <Header />
+                    <main
+                      id="main-content"
+                      className="flex-1 flex flex-col items-center w-full"
+                      role="main"
+                    >
+                      <PageTransitionProvider>{children}</PageTransitionProvider>
+                    </main>
+                    <Footer />
+                    <PortfolioGuide />
+                  </div>
+                </SmoothScrollProvider>
+              </GuideProvider>
             </WebLLMProvider>
           </ThemeProvider>
         </ErrorBoundary>

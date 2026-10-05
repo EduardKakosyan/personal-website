@@ -10,6 +10,7 @@ import { ProjectAnalytics } from '@/components/features/project-analytics'
 import { ProjectButtons } from '@/components/features/project-buttons'
 import { ProjectDetailHeader } from '@/components/features/project-detail-header'
 import { ProjectNavigation } from '@/components/features/project-navigation'
+import { DgxCaseStudy } from '@/components/features/dgx-case-study'
 
 export async function generateStaticParams() {
   const allProjects = await getAllProjects()
@@ -64,13 +65,24 @@ export default async function ProjectDetailPage({ params }: Props) {
     notFound()
   }
 
-  const contentHtml = await markdownToHtml(project.longDescription)
+  if (project.slug === 'dgx-autonomy') {
+    return (
+      <>
+        <ProjectAnalytics projectSlug={project.slug} />
+        <DgxCaseStudy />
+      </>
+    )
+  }
+
+  // The page header owns the title; project Markdown starts with the introduction.
+  const description = project.longDescription.replace(/^\s*# [^\n]*(?:\r?\n|$)/, '')
+  const contentHtml = await markdownToHtml(description)
   const { prev, next } = getAdjacentProjects(project.slug)
 
   return (
     <ErrorBoundary>
       <ProjectAnalytics projectSlug={project.slug} />
-      <article className="container py-12 md:py-16">
+      <article className="project-detail lab-section">
         <div className="mb-8">
           <Link
             href="/projects"
@@ -84,24 +96,7 @@ export default async function ProjectDetailPage({ params }: Props) {
 
         <ProjectDetailHeader project={project} />
 
-        <MarkdownContent
-          content={contentHtml}
-          className="prose prose-zinc max-w-3xl mx-auto
-            prose-headings:my-4 prose-headings:font-bold prose-headings:tracking-tighter
-            prose-h1:text-4xl prose-h1:mb-6 prose-h1:mt-0
-            prose-h2:text-3xl prose-h2:border-b prose-h2:pb-2
-            prose-h3:text-2xl
-            prose-p:my-4
-            prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-primary/90 prose-em:italic
-            prose-pre:my-6 prose-pre:overflow-auto prose-pre:rounded-lg
-            prose-code:bg-muted prose-code:p-1 prose-code:rounded-md prose-code:text-sm
-            prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-4
-            prose-ul:my-4 prose-ul:list-disc prose-ul:pl-6
-            prose-ol:my-4 prose-ol:list-decimal prose-ol:pl-6
-            prose-li:my-2 prose-li:marker:text-primary
-            dark:prose-invert lg:prose-lg"
-        />
+        <MarkdownContent content={contentHtml} className="project-prose" />
 
         <ProjectButtons
           projectSlug={project.slug}

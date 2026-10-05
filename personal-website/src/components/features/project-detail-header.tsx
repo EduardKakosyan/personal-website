@@ -16,7 +16,7 @@ export function ProjectDetailHeader({ project }: ProjectDetailHeaderProps) {
   const [imageError, setImageError] = useState(false)
 
   return (
-    <header className="mb-8 md:mb-12">
+    <header className="project-detail-header">
       {/* Title */}
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
@@ -47,7 +47,7 @@ export function ProjectDetailHeader({ project }: ProjectDetailHeaderProps) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="flex flex-wrap items-center gap-4 mb-4 px-4 py-3 rounded-lg glass-card"
+        className="project-detail-meta flex flex-wrap items-center gap-4"
       >
         {project.category && (
           <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -126,10 +126,10 @@ export function ProjectDetailHeader({ project }: ProjectDetailHeaderProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid gap-3 sm:grid-cols-2 mb-8"
+          className="project-detail-highlights grid gap-3 sm:grid-cols-2"
         >
           {project.highlights.map((highlight) => (
-            <div key={highlight} className="flex items-start gap-3 px-4 py-3 rounded-lg glass-card">
+            <div key={highlight} className="flex items-start gap-3">
               <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-[var(--accent-neon)]" />
               <span className="text-sm">{highlight}</span>
             </div>

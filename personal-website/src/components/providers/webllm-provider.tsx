@@ -9,23 +9,27 @@ import {
   useEffect,
   type ReactNode,
 } from 'react'
-import { ChatCompletionMessageParam, CreateMLCEngine, MLCEngine } from '@mlc-ai/web-llm'
-import { MODEL_TIERS } from '@/lib/hooks/use-webllm'
-
-interface ProgressSnapshot {
-  progress: number
-  timestamp: number
-}
+import type { MLCEngineInterface, ChatCompletionMessageParam } from '@mlc-ai/web-llm'
+import { MODEL_TIERS } from '@/lib/local-models'
+import { checkLocalAISupport, type LocalAISupport } from '@/lib/webgpu-support'
 
 interface WebLLMContextValue {
-  engine: MLCEngine | null
+  engine: MLCEngineInterface | null
   isInitializing: boolean
+  isGenerating: boolean
   isSupported: boolean
+  support: LocalAISupport
   isMobile: boolean
   currentModel: string
   downloadProgress: number
   estimatedTimeRemaining: string | null
   error: string | null
+  initialize: () => Promise<void>
+  cancel: () => void
+  generateStructuredResponse: (
+    messages: ChatCompletionMessageParam[],
+    schema: string,
+  ) => Promise<string>
   generateStreamingResponse: (
     messages: Array<{ role: string; content: string }>,
     onChunk: (chunk: string) => void,
@@ -34,192 +38,200 @@ interface WebLLMContextValue {
 }
 
 const WebLLMContext = createContext<WebLLMContextValue | null>(null)
-
-export function useWebLLMContext(): WebLLMContextValue {
-  const ctx = useContext(WebLLMContext)
-  if (!ctx) {
-    throw new Error('useWebLLMContext must be used within a WebLLMProvider')
-  }
-  return ctx
-}
-
-function getIsMobile(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
-
-const MOBILE_MODEL = MODEL_TIERS[0].modelId // Fast (~200MB) - best for mobile
-const DESKTOP_MODEL = MODEL_TIERS[1].modelId // Balanced (~500MB)
-
-function formatTimeRemaining(seconds: number): string {
-  if (seconds < 5) return 'almost done'
-  if (seconds < 60) return `~${Math.round(seconds)}s remaining`
-  const minutes = Math.floor(seconds / 60)
-  const secs = Math.round(seconds % 60)
-  if (secs === 0) return `~${minutes}m remaining`
-  return `~${minutes}m ${secs}s remaining`
+export function useWebLLMContext() {
+  const context = useContext(WebLLMContext)
+  if (!context) throw new Error('WebLLMProvider is required')
+  return context
 }
 
 export function WebLLMProvider({ children }: { children: ReactNode }) {
-  const [engine, setEngine] = useState<MLCEngine | null>(null)
+  const [engine, setEngine] = useState<MLCEngineInterface | null>(null)
   const [isInitializing, setIsInitializing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isMobile] = useState(getIsMobile)
-  const [currentModel, setCurrentModel] = useState(() =>
-    getIsMobile() ? MOBILE_MODEL : DESKTOP_MODEL,
-  )
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [support, setSupport] = useState<LocalAISupport>({ status: 'checking' })
+  const isSupported = support.status === 'supported'
+  const [isMobile, setIsMobile] = useState(false)
+  const [currentModel, setCurrentModel] = useState(MODEL_TIERS[0].modelId)
   const [downloadProgress, setDownloadProgress] = useState(0)
-  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const engineRef = useRef<MLCEngineInterface | null>(null)
+  const workerRef = useRef<Worker | null>(null)
+  const initRef = useRef<Promise<void> | null>(null)
+  const generationRef = useRef(false)
+  const epoch = useRef(0)
 
-  const [isSupported, setIsSupported] = useState(false)
-
-  const initRef = useRef(false)
-  const progressSnapshots = useRef<ProgressSnapshot[]>([])
-  const smoothedSpeed = useRef<number | null>(null)
-
-  // Defer WebGPU check to after hydration to avoid SSR mismatch
   useEffect(() => {
-    setIsSupported(typeof navigator !== 'undefined' && 'gpu' in navigator)
-  }, [])
-
-  const updateTimeEstimate = useCallback((progress: number) => {
-    const now = Date.now()
-    progressSnapshots.current.push({ progress, timestamp: now })
-
-    // Keep last 5 samples for averaging
-    if (progressSnapshots.current.length > 5) {
-      progressSnapshots.current = progressSnapshots.current.slice(-5)
-    }
-
-    const snaps = progressSnapshots.current
-    if (snaps.length < 2) return
-
-    // Calculate speeds from last 3 intervals
-    const recentSpeeds: number[] = []
-    const startIdx = Math.max(0, snaps.length - 4)
-    for (let i = startIdx + 1; i < snaps.length; i++) {
-      const dp = snaps[i].progress - snaps[i - 1].progress
-      const dt = (snaps[i].timestamp - snaps[i - 1].timestamp) / 1000
-      if (dt > 0 && dp > 0) {
-        recentSpeeds.push(dp / dt)
-      }
-    }
-
-    if (recentSpeeds.length === 0) return
-
-    const avgSpeed = recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length
-
-    // Exponential moving average (alpha = 0.3)
-    if (smoothedSpeed.current === null) {
-      smoothedSpeed.current = avgSpeed
-    } else {
-      smoothedSpeed.current = 0.3 * avgSpeed + 0.7 * smoothedSpeed.current
-    }
-
-    const remaining = 100 - progress
-    if (smoothedSpeed.current > 0) {
-      const seconds = remaining / smoothedSpeed.current
-      setEstimatedTimeRemaining(formatTimeRemaining(seconds))
+    let active = true
+    setIsMobile(window.matchMedia('(max-width: 767px)').matches)
+    void checkLocalAISupport(window.isSecureContext, navigator.gpu).then((result) => {
+      if (active) setSupport(result)
+    })
+    return () => {
+      active = false
+      epoch.current += 1
+      workerRef.current?.terminate()
+      workerRef.current = null
+      engineRef.current = null
     }
   }, [])
 
-  const initializeEngine = useCallback(
+  const load = useCallback(
     async (modelId: string) => {
-      if (!isSupported) {
-        setError(
-          isMobile
-            ? 'WebGPU is not supported on this mobile browser. Try Chrome 121+ on Android or Safari on iOS 26+.'
-            : 'WebGPU is not supported in this browser. Please use a recent version of Chrome, Edge, Firefox, or Safari.',
+      if (initRef.current) return initRef.current
+      if (generationRef.current) throw new Error('Stop the current reply before changing models.')
+      if (!MODEL_TIERS.some((model) => model.modelId === modelId))
+        throw new Error('Unknown local model.')
+      if (!isSupported)
+        throw new Error(
+          support.status === 'unsupported'
+            ? support.reason
+            : 'Checking local AI compatibility. Try again in a moment.',
         )
-        return
-      }
-
+      const requestEpoch = ++epoch.current
       setIsInitializing(true)
       setError(null)
       setDownloadProgress(0)
-      setEstimatedTimeRemaining(null)
-      progressSnapshots.current = []
-      smoothedSpeed.current = null
+      setEngine(null)
+      engineRef.current = null
+      workerRef.current?.terminate()
 
-      try {
-        const mlcEngine = await CreateMLCEngine(modelId, {
-          initProgressCallback: (progress) => {
-            if (progress.text) {
-              const match = progress.text.match(/(\d+(?:\.\d+)?)%/)
-              if (match) {
-                const pct = parseFloat(match[1])
-                setDownloadProgress(pct)
-                updateTimeEstimate(pct)
-              }
-            }
-          },
-        })
-
-        setEngine(mlcEngine)
-        setCurrentModel(modelId)
-        setDownloadProgress(100)
-        setEstimatedTimeRemaining(null)
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Failed to initialize WebLLM'
-        setError(errorMsg)
-      } finally {
-        setIsInitializing(false)
-      }
+      const task = (async () => {
+        let timer: ReturnType<typeof setTimeout> | undefined
+        try {
+          const { CreateWebWorkerMLCEngine } = await import('@mlc-ai/web-llm')
+          const worker = new Worker(new URL('./webllm.worker.ts', import.meta.url), {
+            type: 'module',
+          })
+          workerRef.current = worker
+          const failure = new Promise<never>((_, reject) => {
+            worker.onerror = () =>
+              reject(
+                new Error('The local AI worker stopped. Please retry or choose a smaller model.'),
+              )
+            timer = setTimeout(
+              () => reject(new Error('Model loading timed out. Check your connection and retry.')),
+              300_000,
+            )
+          })
+          const loaded = await Promise.race([
+            CreateWebWorkerMLCEngine(
+              worker,
+              modelId,
+              {
+                initProgressCallback: ({ progress }) => {
+                  if (epoch.current === requestEpoch)
+                    setDownloadProgress(Math.round(progress * 100))
+                },
+              },
+              { context_window_size: 4096 },
+            ),
+            failure,
+          ])
+          if (epoch.current !== requestEpoch) {
+            worker.terminate()
+            return
+          }
+          engineRef.current = loaded
+          setEngine(loaded)
+          setCurrentModel(modelId)
+          setDownloadProgress(100)
+        } catch (cause) {
+          console.warn('Local model initialization failed:', cause)
+          if (epoch.current === requestEpoch) {
+            workerRef.current?.terminate()
+            workerRef.current = null
+            const message =
+              cause instanceof Error
+                ? cause.message
+                : typeof cause === 'string'
+                  ? cause
+                  : 'Local AI could not load. Try a browser with full WebGPU support.'
+            setError(message)
+            throw new Error(message)
+          }
+          throw cause
+        } finally {
+          if (timer) clearTimeout(timer)
+          if (epoch.current === requestEpoch) setIsInitializing(false)
+          initRef.current = null
+        }
+      })()
+      initRef.current = task
+      return task
     },
-    [isSupported, isMobile, updateTimeEstimate],
+    [isSupported, support],
   )
 
-  // Auto-initialize on mount with the appropriate model for device
-  useEffect(() => {
-    if (initRef.current || !isSupported) return
-    initRef.current = true
-    initializeEngine(currentModel)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run once on mount
-  }, [isSupported, initializeEngine])
+  const initialize = useCallback(async () => {
+    if (engineRef.current) return
+    return load(currentModel)
+  }, [load, currentModel])
+  const cancel = useCallback(() => {
+    engineRef.current?.interruptGenerate()
+  }, [])
 
-  const switchModel = useCallback(
-    async (modelId: string) => {
-      if (!isSupported || isInitializing) return
-
-      // Dispose old engine
-      if (engine) {
-        engine.unload()
-        setEngine(null)
+  const run = useCallback(
+    async <T,>(generate: (local: MLCEngineInterface) => Promise<T>): Promise<T> => {
+      const local = engineRef.current
+      if (!local) throw new Error('Enable local AI first.')
+      if (generationRef.current) throw new Error('A reply is already in progress.')
+      generationRef.current = true
+      setIsGenerating(true)
+      let timer: ReturnType<typeof setTimeout> | undefined
+      try {
+        return await Promise.race([
+          generate(local),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+              local.interruptGenerate()
+              workerRef.current?.terminate()
+              engineRef.current = null
+              setEngine(null)
+              setError('The reply timed out. Reload local AI to try again.')
+              reject(new Error('The reply timed out. Please retry.'))
+            }, 90_000)
+          }),
+        ])
+      } finally {
+        if (timer) clearTimeout(timer)
+        generationRef.current = false
+        setIsGenerating(false)
       }
-
-      await initializeEngine(modelId)
     },
-    [engine, isSupported, isInitializing, initializeEngine],
+    [],
+  )
+
+  const generateStructuredResponse = useCallback(
+    (messages: ChatCompletionMessageParam[], schema: string) =>
+      run(async (local) => {
+        const response = await local.chat.completions.create({
+          messages,
+          temperature: 0.2,
+          max_tokens: 320,
+          response_format: { type: 'json_object', schema },
+        })
+        return response.choices[0]?.message.content ?? ''
+      }),
+    [run],
   )
 
   const generateStreamingResponse = useCallback(
-    async (
-      messages: Array<{ role: string; content: string }>,
-      onChunk: (chunk: string) => void,
-    ): Promise<string> => {
-      if (!engine) {
-        throw new Error('Engine not initialized')
-      }
-
-      const stream = await engine.chatCompletion({
-        messages: messages as ChatCompletionMessageParam[],
-        temperature: 0.7,
-        max_tokens: 256,
-        stream: true,
-      })
-
-      let fullResponse = ''
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content || ''
-        if (delta) {
-          fullResponse += delta
-          onChunk(fullResponse)
+    (messages: Array<{ role: string; content: string }>, onChunk: (chunk: string) => void) =>
+      run(async (local) => {
+        const stream = await local.chat.completions.create({
+          messages: messages as ChatCompletionMessageParam[],
+          temperature: 0.3,
+          max_tokens: 256,
+          stream: true,
+        })
+        let reply = ''
+        for await (const chunk of stream) {
+          reply += chunk.choices[0]?.delta?.content ?? ''
+          onChunk(reply)
         }
-      }
-
-      return fullResponse || "I'm sorry, I couldn't generate a response."
-    },
-    [engine],
+        return reply
+      }),
+    [run],
   )
 
   return (
@@ -227,14 +239,19 @@ export function WebLLMProvider({ children }: { children: ReactNode }) {
       value={{
         engine,
         isInitializing,
+        isGenerating,
         isSupported,
+        support,
         isMobile,
         currentModel,
         downloadProgress,
-        estimatedTimeRemaining,
+        estimatedTimeRemaining: null,
         error,
+        initialize,
+        cancel,
+        generateStructuredResponse,
         generateStreamingResponse,
-        switchModel,
+        switchModel: load,
       }}
     >
       {children}

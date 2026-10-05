@@ -18,7 +18,7 @@ import { useReducedMotion } from 'motion/react'
 
 const stages = [
   {
-    title: 'Freeze the agreement',
+    title: 'Set the brief and tests',
     icon: LockKeyhole,
     label: '01 / BEFORE THE BUILD',
     text: 'A product brief and acceptance tests define “done.” The builder can read them, but cannot change them.',
@@ -56,7 +56,7 @@ const stages = [
     title: 'Check the claim',
     icon: ShieldCheck,
     label: '04 / INDEPENDENT EVALUATION',
-    text: '“Finish” is a claim. The controller pins the app snapshot and runs the frozen checks in separate evaluator containers.',
+    text: 'When the agent says it has finished, the controller saves a version of the app and runs the fixed tests in separate containers.',
     lines: [
       'snapshot → pinned by controller',
       'tests → independent containers',
@@ -69,7 +69,7 @@ const stages = [
     title: 'Review the product',
     icon: MessageSquare,
     label: '05 / HUMAN JUDGMENT',
-    text: 'Passing tests is not the end of product quality. Two feedback rounds refined real-dice input and keypad readability.',
+    text: 'Reviewing the app led to two more rounds of changes: making real-dice input easier and keeping the keypad readable.',
     lines: [
       'review 1 → make real-dice input easier',
       'review 2 → keep every pip visible',
@@ -190,7 +190,7 @@ export function RunReplay() {
       </div>
       <footer className="replay-controls">
         <p>
-          A narrated reconstruction from public build records.
+          A walkthrough of the recorded build.
           <br />
           No build is running on your device.
         </p>

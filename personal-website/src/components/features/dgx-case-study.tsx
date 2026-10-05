@@ -31,7 +31,7 @@ export function DgxCaseStudy() {
         </p>
         <div className="case-meta">
           <span>
-            MY ROLE <b>Environment & orchestration</b>
+            MY ROLE <b>Build controller & tests</b>
           </span>
           <span>
             HARDWARE <b>One DGX Spark</b>
@@ -40,7 +40,7 @@ export function DgxCaseStudy() {
             BUILDER <b>Qwen3.8-Flash-Next</b>
           </span>
           <a className="text-link" href={work.repo} target="_blank" rel="noopener noreferrer">
-            Read the repository
+            Source code
             <ArrowUpRight size={15} />
           </a>
         </div>
@@ -67,22 +67,22 @@ export function DgxCaseStudy() {
             {
               icon: LockKeyhole,
               title: 'Protect the acceptance tests',
-              text: 'Dry-run the acceptance checks, freeze the brief and tests, and verify their digest before evaluation. The builder cannot rewrite its own grading criteria.',
+              text: 'The controller checks that the tests run, then locks the brief and tests before the build starts. It checks them again before evaluation so the agent can’t change how its work is graded.',
             },
             {
               icon: ShieldCheck,
               title: 'Test a fixed code snapshot',
-              text: 'Pin the project in the controller’s git store, serve that exact snapshot, and run each check in a disposable evaluator. Reject any change during the evaluation.',
+              text: 'The controller saves a specific version of the code and tests that version in a separate container. If the code changes during evaluation, the result is rejected.',
             },
             {
               icon: GitBranch,
               title: 'Save progress between sessions',
-              text: 'Validate handoffs and label builder statements as claims. Start fresh conversations with the brief, evidence, previous decisions and operator feedback.',
+              text: 'A new conversation starts with the brief, previous decisions, test results, and review feedback. The controller checks the handoff before letting the next session pick up the work.',
             },
             {
               icon: Timer,
               title: 'Limit access and run time',
-              text: 'An unprivileged builder has no Docker socket or access to the host and LAN. Deadlines, response limits, watchdogs and recovery constrain the work.',
+              text: 'The builder runs without elevated privileges or access to the host, local network, or Docker controls. Time limits and recovery checks keep interrupted runs from hanging indefinitely.',
             },
           ].map((item) => (
             <div key={item.title}>
@@ -98,7 +98,7 @@ export function DgxCaseStudy() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Inspect the documented architecture
+          More on the setup
           <ArrowUpRight size={14} />
         </a>
       </section>
@@ -106,13 +106,14 @@ export function DgxCaseStudy() {
         <span className="eyebrow">03 / THE INFERENCE TRADEOFF</span>
         <h2>Choosing a model and inference server</h2>
         <p>
-          The documented app builds use Qwen3.8-Flash-Next through SGLang with NVFP4 weights and
-          multi-token prediction. An earlier llama.cpp backend slowed as context grew; sustained
-          long-context performance motivated the switch.
+          For these app builds, I used Qwen3.8-Flash-Next through SGLang with NVFP4 weights and
+          multi-token prediction. I switched from llama.cpp because it slowed down as the
+          conversations grew longer.
         </p>
         <p>
-          The system qualifies a model on the actual machine with tool calls, long-context recall, a
-          real build and memory measurements. A smaller Qwen3.6-35B-A3B fallback is also supported.
+          Before using a model, the setup checks tool calls, recall in long conversations, memory
+          use, and a real build on the machine. It also supports a smaller Qwen3.6-35B-A3B model as
+          a fallback.
         </p>
         <a
           href={`${work.repo}/blob/main/config/models.yaml`}
@@ -120,12 +121,12 @@ export function DgxCaseStudy() {
           rel="noopener noreferrer"
           className="text-link"
         >
-          Model configuration & qualification records
+          Model settings and test records
           <ArrowUpRight size={14} />
         </a>
       </section>
       <section id="dgx-results" className="case-block" aria-labelledby="results-heading">
-        <span className="eyebrow">04 / THE EVIDENCE</span>
+        <span className="eyebrow">04 / WHAT IT BUILT</span>
         <h2 id="results-heading">Apps built with dgx-autonomy</h2>
         <div className="case-results">
           <div>
@@ -188,9 +189,9 @@ export function DgxCaseStudy() {
           </div>
         </div>
         <p className="case-caveat">
-          Results are reported in the public repositories. The 40-hour limit is a maximum run
-          budget. Briefs and product reviews came from the operator and a supervising Claude
-          session. Later Yahtzee game-management controls were added separately through CodeLayer.
+          These results come from the public build records. I supplied briefs and reviewed the apps
+          with help from a supervising Claude session. Later Yahtzee game-management controls were
+          added separately through CodeLayer.
         </p>
       </section>
       <section className="case-takeaway">

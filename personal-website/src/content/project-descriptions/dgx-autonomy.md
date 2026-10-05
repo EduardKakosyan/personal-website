@@ -1,14 +1,16 @@
 # dgx-autonomy
 
-A self-governing build environment on one DGX Spark. An open-weights model works against a frozen product brief and acceptance checks it cannot change.
+I built dgx-autonomy to run a coding agent on my DGX Spark and let it keep working across conversations. It saves progress, recovers from interrupted runs, and submits code to tests the agent can’t change.
 
-## Engineering the environment
+## What I built around the agent
 
-OpenHands supplies the builder loop. I built the controller, isolated execution and evaluation, snapshot verification, validated handoffs, deadlines and recovery around it.
+OpenHands runs the coding loop. My part is the controller around it: managing handoffs, isolating the build and test environments, checking a fixed version of the code, and deciding when to pause for review.
 
-## Inspect the work
+Shoreline and the original Camp Yahtzee release were built with this setup. Briefs and product reviews came from me and a supervising Claude session; the local model wrote the app code.
 
-[Repository and architecture](https://github.com/EduardKakosyan/dgx-autonomy)
+## Build notes
+
+[Source code and architecture](https://github.com/EduardKakosyan/dgx-autonomy)
 
 [Shoreline build records](https://github.com/EduardKakosyan/shoreline/tree/main/loop/runs)
 

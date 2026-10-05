@@ -1,64 +1,23 @@
 # Claude Autonomous
 
-**Reusable Harness for Autonomous Development**
+This was my earlier setup for letting a coding agent work through a project over several nights. It runs Claude Code in a Docker container, with a schedule, a spending limit, and saved task state between runs.
 
----
+I used it for VoxCoach before moving on to the local-model setup in [dgx-autonomy](/projects/dgx-autonomy).
 
-## Project Overview
+## A nightly run
 
-Claude Autonomous is an open-source infrastructure harness for running Claude Code as a long-running autonomous agent inside an isolated Docker container on macOS. It schedules nightly development cycles via launchd, enforces budget and quality gates, and maintains persistent state between runs.
+A macOS launchd job starts the container. Claude Code reads the project instructions and task backlog, picks up a task, and runs the project’s checks before committing. It then saves its progress and notes for the next run.
 
-**The Idea:** Coding assistants are powerful interactively — but can they sustain long-term software projects autonomously with proper safety guardrails, budget control, and quality enforcement?
+The runs have limits on spending, elapsed time, and conversation turns. A firewall restricts network access, and a command allowlist limits the tools the agent can use.
 
-**What We Built:** A containerized environment where Claude Code runs on a schedule: picking tasks from a backlog, implementing with tests, committing only when quality gates pass, and documenting decisions for the next run.
+## Keeping track of the work
 
-## Technical Architecture
+The task file records what is pending and what is finished. Notes carry decisions between conversations, while logs and Git history record the changes and cost of each run.
 
-### Nightly Execution Cycle
+The VoxCoach build spanned more than twelve nightly runs, covering 47 tasks across ten phases.
 
-1. **launchd triggers** `claude-nightly.sh` at 2 AM daily
-2. Script refreshes OAuth credentials, injects operator instructions
-3. Docker container starts with workspace mounted
-4. Claude Code reads `CLAUDE.md` for context and `tasks.json` for backlog
-5. Agent picks next pending task, implements with tests
-6. Commits only if `make check` passes (fmt + vet + lint + test)
-7. Updates task status, logs output in structured JSON
-8. Budget enforcement: $100/run cap, 3-hour timeout, 500 max turns
+## What I used
 
-### Security & Isolation
+Docker, Bash, macOS launchd, and Claude Code. The project checks included Go formatting, linting, and tests, with Git hooks for secret scanning and commit messages.
 
-- **Container Firewall** — Blocks access to private networks, allows only HTTP/HTTPS/SSH
-- **Permission Allowlist** — Only approved bash commands (gofmt, go build, make check)
-- **No Secrets in Container** — Credentials injected at runtime, never persisted
-- **Network Isolation** — `init-firewall.sh` configures iptables rules
-
-### Persistent State
-
-- **Task Backlog** — `tasks.json` with dependencies and status tracking across runs
-- **Agent Learnings** — `AGENTS.md` documents patterns discovered across runs
-- **Cost Tracking** — JSONL logs for spend monitoring
-- **Git History** — All work auditable through conventional commits
-
-## Technology Stack
-
-- **Container**: Docker (Debian-based, Go 1.24, Node.js, Claude Code CLI)
-- **Scheduling**: macOS launchd (plist daemon)
-- **Orchestration**: Bash scripts with budget enforcement
-- **Security**: iptables firewall rules, permission allowlists
-- **Quality Gates**: golangci-lint v2, go test -race, gofmt, go vet
-- **Git Hooks**: Pre-commit (gofmt, gitleaks), commit-msg (conventional), pre-push (make check)
-
-## Key Features
-
-- **One-Command Setup** — `./setup.sh` builds Docker image, installs launchd job, configures hooks
-- **Budget Controls** — $100/day spend limit with automatic shutdown
-- **Quality Gates** — Code only committed when all checks pass
-- **Auditable** — Every decision traceable through git history and structured logs
-- **Reusable** — Generic harness; swap the workspace for any project
-- **Proven** — Successfully built VoxCoach across 12+ nightly runs (47 tasks, 10 phases)
-
----
-
-**Links:**
-
-- [GitHub Repository](https://github.com/EduardKakosyan/claude-autonomous)
+[Source code and setup](https://github.com/EduardKakosyan/claude-autonomous)

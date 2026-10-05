@@ -64,7 +64,7 @@ const allProjects: Project[] = [
     slug: 'claude-autonomous',
     title: 'Claude Autonomous',
     description:
-      'Open-source harness for running Claude Code as a long-running autonomous agent in an isolated Docker container. Nightly launchd scheduling, $100/day budget controls, container firewall, and persistent task state across runs.',
+      'My earlier setup for running Claude Code overnight, with a Docker container, spending limits, and saved progress between runs.',
     longDescription: getProjectMarkdown('claude-autonomous'),
     previewImageUrl: undefined,
     tags: [
@@ -88,14 +88,14 @@ const allProjects: Project[] = [
       'Budget enforcement: $100/day cap, 3-hour timeout, 500 max turns',
       'Container firewall blocking private network access',
       'Persistent task backlog with dependency tracking across runs',
-      'Successfully built VoxCoach end-to-end (47 tasks, 10 phases)',
+      'Used for the VoxCoach build across 47 tasks',
     ],
   },
   {
     slug: 'voxcoach',
     title: 'VoxCoach',
     description:
-      'Voice sales training platform that simulates realistic discovery calls with LLM-driven buyer personas. Runs 100% locally on Apple Silicon with sub-800ms voice latency, 6-phase call flow, and post-call scoring.',
+      'A tool for practising sales calls with a simulated buyer and reviewing the conversation afterwards. The voice and language models run locally on Apple Silicon.',
     longDescription: getProjectMarkdown('voxcoach'),
     previewImageUrl: '/images/voxcoach.png',
     tags: [
@@ -117,7 +117,7 @@ const allProjects: Project[] = [
     teamSize: 1,
     duration: '2 weeks',
     highlights: [
-      '100% offline voice pipeline on Apple Silicon (<800ms latency)',
+      'Local speech recognition and synthesis on Apple Silicon',
       'Overlapped LLM/TTS streaming with barge-in support',
       '6-phase discovery call simulation with 5 buyer archetypes',
       'Post-call scoring on 7 consultative selling criteria',
@@ -128,7 +128,7 @@ const allProjects: Project[] = [
     slug: 'dev-template',
     title: 'Dev Template',
     description:
-      'Open source tooling-only starter template for building with Claude Code. Pre-configured with 6 specialized sub-agents, 30+ slash commands, three-layer git hook protection, CI/CD, and a persistent knowledge base.',
+      'The agent commands, checks, and Git hooks I put together for starting projects at AI-First Consulting.',
     longDescription: getProjectMarkdown('dev-template'),
     previewImageUrl: undefined,
     tags: [
@@ -152,7 +152,7 @@ const allProjects: Project[] = [
     highlights: [
       '6 specialized sub-agents for codebase research',
       '30+ slash commands for plan-driven development',
-      'Three-layer git hook protection (secrets, lint, local CI)',
+      'Git hooks for secret scanning, linting, and local CI',
       'Persistent knowledge base across sessions',
       'Zero application code — pure development infrastructure',
     ],
@@ -191,7 +191,7 @@ const allProjects: Project[] = [
     slug: 'healthbyte',
     title: 'HealthByte',
     description:
-      'Simulates how different demographics react to healthcare content before publication. Uses a two-agent reinforcement learning loop to iteratively improve messaging for diverse audiences.',
+      'A hackathon project we built to explore how simulated readers respond to healthcare articles, with a second agent revising the text from their feedback.',
     longDescription: getProjectMarkdown('healthbyte'),
     previewImageUrl: undefined,
     tags: [
@@ -211,17 +211,17 @@ const allProjects: Project[] = [
     teamSize: 4,
     duration: '48 hours',
     highlights: [
-      'Won 1st place among 20 university teams',
+      'Our team took first place at the Atlantic AI Summit 2025',
       'Two-agent reinforcement learning loop (persona + editor)',
       'Persona modeling across diverse demographics',
-      'Iterative content optimization with convergence tracking',
+      'Article revisions and simulated reactions shown side by side',
     ],
   },
   {
     slug: 'second-brain',
     title: 'Second Brain',
     description:
-      'Time management and study assistant for university students. Connects to Google Drive and calendar to automatically process academic documents and schedule study sessions.',
+      'A study assistant we built at a hackathon. It searches course files in Google Drive and helps put study sessions and exam dates on a calendar.',
     longDescription: getProjectMarkdown('second-brain'),
     previewImageUrl: undefined,
     tags: [
@@ -252,7 +252,7 @@ const allProjects: Project[] = [
     slug: 'cargrep',
     title: 'CarGrep',
     description:
-      'Car recommendation startup backed by Shiftkey Labs (Dalhousie University). Describe what you need in plain English, and the platform finds deals across Canadian marketplaces — no vehicle knowledge required.',
+      'A car search app I built around a conversation: describe your budget and what you need, then browse matching listings from Canadian marketplaces.',
     longDescription: getProjectMarkdown('cargrep'),
     previewImageUrl: '/images/cargrep.png',
     tags: [
@@ -284,7 +284,7 @@ const allProjects: Project[] = [
     slug: 'network-sim',
     title: 'Q-Learning Network Simulator',
     description:
-      'Network simulation comparing Q-routing (reinforcement learning) against Dijkstra and OSPF across different topologies and traffic patterns.',
+      'A simulator I worked on with Ethan Rozee and Jack Whitmar to compare learning-based routing with Dijkstra and OSPF.',
     longDescription: getProjectMarkdown('network-sim'),
     previewImageUrl: undefined,
     tags: [

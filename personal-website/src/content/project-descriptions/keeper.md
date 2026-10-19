@@ -2,7 +2,7 @@
 
 ## Problem
 
-A meeting transcript is only useful if you can find the decision later and check what was actually said. I built Keeper to do that without handing the archive to anyone else: a Mac app captures meetings and handles dictation, and a server stores and searches everything.
+Keeper is a private meeting archive for finding decisions and checking them against the transcript. I built a Mac app that captures meetings and handles dictation, and a server that stores and searches the archive.
 
 ## System
 
@@ -14,9 +14,9 @@ When a meeting uploads, its summary goes into a queue. If the machine running th
 
 **One access rule for everything.** Ownership and sharing are checked where the data is stored, so search, exports, web pages and MCP all follow the same rule. A colleague can read a meeting you shared without being able to change it.
 
-**Nothing gets overwritten.** Old summaries stay available after a new one is generated. Speaker names sit on top of the original labels instead of rewriting the transcript. If a speaker is unknown, Keeper leaves them unknown rather than guessing from the attendee list.
+**Summary versions and speaker labels.** Old summaries stay available after a new one is generated. Speaker names sit on top of the original labels instead of rewriting the transcript. If a speaker is unknown, Keeper leaves them unknown rather than guessing from the attendee list.
 
-**Private storage isn't the whole story.** An AI assistant connected over MCP can still send what it retrieves to its own provider. So the credential for that connection should grant only the access the person meant to give.
+**Access through external assistants.** An AI assistant connected over MCP can still send what it retrieves to its own provider. So the credential for that connection should grant only the access the person meant to give.
 
 ## Result
 
@@ -26,6 +26,6 @@ The code stays private until I've scanned its history and reviewed the test data
 
 ## What broke
 
-Search results came back in reverse order. SQLite's BM25 score is a cost, where lower is better, and an early version treated it as relevance, where higher is better. The paging tests still passed because the right rows came back; they were just ranked wrong. Lesson: test what the score means, not just that the pages load.
+Search results came back in reverse order. SQLite's BM25 score is a cost, where lower is better, and an early version treated it as relevance, where higher is better. The paging tests still passed because the right rows came back; they were just ranked wrong. Those tests didn't check the meaning of the score.
 
 Paging also produced duplicates and gaps for a while, because each page ran a slightly different search. Fixing the set of candidates per query made every page a slice of one ranked list.

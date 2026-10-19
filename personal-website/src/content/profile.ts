@@ -192,7 +192,7 @@ export const profile: Profile = profileSchema.parse({
     email: 'kakosyaneduard@gmail.com',
   },
   headline:
-    'I work directly with teams to turn operational problems into working AI systems, from discovery and architecture to integration and rollout.',
+    'I work with clients, lead a team of five developers and write code alongside them. Outside client work, I build meeting tools and experiment with local coding agents.',
   roles: [
     {
       id: 'ai-first',
@@ -203,7 +203,7 @@ export const profile: Profile = profileSchema.parse({
       location: 'Halifax, NS',
       start: '2025-02',
       summary:
-        'I lead a team of five developers and build client AI systems, from discovery and architecture through integration and rollout. I sit on the leadership team and also built and managed a data science and ML curriculum for a provincial workforce program through AI-First.',
+        'I lead a team of five developers and sit on the leadership team. Our work includes document-review agents and chat tools built around client content. We’re also building an assistant for a client’s own GPU. I built and managed a data science and ML curriculum for a client’s workforce program through AI-First.',
     },
     {
       id: 'teaching',

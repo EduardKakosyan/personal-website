@@ -3,6 +3,7 @@ import { storyCopy } from '../../content/story-copy'
 import { profile } from '../../content/profile'
 import {
   allowsGuideNavigation,
+  guideCopyRule,
   guideOutputSchemaForQuery,
   guideSections,
   portfolioContext,
@@ -26,12 +27,12 @@ const audience: Record<Persona, string> = {
   recruiter: 'a recruiter checking his role, scope and dates',
   'hiring-manager':
     'a hiring manager looking for hands-on, client-facing AI engineering leadership',
-  engineer: 'an engineer who wants to see how the systems actually work',
+  engineer: 'an engineer interested in implementation details and tests',
 }
 
 // Plain-voice rules shared by every request (the site's copy guide, in short).
 const voice =
-  'Write about Eduard as "Eduard" or "he"; never write "I", "my", "we" or "our". Plain, specific sentences. State facts from the notes; do not claim benefits, guarantees or outcomes the notes do not state, and avoid words like ensures, enables, seamless, robust or leverage. Use past tense for roles that have ended. Do not comment on the visitor, the page or this conversation, and never mention "the notes"; if something is not covered, say this site does not say.'
+  'Write about Eduard as "Eduard" or "he"; never write "I", "my", "we" or "our". Use plain, specific sentences with natural variety in length. Add useful project context rather than another pitch. Avoid aphorisms, slogans, rhetorical questions, manufactured contrasts and repeated lists of development stages. State facts from the notes; do not claim benefits, guarantees or outcomes the notes do not state, and avoid words like ensures, enables, seamless, robust or leverage. Preserve qualifications about project status, privacy, test results and human supervision. Never name clients. Keep the client curriculum delivered through AI-First separate from the ShiftKey Labs course at Dalhousie. Use past tense for roles that have ended. Do not comment on the visitor, the page or this conversation, and never mention "the notes"; if something is not covered, say this site does not say.'
 
 // The facts the model may use: the chapter, the line already shown, his roles and the
 // relevant project notes. Nothing else from the site is sent.
@@ -58,7 +59,7 @@ function notesFor(input: NarrateInput): string {
 
 export function buildPrompt(input: NarrateInput): NarratePrompt {
   const notes = notesFor(input)
-  const visitor = `The visitor is ${audience[input.persona]}.`
+  const visitor = `The visitor is ${audience[input.persona]}. ${guideCopyRule}`
   if (input.kind === 'bridge') {
     return {
       messages: [

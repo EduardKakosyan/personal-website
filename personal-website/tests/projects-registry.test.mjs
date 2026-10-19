@@ -113,7 +113,7 @@ test('new case studies are short, retain section anchors and use only synthetic 
         : ['Problem', 'System', 'Decisions', 'Result', 'What broke'],
     )
     if (slug === 'keystone') {
-      assert.match(body, /rolling out/)
+      assert.match(body, /rolling (?:Keystone )?out/)
       const images = [...body.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
       assert.equal(images.length, 3)
       for (const [, path] of images) {

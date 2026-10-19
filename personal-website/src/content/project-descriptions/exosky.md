@@ -2,7 +2,7 @@
 
 ## Problem
 
-What would the night sky look like from another planet? For NASA Space Apps Challenge 2024, our team built a sky viewer that moves your viewpoint from Earth to an exoplanet and lets you draw your own constellations.
+For NASA Space Apps Challenge 2024, our team built a sky viewer that moves your viewpoint from Earth to an exoplanet and lets you draw your own constellations.
 
 ## System
 

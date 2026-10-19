@@ -2,7 +2,7 @@
 
 ## Problem
 
-Can you swim at this beach right now? The answer is spread across three public sources: the municipality's supervised-beach table, provincial park notices, and the provincial blue-green algae feed. I built a map that answers it in one place, with the official notice underneath each status. It was a Volta hackathon project, September 12–14, 2026, built with [@Harshil-varia](https://github.com/Harshil-varia).
+Beach notices are spread across three public sources: the municipality's supervised-beach table, provincial park notices, and the provincial blue-green algae feed. Our map brings them together, with the official notice underneath each status. I built it with [@Harshil-varia](https://github.com/Harshil-varia) at the Volta hackathon, September 12–14, 2026.
 
 ## System
 

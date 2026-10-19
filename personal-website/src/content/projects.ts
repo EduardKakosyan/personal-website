@@ -66,11 +66,11 @@ export const projects: Project[] = [
     beat: 'systems',
     visibility: 'described-only',
     description:
-      'An internal platform connecting SharePoint, Linear and QuickBooks, with a shared capability registry for staff and AI agents.',
+      'An internal platform that connects SharePoint, Linear and QuickBooks. Staff and AI agents use the same operations.',
     detail:
-      'Eduard leads Keystone’s architecture and development with a team of five developers. A UX research contractor ran discovery with him. The system connects SharePoint, Linear and QuickBooks and exposes capabilities through MCP. The earlier metrics were inaccurate and underused. Keystone is rolling out, not a claimed shipped result.',
+      'Eduard leads Keystone’s architecture and development with a team of five developers. A UX research contractor worked with him to understand what the team needed. The system connects SharePoint, Linear and QuickBooks and exposes operations through MCP. The old metrics were inaccurate and rarely used. Keystone is rolling out; adoption has not been measured yet.',
     aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
-    outcome: 'Agree on the numbers, then build the dashboard. Rolling out now.',
+    outcome: 'I lead the architecture and development. We’re rolling it out now.',
     facts: {
       role: 'Engineering lead and architect',
       when: '2026 / rolling out',
@@ -90,7 +90,7 @@ export const projects: Project[] = [
     detail:
       'Keeper stores transcripts and summary versions in SQLite, serves a web UI and MCP tools, and can summarize with a configured local model. Access is scoped to the person whose token is on the request. The repository remains private pending its publication audit.',
     aliases: ['keeper', 'meeting', 'archive', 'dictation'],
-    outcome: 'Search past meetings without handing the archive to someone else.',
+    outcome: 'Search results link back to the transcript and timestamp.',
     facts: {
       role: 'Builder',
       when: 'October 2026',
@@ -111,7 +111,7 @@ export const projects: Project[] = [
       'Eduard built the controller around OpenHands to save progress, recover interrupted runs, test code in a separate container, and pause for review. Recent app runs use SGLang and NVFP4; llama.cpp and a Qwen3.6 fallback are also supported. Shoreline and the original Camp Yahtzee release are documented outputs. Human and Claude supervision supplied product briefs and reviews.',
     aliases: ['dgx', 'autonomy', 'autonomous loops', 'local ai', 'qwen', 'spark'],
     outcome:
-      'Code written on my own hardware, checked by tests the agent can’t change, reviewed by me.',
+      'Shoreline and the first Camp Yahtzee release were built with this setup, with briefs and reviews from me and Claude.',
     facts: {
       role: 'Build controller and tests',
       when: '2026',
@@ -244,7 +244,7 @@ export const projects: Project[] = [
     tier: 'archive',
     visibility: 'public-repo',
     description:
-      'A hackathon experiment in simulated reader reactions to healthcare articles and revisions from that feedback.',
+      'A hackathon prototype where one agent simulates readers’ responses to a healthcare article and another revises the text.',
     detail:
       'Eduard built it with Huy Huynh, Hao Tang and Tobi Onibudo. Their team took first place at the Atlantic AI Summit 2025. One agent simulates readers; another revises the article.',
     aliases: ['healthbyte', 'health', 'hackathon'],

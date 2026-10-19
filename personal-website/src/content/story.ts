@@ -18,9 +18,9 @@ const still = (id: ChapterId, alt: string) => ({
 export const chapters: Chapter[] = [
   {
     id: 'systems',
-    kicker: 'Discovery to deployment',
-    headline: 'Keystone: from disconnected tools to one working system.',
-    line: 'I ran discovery with a UX researcher, designed the architecture, and lead development. Keystone connects SharePoint, Linear and QuickBooks through a shared capability registry for staff and AI agents. Rolling out now.',
+    kicker: 'At AI-First',
+    headline: 'Keystone connects the tools our team uses.',
+    line: 'Our old dashboard had inaccurate numbers and saw little use. I worked with a UX researcher to understand what the team needed, then designed Keystone. It connects SharePoint, Linear and QuickBooks. I lead development, and we’re rolling it out now.',
     proof: ['keystone', 'hvac-rfq-triage', 'consulting-rfp-triage'],
     learnMore: '/projects/keystone',
     learnMoreLabel: 'Read the Keystone case study',
@@ -28,9 +28,9 @@ export const chapters: Chapter[] = [
   },
   {
     id: 'private-local',
-    kicker: 'Private AI',
-    headline: 'AI that runs on hardware you control.',
-    line: "Keeper keeps meeting transcripts in a private archive you can search and summarize. dgx-autonomy runs a coding agent on my own DGX Spark, and its code has to pass tests it can't edit.",
+    kicker: 'My own projects',
+    headline: 'Meeting tools and a local coding agent.',
+    line: "I built Keeper to record meetings and search their transcripts. It can also write summaries using a local model. On my DGX Spark, dgx-autonomy runs a coding agent whose work is checked against tests it can't edit. I supply briefs and review the results with help from Claude.",
     proof: ['keeper', 'dgx-autonomy'],
     learnMore: '/projects/keeper',
     learnMoreLabel: 'Read the Keeper case study',
@@ -38,9 +38,9 @@ export const chapters: Chapter[] = [
   },
   {
     id: 'adoption',
-    kicker: 'Teaching and adoption',
-    headline: 'Help people work with what you build.',
-    line: 'Through AI-First, I built a client’s data science and ML curriculum: {metric:learners} learners, {metric:learners.detail}. Separately, I co-taught an agentic AI course for non-CS students at Dalhousie, using n8n and Bolt.',
+    kicker: 'Teaching',
+    headline: 'I’ve also written curriculum and taught AI.',
+    line: 'Through AI-First, I built and managed a client’s data science and ML curriculum: {metric:learners} learners, {metric:learners.detail}. In a separate role at ShiftKey Labs, I co-taught an agentic AI course for students outside computer science at Dalhousie. They built agents with n8n and Bolt.',
     proof: ['workforce-ml-curriculum'],
     learnMore: '/about',
     learnMoreLabel: 'See my experience',
@@ -49,8 +49,8 @@ export const chapters: Chapter[] = [
   {
     id: 'next-step',
     kicker: 'Get in touch',
-    headline: 'Need an engineer who works through the whole problem?',
-    line: 'If you’re hiring or have a system to build, tell me about the team, the problem and the constraints. The résumé has my experience at a glance.',
+    headline: 'Tell me what you’re working on.',
+    line: 'If you’re hiring or have a project in mind, email me about it. My résumé has a short overview of my experience, and my public code is on GitHub.',
     proof: ['keystone', 'dgx-autonomy'],
     learnMore: '/contact',
     learnMoreLabel: 'Contact me',
@@ -73,29 +73,30 @@ export function parsePersona(value: unknown): Persona {
 export const narratorLines: Record<Persona, Record<ChapterId, string>> = {
   recruiter: {
     adoption:
-      'Quick facts: Eduard is Lead AI Developer at AI-First Consulting, and he co-taught an AI course at Dalhousie. The résumé has the dates.',
+      'The About page lists the teaching role separately from his client work, with dates for each role.',
     systems:
-      'Eduard leads a team of five developers. On Keystone, he leads both the architecture and development, from discovery through rollout.',
+      'Eduard leads a team of five developers and works on the code with them. The Keystone case study covers his architecture and development work.',
     'private-local':
-      "He also builds AI that runs on private hardware. Each project page says what's public and what isn't.",
-    'next-step': 'The résumé is one page. His email is right below.',
+      'Shoreline and the original Camp Yahtzee release were built with his local coding-agent setup. Later Camp Yahtzee controls were added through CodeLayer.',
+    'next-step': 'The résumé is one page. The contact page has his email and LinkedIn.',
   },
   'hiring-manager': {
     systems:
-      "Start here. The case study covers why the old metrics went unused, how the team agreed on new ones, and what's still rolling out.",
+      'The case study explains how interviews with the team shaped the scorecard. Keystone is still rolling out; there are no adoption results yet.',
     adoption:
-      'Building the tool is half the job. This is the other half: getting people to use it.',
-    'private-local': "If your data can't leave the building, this is the relevant work.",
+      'The client-work section distinguishes projects Eduard managed from those he contributed to, including AI Accelerator engagements.',
+    'private-local':
+      'Keeper’s write-up explains who can access a meeting and what happens when an external AI assistant retrieves it.',
     'next-step':
-      'Every case study says what Eduard did himself and what the team did. Have a similar problem? Get in touch.',
+      'The About page has his work history. For questions about a role or project, email is the best way to reach him.',
   },
   engineer: {
     'private-local':
-      "Start with dgx-autonomy: the agent's code has to pass tests it can't edit, and the build records are public. Keeper's write-up includes a search bug and how it was fixed.",
+      "The dgx-autonomy repo includes build records and acceptance tests. Keeper's write-up covers a search-ranking bug that its paging tests missed.",
     systems:
-      "Keystone's code is private, so the case study uses diagrams. Look at the shared capability registry.",
+      'Staff and AI agents use the same registry of operations in Keystone. The case study diagrams that design; the code is private.',
     adoption:
-      'Two separate engagements: an agentic AI course at Dalhousie, and a client curriculum delivered through AI-First.',
+      'The learner and completion figures here refer to the client curriculum, not the Dalhousie course.',
     'next-step': 'Public code is on GitHub. Keeper and Keystone are write-ups only.',
   },
 }

@@ -2,13 +2,13 @@
 
 ## Discovery
 
-Our old internal dashboard had a problem a redesign couldn't fix: its numbers were inaccurate, and people barely used it. So I started with discovery instead of screens. What does leadership need to know? What does each role need? Where do the files actually live?
+Our old internal dashboard had inaccurate numbers, and people barely used it. A UX research contractor and I interviewed the team about the information they needed and where their files were stored.
 
-I lead Keystone's architecture and development with a team of five developers. A UX research contractor worked with me on discovery. My role spans understanding the workflows, designing the system and building it with the team.
+I designed Keystone's architecture and lead a team of five developers building it. I also work on the code.
 
 ## Definitions
 
-The scorecard follows the business from start to finish: attract, convert, deliver, collect. Before drawing any views, we interviewed each role about the numbers they rely on. If two people disagree on what a number means, a nicer chart won't help.
+The scorecard covers four stages: attract, convert, deliver, collect. We used those interviews to agree on what each metric means before drawing the views.
 
 ![Synthetic funnel diagram: attract, convert, deliver, collect.](/images/keystone/funnel.svg)
 
@@ -24,10 +24,10 @@ Keystone connects SharePoint, Linear and QuickBooks through a shared registry of
 
 ## Build
 
-I lead development alongside the team, carrying the architecture through implementation and rollout. Keystone is rolling out now, with a target of the end of October 2026. It hasn't shipped, so there are no adoption numbers yet. The code is private.
+We're rolling Keystone out, with a target of the end of October 2026. The rollout isn't complete, so we don't have adoption numbers yet. The code is private.
 
 ## What broke
 
-The old dashboard. Its numbers were inaccurate and people barely used it. A new dashboard built on the same unclear definitions would have failed the same way, which is why this project started with discovery instead of design.
+The old dashboard's inaccurate numbers and low usage led us to revisit the metric definitions before designing its replacement.
 
-The new scorecard still has to prove itself in daily use. That hasn't happened yet.
+We haven't yet evaluated the new scorecard in daily use.

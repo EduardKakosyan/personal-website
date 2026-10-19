@@ -22,6 +22,7 @@ import {
   directGuideAction,
   allowsGuideNavigation,
   guideActionSchema,
+  guideCopyRule,
   guideDestination,
   guideOutputSchemaForQuery,
   parseGuideResponse,
@@ -218,7 +219,7 @@ function GuideBody() {
             .map((work) => `${work.title}: ${work.summary}`)
             .join('\n\n')
         : /\b(eduard|background|skills|contact|experience|education)\b/i.test(text)
-          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and works directly with clients on AI systems, from discovery and architecture through integration and rollout. Reach him at ${identity.email}.`
+          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and writes code alongside them. On Keystone, he leads architecture and development of a platform connecting SharePoint, Linear and QuickBooks. His email is ${identity.email}.`
           : 'I couldn’t find that in the project notes. Try asking about dgx-autonomy, HUGO, or Shoreline.'
       const direct = directGuideAction(text, currentProject?.slug)
       if (direct) {
@@ -250,7 +251,7 @@ function GuideBody() {
           [
             {
               role: 'system',
-              content: `${portfolioContext}\nThe visitor is viewing ${currentProject?.title ?? 'the portfolio homepage'}. Resolve questions like 'this project' in that context.\n${allowsGuideNavigation(text) ? `Return JSON with action, target and reply. Allowed project IDs: ${portfolioWorks.map((work) => work.slug).join(', ')}. Allowed section IDs: ${Object.keys(guideSections).join(', ')}. For an answer use target="".` : 'Answer the question about the current page. Return JSON with action="answer", target="", and your explanation in reply. Keep it to two or three sentences.'} Retrieve evidence only from these notes:\n${sources.map((work) => `${work.title} [${work.slug}]: ${work.summary} ${work.detail}`).join('\n') || 'No matching project found.'}`,
+              content: `${portfolioContext}\n${guideCopyRule}\nThe visitor is viewing ${currentProject?.title ?? 'the portfolio homepage'}. Resolve questions like 'this project' in that context.\n${allowsGuideNavigation(text) ? `Return JSON with action, target and reply. Allowed project IDs: ${portfolioWorks.map((work) => work.slug).join(', ')}. Allowed section IDs: ${Object.keys(guideSections).join(', ')}. For an answer use target="".` : 'Answer the question about the current page. Return JSON with action="answer", target="", and your explanation in reply. Keep it to two or three sentences.'} Retrieve evidence only from these notes:\n${sources.map((work) => `${work.title} [${work.slug}]: ${work.summary} ${work.detail}`).join('\n') || 'No matching project found.'}`,
             },
             ...messages
               .slice(-4)
@@ -543,7 +544,9 @@ function GuideBody() {
             setMood(event.target.value ? 'listening' : 'ready')
           }}
           maxLength={1000}
-          placeholder={currentProject ? `Ask about ${currentProject.title}…` : 'Ask about my work…'}
+          placeholder={
+            currentProject ? `Ask about ${currentProject.title}…` : 'Ask about Eduard’s work…'
+          }
           autoComplete="off"
           disabled={isGenerating}
         />

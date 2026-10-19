@@ -16,7 +16,7 @@ export default function ContactPage() {
           Get in <em>touch.</em>
         </h1>
         <p className="site-lead">
-          Hiring, a project, or a question about something here? Email is best.
+          Email is the best way to reach me about a role, a project, or something you’ve read here.
         </p>
       </header>
       <section className="site-section" aria-labelledby="contact-heading">
@@ -46,7 +46,7 @@ export default function ContactPage() {
             <p>
               {identity.title} at {identity.company}.
             </p>
-            <p>Client-facing AI engineering, systems integration and local-model deployment.</p>
+            <p>I lead a team of five developers and write code alongside them.</p>
           </article>
         </div>
       </section>

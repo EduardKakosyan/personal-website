@@ -9,7 +9,7 @@ const { chapters, personaOrder, narratorLines, parsePersona } = loadTs(
 const { storyCopy } = loadTs(new URL('../src/content/story-copy.ts', import.meta.url))
 const { projects } = loadTs(new URL('../src/content/projects.ts', import.meta.url))
 const { profile } = loadTs(new URL('../src/content/profile.ts', import.meta.url))
-const { guideSections, guideDestination } = loadTs(
+const { guideSections, guideDestination, projectCommands } = loadTs(
   new URL('../src/content/portfolio.ts', import.meta.url),
 )
 
@@ -77,4 +77,39 @@ test('legacy styles are gone and the initial page never hides no-JS content', ()
     'utf8',
   )
   assert.match(transition, /initial=\{false\}/)
+})
+
+test('homepage copy keeps teaching attribution, build supervision and project status explicit', () => {
+  const systems = chapters.find((chapter) => chapter.id === 'systems')
+  const local = chapters.find((chapter) => chapter.id === 'private-local')
+  const teaching = chapters.find((chapter) => chapter.id === 'adoption')
+  assert.match(systems.line, /rolling it out now/)
+  assert.match(local.line, /briefs and review the results with help from Claude/)
+  assert.match(teaching.line, /Through AI-First.*client’s data science and ML curriculum/)
+  assert.match(teaching.line, /separate role at ShiftKey Labs/)
+  assert.match(narratorLines.recruiter['private-local'], /original Camp Yahtzee release/)
+  assert.match(narratorLines.recruiter['private-local'], /Later.*CodeLayer/)
+})
+
+test('authored website copy avoids empty quality claims', () => {
+  const bodies = new URL('../src/content/project-descriptions/', import.meta.url)
+  const copy = [
+    JSON.stringify(chapters),
+    JSON.stringify(narratorLines),
+    JSON.stringify(projects),
+    JSON.stringify(projectCommands),
+    profile.headline,
+    ...profile.roles.map((role) => role.summary),
+    readFileSync(
+      new URL('../src/components/features/story/story-hero.tsx', import.meta.url),
+      'utf8',
+    ),
+    ...readdirSync(bodies)
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => readFileSync(new URL(name, bodies), 'utf8')),
+  ].join('\n')
+  assert.doesNotMatch(
+    copy,
+    /\b(?:(?:actually|really|just|truly) works?|works? in practice|actually (?:useful|use)|real[- ]world solutions?|production[- ]ready|battle[- ]tested)\b/i,
+  )
 })

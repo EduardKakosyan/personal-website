@@ -94,10 +94,9 @@ test('narrator grounding preserves team leadership and separates the teaching en
     text: 'What did Eduard teach and who does he lead?',
   })
   assert.match(grounding, /team of five developers/)
-  assert.match(
-    grounding,
-    /Skills for Hire curriculum work was a client engagement through AI-First, separate from/,
-  )
+  assert.match(grounding, /client's data science and ML curriculum through AI-First/)
+  assert.match(grounding, /That engagement was separate from the agentic AI course/)
+  assert.match(grounding, /co-taught for non-CS students at ShiftKey Labs, Dalhousie/)
   assert.doesNotMatch(grounding, /co-op developers|AI Instructor & Curriculum Developer/)
 })
 

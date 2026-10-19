@@ -1,39 +1,47 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ArrowDown, ArrowUpRight } from 'lucide-react'
+import { ArrowDown } from 'lucide-react'
 import { identity, resumePdfPath } from '@/content/profile'
 import { analyticsEvents } from '@/lib/analytics'
 
 export function Header() {
   const pathname = usePathname()
   return (
-    <header className="lab-header" data-tone={pathname === '/' ? 'dark' : 'light'}>
-      <div className="lab-header-inner">
-        <Link href="/" className="lab-wordmark" aria-label={`${identity.name} home`}>
-          <span className="lab-monogram">ek.</span>
+    <header className="site-header">
+      <div className="site-header-inner">
+        <Link
+          href="/"
+          className="site-wordmark"
+          aria-current={pathname === '/' ? 'page' : undefined}
+          aria-label={`${identity.name} home`}
+        >
+          <span className="site-monogram">ek.</span>
           <span>
             <strong>{identity.name}</strong>
-            <small>AI ENGINEER & BUILDER</small>
+            <small>
+              {identity.title} at {identity.company}
+            </small>
           </span>
         </Link>
-        <nav className="lab-nav" aria-label="Main navigation">
+        <nav className="site-nav" aria-label="Main navigation">
           <Link
             href="/projects"
             aria-current={pathname.startsWith('/projects') ? 'page' : undefined}
           >
             Work
           </Link>
-          <Link href="/#about">About</Link>
-          <span className="nav-divider" />
+          <Link href="/about" aria-current={pathname === '/about' ? 'page' : undefined}>
+            About
+          </Link>
           <Link href="/contact" aria-current={pathname === '/contact' ? 'page' : undefined}>
-            Let’s talk
-            <ArrowUpRight size={12} />
+            Contact
           </Link>
           <a
             href={resumePdfPath}
             download
-            className="lab-nav-resume"
+            className="site-nav-resume"
+            aria-current={pathname === resumePdfPath ? 'page' : undefined}
             aria-label="Download résumé (PDF)"
             onClick={() => analyticsEvents.resumeDownloaded()}
           >

@@ -7,7 +7,6 @@ import Image from 'next/image'
 import { ArrowDown, ArrowUpRight, ArrowRight, Github, Radio } from 'lucide-react'
 import { identity } from '@/content/portfolio'
 import { useGuide } from '@/components/providers/guide-provider'
-import { useWebLLMContext } from '@/components/providers/webllm-provider'
 
 const WorkshopScene = dynamic(
   () => import('./workshop-scene').then((module) => module.WorkshopScene),
@@ -24,19 +23,16 @@ const WorkshopScene = dynamic(
 
 export function LabHome() {
   const { openGuide, mood, pointAt } = useGuide()
-  const { isGenerating, engine, isInitializing } = useWebLLMContext()
+  const isGenerating = mood === 'thinking'
   const [question, setQuestion] = useState('')
-  const status = isInitializing
-    ? 'Loading local model'
-    : mood === 'thinking'
+  const status =
+    mood === 'thinking'
       ? 'Reading project notes'
       : mood === 'navigating'
         ? 'Opening the project'
         : mood === 'presenting'
           ? 'Answer ready'
-          : engine
-            ? 'Local model ready'
-            : 'Project guide ready'
+          : 'Project guide ready'
   const ask = (event: FormEvent) => {
     event.preventDefault()
     if (!question.trim() || isGenerating) return

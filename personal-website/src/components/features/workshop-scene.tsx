@@ -7,7 +7,6 @@ import { useReducedMotion } from 'motion/react'
 import * as THREE from 'three'
 import { Cadence, Character } from './agent-scene'
 import { useGuide } from '@/components/providers/guide-provider'
-import { useWebLLMContext } from '@/components/providers/webllm-provider'
 
 // An authored, stylized Spark enclosure. All geometry is local; no external model download.
 function Spark() {
@@ -133,7 +132,7 @@ function Installation({ still }: { still: boolean }) {
 
 export function WorkshopScene() {
   const reducedMotion = useReducedMotion()
-  const { isGenerating, isInitializing } = useWebLLMContext()
+  const { open } = useGuide()
   const container = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(true)
   const [lost, setLost] = useState(false)
@@ -148,7 +147,7 @@ export function WorkshopScene() {
     if (container.current) observer.observe(container.current)
     return () => observer.disconnect()
   }, [])
-  const animated = visible && !reducedMotion && !isGenerating && !isInitializing
+  const animated = visible && !reducedMotion && !open
   return (
     <div ref={container} className="workshop-canvas" aria-hidden="true">
       {supported && !lost ? (

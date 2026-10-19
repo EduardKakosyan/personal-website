@@ -4,15 +4,13 @@ import './globals.css'
 import './lab.css'
 import './agent.css'
 import './workshop.css'
+import './site.css'
 import { cn } from '@/lib/utils'
-import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/layouts/header'
 import { Footer } from '@/components/layouts/footer'
-import { PortfolioGuide } from '@/components/features/portfolio-guide'
+import { GuideLauncher } from '@/components/features/guide/guide-launcher'
 import { GuideProvider } from '@/components/providers/guide-provider'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
-import { SmoothScrollProvider } from '@/components/providers/smooth-scroll-provider'
-import { WebLLMProvider } from '@/components/providers/webllm-provider'
 import { PageTransitionProvider } from '@/components/providers/page-transition-provider'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
@@ -146,40 +144,29 @@ export default function RootLayout({
         )}
       >
         <ErrorBoundary>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+          <WebVitals />
+          {/* Skip to main content link for accessibility */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <WebVitals />
-            {/* Skip to main content link for accessibility */}
-            <a
-              href="#main-content"
-              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              Skip to main content
-            </a>
+            Skip to main content
+          </a>
 
-            <WebLLMProvider>
-              <GuideProvider>
-                <SmoothScrollProvider>
-                  <div className="relative flex min-h-dvh flex-col bg-background">
-                    <Header />
-                    <main
-                      id="main-content"
-                      className="flex-1 flex flex-col items-center w-full"
-                      role="main"
-                    >
-                      <PageTransitionProvider>{children}</PageTransitionProvider>
-                    </main>
-                    <Footer />
-                    <PortfolioGuide />
-                  </div>
-                </SmoothScrollProvider>
-              </GuideProvider>
-            </WebLLMProvider>
-          </ThemeProvider>
+          <GuideProvider>
+            <div className="site-shell relative flex min-h-dvh flex-col">
+              <Header />
+              <main
+                id="main-content"
+                className="flex-1 flex flex-col items-center w-full"
+                role="main"
+              >
+                <PageTransitionProvider>{children}</PageTransitionProvider>
+              </main>
+              <Footer />
+              <GuideLauncher />
+            </div>
+          </GuideProvider>
         </ErrorBoundary>
         <Analytics />
         <SpeedInsights />

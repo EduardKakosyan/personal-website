@@ -3,16 +3,16 @@ import { identity } from '@/content/profile'
 
 export function Footer() {
   return (
-    <footer className="lab-footer">
-      <div className="lab-footer-inner">
-        <div className="lab-footer-top">
+    <footer className="site-footer">
+      <div className="site-width">
+        <div className="site-footer-top">
           <div>
             <strong>{identity.name}</strong>
             <p>
               {identity.title} at {identity.company}.
             </p>
           </div>
-          <div className="lab-footer-links">
+          <div className="site-footer-links">
             <a href={identity.github} target="_blank" rel="noopener noreferrer">
               GitHub
               <ArrowUpRight size={12} />
@@ -27,7 +27,7 @@ export function Footer() {
             </a>
           </div>
         </div>
-        <div className="lab-footer-bottom">
+        <div className="site-footer-bottom">
           <span>
             © {new Date().getFullYear()} {identity.name.toUpperCase()}
           </span>

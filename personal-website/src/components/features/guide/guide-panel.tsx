@@ -13,7 +13,11 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { useGuide } from '@/components/providers/guide-provider'
-import { useWebLLMContext, MODEL_TIERS } from '@/components/providers/webllm-provider'
+import {
+  WebLLMProvider,
+  useWebLLMContext,
+  MODEL_TIERS,
+} from '@/components/providers/webllm-provider'
 import {
   directGuideAction,
   allowsGuideNavigation,
@@ -32,7 +36,6 @@ import {
   type GuideAction,
   type Work,
 } from '@/content/portfolio'
-import { FlyingAgent } from '@/components/features/flying-agent'
 import { validateChatMessage } from '@/lib/validation'
 import { sanitizeUserInput } from '@/lib/sanitizer'
 import { validateUserInput } from '@/lib/guardrails'
@@ -50,7 +53,15 @@ const welcome: Message = {
   text: 'Hi, I’m EK—01, Eduard’s portfolio guide. I can find project details or open a case study for you.',
 }
 
-export function PortfolioGuide() {
+export function GuidePanel() {
+  return (
+    <WebLLMProvider>
+      <GuideBody />
+    </WebLLMProvider>
+  )
+}
+
+function GuideBody() {
   const { open, mood, prompt, pointAt, clearPrompt, closeGuide, setMood } = useGuide()
   const {
     engine,
@@ -106,7 +117,7 @@ export function PortfolioGuide() {
       if (target?.isConnected) target.focus({ preventScroll: true })
       else
         document
-          .querySelector<HTMLButtonElement>('.flying-agent-character')
+          .querySelector<HTMLButtonElement>('.site-guide-launcher')
           ?.focus({ preventScroll: true })
     }
   }, [open, closeGuide, cancel])
@@ -344,7 +355,7 @@ export function PortfolioGuide() {
     execute(action)
   }
 
-  if (!open) return <FlyingAgent />
+  if (!open) return null
   const latest = messages.filter((message) => message.role === 'assistant').at(-1) ?? welcome
   const pageWelcome =
     currentProject && latest.id === 'welcome'
@@ -352,210 +363,216 @@ export function PortfolioGuide() {
       : latest
   const visibleMessages = showHistory ? messages : [pageWelcome]
   return (
-    <FlyingAgent>
-      <section className="agent-speech-content" aria-label="EK—01 portfolio agent" data-mood={mood}>
-        <header className="guide-header">
-          <div>
-            <strong>EK—01</strong>
-            <small>
-              {isGenerating
-                ? 'Reading the project notes…'
-                : engine
-                  ? 'AI running on your device'
-                  : currentProject
-                    ? `Exploring ${currentProject.title}`
-                    : 'Your guide to the work'}
-            </small>
-          </div>
-          <button
-            onClick={() => {
-              stop()
-              closeGuide()
-            }}
-            aria-label="Close guide"
-          >
-            <X size={18} />
-          </button>
-        </header>
-        <div
-          className="guide-messages"
-          ref={scrollRef}
-          role="log"
-          aria-label="Guide conversation"
-          aria-live="polite"
+    <section
+      id="guide-panel"
+      className="site-guide-panel"
+      role="dialog"
+      aria-label="EK—01 portfolio guide"
+      data-mood={mood}
+    >
+      <header className="guide-header">
+        <div className="companion-fallback" aria-hidden="true">
+          <i />
+          <i />
+        </div>
+        <div>
+          <strong>EK—01</strong>
+          <small>
+            {isGenerating
+              ? 'Reading the project notes…'
+              : engine
+                ? 'AI running on your device'
+                : currentProject
+                  ? `Exploring ${currentProject.title}`
+                  : 'Your guide to the work'}
+          </small>
+        </div>
+        <button
+          onClick={() => {
+            stop()
+            closeGuide()
+          }}
+          aria-label="Close guide"
         >
-          {visibleMessages.map((message) => (
-            <div className={`guide-message guide-message-${message.role}`} key={message.id}>
-              {message.mode && (
-                <small>{message.mode === 'model' ? 'LOCAL AI' : 'PROJECT NOTES'}</small>
-              )}
-              <p>{message.text}</p>
-              {!!message.sources?.length && (
-                <div className="guide-sources">
-                  {message.sources.map((work) => (
-                    <a key={work.slug} href={work.repo} target="_blank" rel="noopener noreferrer">
-                      {work.title}
-                      <ArrowUpRight size={12} />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-          {isGenerating && (
-            <p className="guide-thinking">
-              <LoaderCircle size={14} className="spin" /> Reading, then checking the action…
-            </p>
-          )}
-        </div>
-        <div className="guide-command-context">
-          {currentProject ? `${currentProject.title} · Things to try` : 'Start here'}
-        </div>
-        <div
-          className="guide-shortcuts"
-          aria-label={currentProject ? `${currentProject.title} commands` : 'Portfolio shortcuts'}
-        >
-          {currentProject ? (
-            commands.map((command) => (
-              <button
-                key={`${currentProject.slug}-${command.id}`}
-                disabled={isGenerating}
-                onClick={() => runCommand(command)}
-              >
-                {command.label} <ArrowUpRight size={12} />
-              </button>
-            ))
-          ) : (
-            <>
-              <button disabled={isGenerating} onClick={() => void send('Show me HUGO')}>
-                Meet HUGO <ArrowUpRight size={12} />
-              </button>
-              <button
-                disabled={isGenerating}
-                onClick={() => void send('Show me Eduard’s local AI work')}
-              >
-                Local AI work <ArrowUpRight size={12} />
-              </button>
-              <button
-                disabled={isGenerating}
-                onClick={() => void send('Show me the verification checks')}
-              >
-                How it verifies <ArrowUpRight size={12} />
-              </button>
-            </>
-          )}
-        </div>
-        <div className="guide-model-control">
-          {isInitializing ? (
-            <div>
-              <LoaderCircle size={13} className="spin" /> Loading model · {downloadProgress}%
-              <progress value={downloadProgress} max="100" aria-label="Local model download" />
-            </div>
-          ) : engine ? (
-            <label>
-              <Cpu size={13} />
-              <select
-                aria-label="Local model"
-                value={currentModel}
-                disabled={isGenerating}
-                onChange={(event) => {
-                  void switchModel(event.target.value).catch((cause: unknown) =>
-                    setNotice(cause instanceof Error ? cause.message : 'Model switch failed.'),
-                  )
-                }}
-              >
-                {MODEL_TIERS.map((model) => (
-                  <option key={model.id} value={model.modelId}>
-                    {model.label}
-                  </option>
+          <X size={18} />
+        </button>
+      </header>
+      <div
+        className="guide-messages"
+        ref={scrollRef}
+        role="log"
+        aria-label="Guide conversation"
+        aria-live="polite"
+      >
+        {visibleMessages.map((message) => (
+          <div className={`guide-message guide-message-${message.role}`} key={message.id}>
+            {message.mode && (
+              <small>{message.mode === 'model' ? 'LOCAL AI' : 'PROJECT NOTES'}</small>
+            )}
+            <p>{message.text}</p>
+            {!!message.sources?.length && (
+              <div className="guide-sources">
+                {message.sources.map((work) => (
+                  <a key={work.slug} href={work.repo} target="_blank" rel="noopener noreferrer">
+                    {work.title}
+                    <ArrowUpRight size={12} />
+                  </a>
                 ))}
-              </select>
-              <span>Browser only</span>
-            </label>
-          ) : (
-            <>
-              <span>
-                <Cpu size={13} />{' '}
-                {isSupported
-                  ? 'A model downloads when enabled'
-                  : support.status === 'checking'
-                    ? 'Checking browser compatibility…'
-                    : 'Local AI unavailable in this browser'}
-              </span>
-              <button
-                onClick={enable}
-                disabled={!isSupported}
-                aria-describedby={!isSupported ? 'local-ai-support' : undefined}
-              >
-                <Sparkles size={12} />
-                {error ? 'Retry local AI' : 'Enable local AI'}
-              </button>
-            </>
-          )}
-        </div>
-        {support.status !== 'supported' && (
-          <p id="local-ai-support" className="guide-notice" role="status">
-            {support.status === 'checking'
-              ? 'Checking whether this browser can run a model on your GPU.'
-              : support.reason}
+              </div>
+            )}
+          </div>
+        ))}
+        {isGenerating && (
+          <p className="guide-thinking">
+            <LoaderCircle size={14} className="spin" /> Reading, then checking the action…
           </p>
         )}
-        {(notice || error) && (
-          <p className="guide-notice" role="status">
-            {notice || error}
-          </p>
+      </div>
+      <div className="guide-command-context">
+        {currentProject ? `${currentProject.title} · Things to try` : 'Start here'}
+      </div>
+      <div
+        className="guide-shortcuts"
+        aria-label={currentProject ? `${currentProject.title} commands` : 'Portfolio shortcuts'}
+      >
+        {currentProject ? (
+          commands.map((command) => (
+            <button
+              key={`${currentProject.slug}-${command.id}`}
+              disabled={isGenerating}
+              onClick={() => runCommand(command)}
+            >
+              {command.label} <ArrowUpRight size={12} />
+            </button>
+          ))
+        ) : (
+          <>
+            <button disabled={isGenerating} onClick={() => void send('Show me HUGO')}>
+              Meet HUGO <ArrowUpRight size={12} />
+            </button>
+            <button
+              disabled={isGenerating}
+              onClick={() => void send('Show me Eduard’s local AI work')}
+            >
+              Local AI work <ArrowUpRight size={12} />
+            </button>
+            <button
+              disabled={isGenerating}
+              onClick={() => void send('Show me the verification checks')}
+            >
+              How it verifies <ArrowUpRight size={12} />
+            </button>
+          </>
         )}
-        <form onSubmit={submit} className="guide-input">
-          <label className="sr-only" htmlFor="guide-question">
-            Ask about Eduard’s work
+      </div>
+      <div className="guide-model-control">
+        {isInitializing ? (
+          <div>
+            <LoaderCircle size={13} className="spin" /> Loading model · {downloadProgress}%
+            <progress value={downloadProgress} max="100" aria-label="Local model download" />
+          </div>
+        ) : engine ? (
+          <label>
+            <Cpu size={13} />
+            <select
+              aria-label="Local model"
+              value={currentModel}
+              disabled={isGenerating}
+              onChange={(event) => {
+                void switchModel(event.target.value).catch((cause: unknown) =>
+                  setNotice(cause instanceof Error ? cause.message : 'Model switch failed.'),
+                )
+              }}
+            >
+              {MODEL_TIERS.map((model) => (
+                <option key={model.id} value={model.modelId}>
+                  {model.label}
+                </option>
+              ))}
+            </select>
+            <span>Browser only</span>
           </label>
-          <input
-            ref={inputRef}
-            id="guide-question"
-            value={input}
-            onChange={(event) => {
-              setInput(event.target.value)
-              setMood(event.target.value ? 'listening' : 'ready')
-            }}
-            maxLength={1000}
-            placeholder={
-              currentProject ? `Ask about ${currentProject.title}…` : 'Ask about my work…'
-            }
-            autoComplete="off"
-            disabled={isGenerating}
-          />
-          {isGenerating ? (
-            <button type="button" onClick={stop} aria-label="Stop reply">
-              <Square size={14} />
+        ) : (
+          <>
+            <span>
+              <Cpu size={13} />{' '}
+              {isSupported
+                ? 'A model downloads when enabled'
+                : support.status === 'checking'
+                  ? 'Checking browser compatibility…'
+                  : 'Local AI unavailable in this browser'}
+            </span>
+            <button
+              onClick={enable}
+              disabled={!isSupported}
+              aria-describedby={!isSupported ? 'local-ai-support' : undefined}
+            >
+              <Sparkles size={12} />
+              {error ? 'Retry local AI' : 'Enable local AI'}
             </button>
-          ) : (
-            <button type="submit" aria-label="Send question" disabled={!input.trim()}>
-              <ArrowUp size={18} />
-            </button>
-          )}
-        </form>
-        <footer className="guide-footer">
-          <button onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}>
-            {showHistory ? 'Back to the agent' : 'Conversation'}
+          </>
+        )}
+      </div>
+      {support.status !== 'supported' && (
+        <p id="local-ai-support" className="guide-notice" role="status">
+          {support.status === 'checking'
+            ? 'Checking whether this browser can run a model on your GPU.'
+            : support.reason}
+        </p>
+      )}
+      {(notice || error) && (
+        <p className="guide-notice" role="status">
+          {notice || error}
+        </p>
+      )}
+      <form onSubmit={submit} className="guide-input">
+        <label className="sr-only" htmlFor="guide-question">
+          Ask about Eduard’s work
+        </label>
+        <input
+          ref={inputRef}
+          id="guide-question"
+          value={input}
+          onChange={(event) => {
+            setInput(event.target.value)
+            setMood(event.target.value ? 'listening' : 'ready')
+          }}
+          maxLength={1000}
+          placeholder={currentProject ? `Ask about ${currentProject.title}…` : 'Ask about my work…'}
+          autoComplete="off"
+          disabled={isGenerating}
+        />
+        {isGenerating ? (
+          <button type="button" onClick={stop} aria-label="Stop reply">
+            <Square size={14} />
           </button>
-          <span>Stays on your device.</span>
-          <button
-            aria-label="Reset guide conversation"
-            disabled={isGenerating}
-            onClick={() => {
-              request.current += 1
-              setMessages([welcome])
-              setMood('ready')
-              setNotice('')
-              setDestination(null)
-              pointAt(null)
-              setShowHistory(false)
-            }}
-          >
-            <RotateCcw size={12} />
+        ) : (
+          <button type="submit" aria-label="Send question" disabled={!input.trim()}>
+            <ArrowUp size={18} />
           </button>
-        </footer>
-      </section>
-    </FlyingAgent>
+        )}
+      </form>
+      <footer className="guide-footer">
+        <button onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}>
+          {showHistory ? 'Back to the agent' : 'Conversation'}
+        </button>
+        <span>Stays on your device.</span>
+        <button
+          aria-label="Reset guide conversation"
+          disabled={isGenerating}
+          onClick={() => {
+            request.current += 1
+            setMessages([welcome])
+            setMood('ready')
+            setNotice('')
+            setDestination(null)
+            pointAt(null)
+            setShowHistory(false)
+          }}
+        >
+          <RotateCcw size={12} />
+        </button>
+      </footer>
+    </section>
   )
 }

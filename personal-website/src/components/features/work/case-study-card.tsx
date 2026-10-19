@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { caseStudies, type Project } from '@/content/projects'
 
 export const beatLabels = {
-  systems: 'Revenue and operations',
+  systems: 'Applied AI systems',
   'private-local': 'Private and local',
   adoption: 'Adoption and leadership',
 }

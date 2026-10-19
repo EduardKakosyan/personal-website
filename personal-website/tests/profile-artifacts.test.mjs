@@ -18,6 +18,7 @@ const { renderResume } = await import('../scripts/render-resume.mts')
 const { renderGithubReadme } = await import('../scripts/render-github-readme.mts')
 const { projects } = await import('../src/content/projects.ts')
 const { githubContent } = await import('../profile-readme/content.ts')
+const { resumeContent } = await import('../resume/content.ts')
 const { fill } = await import('../scripts/lib/fill.mts')
 const { tex } = await import('../scripts/lib/tex.mts')
 const { findHiddenTerms, hiddenTermPattern, localHiddenTerms } =
@@ -155,6 +156,39 @@ test('resume.tex matches a fresh render', () => {
     resumeTex,
     'resume/resume.tex is stale: run `pnpm resume` and commit the result',
   )
+})
+
+test('curriculum delivery belongs to AI-First, not the ShiftKey teaching role', () => {
+  const teaching = profile.roles.find((role) => role.id === 'teaching')
+  assert.equal(teaching.title, 'AI Instructor')
+  assert.equal(teaching.org, 'ShiftKey Labs, Dalhousie University')
+  assert.match(teaching.summary, /agentic AI course/)
+  assert.doesNotMatch(teaching.summary, /curriculum|Skills for Hire|provincial/i)
+
+  const teachingCopy = resumeContent.experience.find((role) => role.roleId === 'teaching')
+  assert.doesNotMatch(JSON.stringify(teachingCopy), /curriculum|Skills for Hire|metric:learners/i)
+  const clientCopy = resumeContent.experience.find((role) => role.roleId === 'ai-first')
+  assert.match(JSON.stringify(clientCopy), /Skills for Hire/)
+  assert.match(JSON.stringify(clientCopy), /metric:learners/)
+  const learners = profile.metrics.find((metric) => metric.id === 'learners')
+  assert.match(
+    learners.definition,
+    /client engagement, separate from his teaching at ShiftKey Labs/,
+  )
+})
+
+test('public copy describes hands-on leadership of a team of five developers', () => {
+  for (const copy of [
+    profile.roles.find((role) => role.id === 'ai-first').summary,
+    resumeContent.summary,
+    githubContent.role,
+    projects.find((project) => project.slug === 'keystone').detail,
+  ]) {
+    assert.match(copy, /team of five developers/i)
+    assert.doesNotMatch(copy, /co-op developers|GTM|revenue and operations/i)
+  }
+  assert.equal(resumeContent.skills[0].label, 'AI & LLMs')
+  assert.doesNotMatch(resumeTex, /co-op developers|GTM|sales opportunities I owned/)
 })
 
 test('resume.sha matches sha256(resume.tex)', () => {

@@ -52,9 +52,11 @@ export const metadata: Metadata = {
     template: '%s | Eduard Kakosyan',
   },
   description:
-    'Eduard Kakosyan builds AI tools for sales and operations teams. Lead AI Developer at AI-First Consulting in Halifax.',
+    'Eduard Kakosyan leads hands-on AI engineering, from client discovery and architecture to integration and rollout. Lead AI Developer in Halifax.',
   keywords: [
     'AI Developer',
+    'Forward Deployed Engineering',
+    'Applied AI',
     'Machine Learning',
     'LLM',
     'OpenAI',
@@ -97,14 +99,14 @@ export const metadata: Metadata = {
     url: identity.website,
     title: 'Eduard Kakosyan | AI Developer',
     description:
-      'Eduard Kakosyan builds AI tools for sales and operations teams. Lead AI Developer at AI-First Consulting in Halifax.',
+      'Eduard Kakosyan leads hands-on AI engineering, from client discovery and architecture to integration and rollout. Lead AI Developer in Halifax.',
     siteName: 'Eduard Kakosyan Portfolio',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Eduard Kakosyan | AI Developer',
     description:
-      'Eduard Kakosyan builds AI tools for sales and operations teams. Lead AI Developer at AI-First Consulting in Halifax.',
+      'Eduard Kakosyan leads hands-on AI engineering, from client discovery and architecture to integration and rollout. Lead AI Developer in Halifax.',
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,

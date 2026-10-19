@@ -65,16 +65,17 @@ export const projects: Project[] = [
     tier: 'case-study',
     beat: 'systems',
     visibility: 'described-only',
-    description: 'One scorecard for sales and delivery, built on numbers the team agreed on first.',
+    description:
+      'An internal platform connecting SharePoint, Linear and QuickBooks, with a shared capability registry for staff and AI agents.',
     detail:
-      'Eduard led Keystone and designed its architecture. A UX research contractor ran discovery with him, and two co-op developers build from his architecture. The earlier metrics were inaccurate and underused. Keystone is rolling out, not a claimed shipped result.',
+      'Eduard leads Keystone’s architecture and development with a team of five developers. A UX research contractor ran discovery with him. The system connects SharePoint, Linear and QuickBooks and exposes capabilities through MCP. The earlier metrics were inaccurate and underused. Keystone is rolling out, not a claimed shipped result.',
     aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
     outcome: 'Agree on the numbers, then build the dashboard. Rolling out now.',
     facts: {
-      role: 'Lead and architect',
+      role: 'Engineering lead and architect',
       when: '2026 / rolling out',
-      team: 'Eduard, a UX research contractor and two co-op developers',
-      stack: ['Capability registry', 'MCP', 'Scorecards'],
+      team: 'Team of five developers led by Eduard, with a UX research contractor',
+      stack: ['Capability registry', 'MCP', 'SharePoint', 'Linear', 'QuickBooks'],
       links: [],
     },
   },

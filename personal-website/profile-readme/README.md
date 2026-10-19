@@ -2,7 +2,7 @@
 
 # Eduard Kakosyan
 
-Lead AI Developer at AI-First Consulting. I build revenue and operations systems, with local AI where control matters.
+Lead AI Developer at AI-First Consulting. I lead a team of five developers and build AI systems with clients, from discovery and architecture through integration and rollout.
 
 [Website](https://kakosyaneduard.ca) · [Resume](https://kakosyaneduard.ca/eduard-kakosyan-resume.pdf) · [LinkedIn](https://www.linkedin.com/in/eduard-kakosyan) · [Email](mailto:kakosyaneduard@gmail.com)
 
@@ -23,9 +23,9 @@ Lead AI Developer at AI-First Consulting. I build revenue and operations systems
 
 ## Tech
 
-- **GTM & Automation:** CRM pipelines, n8n, Microsoft Graph
 - **AI & LLMs:** MCP, RAG, evals, SGLang, vLLM
 - **Languages & Frameworks:** Python, TypeScript, Go, Next.js, FastAPI
 - **Cloud & Infrastructure:** PostgreSQL, Docker, NVIDIA DGX Spark
+- **Integrations & Automation:** n8n, Microsoft Graph, Power Automate
 
 The code is here; the decisions and my contribution are at [kakosyaneduard.ca](https://kakosyaneduard.ca/projects).

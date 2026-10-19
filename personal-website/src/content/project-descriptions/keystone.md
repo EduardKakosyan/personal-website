@@ -4,7 +4,7 @@
 
 Our old internal dashboard had a problem a redesign couldn't fix: its numbers were inaccurate, and people barely used it. So I started with discovery instead of screens. What does leadership need to know? What does each role need? Where do the files actually live?
 
-I led Keystone and designed the architecture. A UX researcher ran discovery with me, and two co-op developers are building it from my design.
+I lead Keystone's architecture and development with a team of five developers. A UX research contractor worked with me on discovery. My role spans understanding the workflows, designing the system and building it with the team.
 
 ## Definitions
 
@@ -18,13 +18,13 @@ The eight views below are sketches, not screenshots. They contain no company dat
 
 ## Architecture
 
-Keystone keeps a registry of named capabilities and exposes them to AI agents through MCP. Each capability is one operation an agent is allowed to call. The diagram shows that boundary, not the private code behind it.
+Keystone connects SharePoint, Linear and QuickBooks through a shared registry of named capabilities. Staff use those capabilities through the application; AI agents access them through MCP. Each capability is one operation an agent is allowed to call. The diagram shows that boundary, not the private code behind it.
 
 ![Synthetic architecture diagram: capability registry to MCP to an agent.](/images/keystone/capabilities.svg)
 
 ## Build
 
-I handed the architecture to the development team and led the move into code. Keystone is rolling out now, with a target of the end of October 2026. It hasn't shipped, so there are no adoption numbers yet. The code is private.
+I lead development alongside the team, carrying the architecture through implementation and rollout. Keystone is rolling out now, with a target of the end of October 2026. It hasn't shipped, so there are no adoption numbers yet. The code is private.
 
 ## What broke
 

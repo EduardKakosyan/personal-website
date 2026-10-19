@@ -86,6 +86,21 @@ test('numbers in a reply must come from the grounding', () => {
   assert.equal(numbersGrounded('Built in 2026', 'start 2026-02'), true)
 })
 
+test('narrator grounding preserves team leadership and separates the teaching engagements', () => {
+  const { grounding } = buildPrompt({
+    kind: 'question',
+    persona: 'recruiter',
+    chapter: 'adoption',
+    text: 'What did Eduard teach and who does he lead?',
+  })
+  assert.match(grounding, /team of five developers/)
+  assert.match(
+    grounding,
+    /Skills for Hire curriculum work was a client engagement through AI-First, separate from/,
+  )
+  assert.doesNotMatch(grounding, /co-op developers|AI Instructor & Curriculum Developer/)
+})
+
 test('the Spark client sends Access credentials, a timeout and no thinking', async () => {
   const env = {
     DGX_NARRATE_URL: 'https://narrator.example.test',

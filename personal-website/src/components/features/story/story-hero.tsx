@@ -11,10 +11,11 @@ export function StoryHero() {
         {identity.title} at {identity.company}
       </p>
       <h1>
-        I build AI tools that sales and operations teams <em>actually use.</em>
+        I work with your team to build AI that <em>works in practice.</em>
       </h1>
       <p className="site-lead">
-        I connect the tools to the team&apos;s own data and stay until people use them.
+        I lead a team of five developers, working from the first client conversation through
+        architecture, hands-on development, integration and rollout.
       </p>
       <div className="story-actions">
         <a className="site-button" href="#selected-work">

@@ -3,7 +3,7 @@ import { profile } from '@/content/profile'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Eduard Kakosyan — AI for Revenue & Operations',
+  title: 'Eduard Kakosyan — Applied AI & Engineering Leadership',
   description: profile.headline,
 }
 export default function HomePage() {

@@ -73,7 +73,6 @@ export interface Profile {
   headline: string
   roles: Role[]
   education: Education[]
-  /** GTM and automation first. */
   skills: { label: string; items: string[] }[]
   certificates: string[]
   metrics: Metric[]
@@ -193,7 +192,7 @@ export const profile: Profile = profileSchema.parse({
     email: 'kakosyaneduard@gmail.com',
   },
   headline:
-    'I build AI tools that sales and operations teams actually use, connect them to the team’s own data, and stay until people use them.',
+    'I work directly with teams to turn operational problems into working AI systems, from discovery and architecture to integration and rollout.',
   roles: [
     {
       id: 'ai-first',
@@ -204,17 +203,17 @@ export const profile: Profile = profileSchema.parse({
       location: 'Halifax, NS',
       start: '2025-02',
       summary:
-        'I run the dev team, build our internal systems and client AI projects, and sit on the leadership team.',
+        'I lead a team of five developers and build client AI systems, from discovery and architecture through integration and rollout. I sit on the leadership team and also built and managed a data science and ML curriculum for a provincial workforce program through AI-First.',
     },
     {
       id: 'teaching',
-      title: 'AI Instructor & Curriculum Developer',
+      title: 'AI Instructor',
       org: 'ShiftKey Labs, Dalhousie University',
       location: 'Halifax, NS',
       start: '2025-08',
       end: '2026-04',
       summary:
-        'I co-taught an agentic AI course at Dalhousie and built and managed the curriculum for a provincial data science and machine learning program.',
+        'I co-taught an agentic AI course for non-CS students at Dalhousie, helping them build agents with n8n and Bolt.',
     },
     {
       id: 'cargrep',
@@ -238,21 +237,6 @@ export const profile: Profile = profileSchema.parse({
     },
   ],
   skills: [
-    {
-      label: 'GTM & Automation',
-      items: [
-        'CRM pipelines',
-        'Power Automate',
-        'Copilot Studio',
-        'Dataverse',
-        'n8n',
-        'Vapi',
-        'Fireflies',
-        'Linear',
-        'QuickBooks Online',
-        'Microsoft Graph',
-      ],
-    },
     {
       label: 'AI & LLMs',
       items: [
@@ -303,6 +287,21 @@ export const profile: Profile = profileSchema.parse({
         'NVIDIA DGX Spark',
       ],
     },
+    {
+      label: 'Integrations & Automation',
+      items: [
+        'Microsoft Graph',
+        'Power Automate',
+        'Copilot Studio',
+        'Dataverse',
+        'n8n',
+        'Vapi',
+        'Fireflies',
+        'Linear',
+        'QuickBooks Online',
+        'CRM pipelines',
+      ],
+    },
   ],
   certificates: [
     'AWS Cloud Practitioner',
@@ -324,7 +323,7 @@ export const profile: Profile = profileSchema.parse({
       detail: '88% completion',
       label: 'learners',
       definition:
-        'Learners in the Skills for Hire Atlantic data science and ML program whose curriculum Eduard built and managed, with 88% completion, as published in the AI-First Consulting case studies (https://www.ai-first.ca/work).',
+        'Learners in the Skills for Hire Atlantic data science and ML program whose curriculum Eduard built and managed through AI-First Consulting, with 88% completion. This was a client engagement, separate from his teaching at ShiftKey Labs. Published in the AI-First Consulting case studies (https://www.ai-first.ca/work).',
       surfaces: ['resume', 'site'],
     },
     {

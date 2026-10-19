@@ -18,9 +18,9 @@ const still = (id: ChapterId, alt: string) => ({
 export const chapters: Chapter[] = [
   {
     id: 'systems',
-    kicker: 'Revenue and operations',
-    headline: 'Keystone: one scorecard for sales and delivery.',
-    line: 'The old metrics were inaccurate and barely used. A UX researcher and I ran discovery so the team could agree on what each number means, then I designed the system that tracks them. Rolling out now.',
+    kicker: 'Discovery to deployment',
+    headline: 'Keystone: from disconnected tools to one working system.',
+    line: 'I ran discovery with a UX researcher, designed the architecture, and lead development. Keystone connects SharePoint, Linear and QuickBooks through a shared capability registry for staff and AI agents. Rolling out now.',
     proof: ['keystone', 'hvac-rfq-triage', 'consulting-rfp-triage'],
     learnMore: '/projects/keystone',
     learnMoreLabel: 'Read the Keystone case study',
@@ -39,8 +39,8 @@ export const chapters: Chapter[] = [
   {
     id: 'adoption',
     kicker: 'Teaching and adoption',
-    headline: 'Software only counts if people use it.',
-    line: 'I built the curriculum for a provincial data science program: {metric:learners} learners, {metric:learners.detail}. I also co-taught an agentic AI course at Dalhousie.',
+    headline: 'Help people work with what you build.',
+    line: 'Through AI-First, I built a client’s data science and ML curriculum: {metric:learners} learners, {metric:learners.detail}. Separately, I co-taught an agentic AI course for non-CS students at Dalhousie, using n8n and Bolt.',
     proof: ['workforce-ml-curriculum'],
     learnMore: '/about',
     learnMoreLabel: 'See my experience',
@@ -49,8 +49,8 @@ export const chapters: Chapter[] = [
   {
     id: 'next-step',
     kicker: 'Get in touch',
-    headline: 'Want something like this for your team?',
-    line: 'Tell me what your team is stuck on, or grab the résumé first.',
+    headline: 'Need an engineer who works through the whole problem?',
+    line: 'If you’re hiring or have a system to build, tell me about the team, the problem and the constraints. The résumé has my experience at a glance.',
     proof: ['keystone', 'dgx-autonomy'],
     learnMore: '/contact',
     learnMoreLabel: 'Contact me',
@@ -75,7 +75,7 @@ export const narratorLines: Record<Persona, Record<ChapterId, string>> = {
     adoption:
       'Quick facts: Eduard is Lead AI Developer at AI-First Consulting, and he co-taught an AI course at Dalhousie. The résumé has the dates.',
     systems:
-      'Keystone is the system he leads now. He designed it; two co-op developers build from his architecture.',
+      'Eduard leads a team of five developers. On Keystone, he leads both the architecture and development, from discovery through rollout.',
     'private-local':
       "He also builds AI that runs on private hardware. Each project page says what's public and what isn't.",
     'next-step': 'The résumé is one page. His email is right below.',
@@ -95,7 +95,7 @@ export const narratorLines: Record<Persona, Record<ChapterId, string>> = {
     systems:
       "Keystone's code is private, so the case study uses diagrams. Look at the shared capability registry.",
     adoption:
-      'This is the teaching side: a course at Dalhousie and a provincial data science curriculum.',
+      'Two separate engagements: an agentic AI course at Dalhousie, and a client curriculum delivered through AI-First.',
     'next-step': 'Public code is on GitHub. Keeper and Keystone are write-ups only.',
   },
 }

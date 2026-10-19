@@ -218,7 +218,7 @@ function GuideBody() {
             .map((work) => `${work.title}: ${work.summary}`)
             .join('\n\n')
         : /\b(eduard|background|skills|contact|experience|education)\b/i.test(text)
-          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He builds AI systems for revenue and operations teams and local AI tools, and has taught AI courses and workshops. Reach him at ${identity.email}.`
+          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and works directly with clients on AI systems, from discovery and architecture through integration and rollout. Reach him at ${identity.email}.`
           : 'I couldn’t find that in the project notes. Try asking about dgx-autonomy, HUGO, or Shoreline.'
       const direct = directGuideAction(text, currentProject?.slug)
       if (direct) {

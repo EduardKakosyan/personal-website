@@ -38,33 +38,33 @@ export interface ResumeContent {
 
 export const resumeContent: ResumeContent = {
   summary:
-    'Tech and AI lead on a consulting firm’s leadership team. I build the AI systems revenue and operations teams run on, on their own data and local models, and I lead the adoption that gets them used.',
+    'Hands-on AI engineering lead working directly with clients, from discovery and architecture through integration and rollout. I lead a team of five developers building AI applications, workflow integrations and local-model systems.',
   experience: [
     {
       roleId: 'ai-first',
       groups: [
         {
-          label: 'GTM & internal systems',
-          bullets: [
-            'Led and architected Keystone (rolling out), the firm’s system of record over SharePoint, Linear and QuickBooks, with every capability exposed to staff and to Claude through one registry and MCP.',
-            'Ran the discovery behind its attract → convert → deliver → collect scorecard; it succeeds the CRM I built solo.',
-            'Cut proposals from days to 30 minutes and turned every client meeting into Linear tasks (Fireflies, Claude).',
-          ],
-        },
-        {
           label:
-            'Client builds: {metric:projects} client projects {metric:projects.detail}, from AI Accelerator sprints to custom builds',
+            'Client engineering: {metric:projects} projects {metric:projects.detail}, spanning AI Accelerator sprints and custom builds',
           bullets: [
             'Built RFQ, RFP and legal-review triage agents for HVAC, consulting and recruitment firms (Power Automate).',
             'Led RAG chat platforms grounded in clients’ own content, with eval-gated releases (Next.js, pgvector, Claude).',
-            'Leading an on-prem build: a local-model assistant on the client’s own GPU, so the data never leaves the site.',
+            'Leading an on-prem build: a local-model assistant on the client’s own GPU, so the data stays on site.',
           ],
         },
         {
-          label: 'Adoption & leadership',
+          label: 'Architecture & systems integration',
           bullets: [
-            'Hold the leadership team’s tech and AI seat; hire and manage the co-op developers building my architecture.',
-            'Won {metric:oppsWon} sales opportunities I owned ({metric:oppsWon.detail}) across custom builds, advisory and training.',
+            'Lead architecture and development of Keystone (rolling out), connecting SharePoint, Linear and QuickBooks through a shared capability registry for staff and Claude via MCP.',
+            'Ran discovery with a UX researcher to define workflows and shared metrics before building the system.',
+            'Cut proposals from days to 30 minutes and connected client meetings to Linear tasks (Fireflies, Claude).',
+          ],
+        },
+        {
+          label: 'Engineering leadership & enablement',
+          bullets: [
+            'Hold the leadership team’s tech and AI seat; lead development, technical direction and delivery across the team.',
+            'Designed and managed a client’s Skills for Hire data science and ML curriculum: {metric:learners} learners, {metric:learners.detail}.',
             'Ran AI Accelerator sprints, cohort programs and workshops for client teams, CPA firms and a college.',
           ],
         },
@@ -73,7 +73,6 @@ export const resumeContent: ResumeContent = {
     {
       roleId: 'teaching',
       bullets: [
-        'Designed a provincial Skills for Hire data science and ML curriculum: {metric:learners} learners, {metric:learners.detail}.',
         'Co-taught an agentic AI course for non-CS students at Dalhousie, who built agents with n8n and Bolt.',
       ],
     },
@@ -111,18 +110,6 @@ export const resumeContent: ResumeContent = {
   ],
   skills: [
     {
-      label: 'GTM & Automation',
-      items: [
-        'CRM pipelines',
-        'Power Automate',
-        'Copilot Studio',
-        'n8n',
-        'Fireflies',
-        'Linear',
-        'QuickBooks Online',
-      ],
-    },
-    {
       label: 'AI & LLMs',
       items: [
         'Anthropic Claude',
@@ -152,6 +139,17 @@ export const resumeContent: ResumeContent = {
         'Docker',
         'Linux',
         'NVIDIA DGX Spark',
+      ],
+    },
+    {
+      label: 'Integrations & Automation',
+      items: [
+        'Microsoft Graph',
+        'Power Automate',
+        'Copilot Studio',
+        'n8n',
+        'Linear',
+        'QuickBooks Online',
       ],
     },
   ],

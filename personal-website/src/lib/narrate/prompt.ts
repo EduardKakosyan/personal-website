@@ -24,7 +24,8 @@ export interface NarratePrompt {
 
 const audience: Record<Persona, string> = {
   recruiter: 'a recruiter checking his role, scope and dates',
-  'hiring-manager': 'a hiring manager with a revenue or operations problem to solve',
+  'hiring-manager':
+    'a hiring manager looking for hands-on, client-facing AI engineering leadership',
   engineer: 'an engineer who wants to see how the systems actually work',
 }
 

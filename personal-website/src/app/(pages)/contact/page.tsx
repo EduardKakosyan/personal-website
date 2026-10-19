@@ -46,7 +46,7 @@ export default function ContactPage() {
             <p>
               {identity.title} at {identity.company}.
             </p>
-            <p>AI tools for sales and operations teams, on data they control.</p>
+            <p>Client-facing AI engineering, systems integration and local-model deployment.</p>
           </article>
         </div>
       </section>

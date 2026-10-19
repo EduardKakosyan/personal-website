@@ -49,22 +49,20 @@ export const chapters: Chapter[] = [
   {
     id: 'next-step',
     kicker: 'Get in touch',
-    headline: 'Tell me what you’re working on.',
-    line: 'If you’re hiring or have a project in mind, email me about it. My résumé has a short overview of my experience, and my public code is on GitHub.',
+    headline: 'More about my work.',
+    line: 'My résumé has a short overview of my experience. You can find code and build records on GitHub, or email me with a question about a project.',
     proof: ['keystone', 'dgx-autonomy'],
     learnMore: '/contact',
     learnMoreLabel: 'Contact me',
     still: still('next-step', 'The portfolio guide listening, ready for a question.'),
   },
 ]
-export const personaLabels: Record<Persona, string> = {
-  recruiter: "I'm recruiting",
-  'hiring-manager': "I'm hiring for my team",
-  engineer: "I'm an engineer",
-}
+export const portfolioAudience: Persona = 'hiring-manager'
+export const portfolioOrder: ChapterId[] = ['systems', 'private-local', 'adoption', 'next-step']
+
 export const personaOrder: Record<Persona, ChapterId[]> = {
   recruiter: ['adoption', 'systems', 'private-local', 'next-step'],
-  'hiring-manager': ['systems', 'adoption', 'private-local', 'next-step'],
+  'hiring-manager': portfolioOrder,
   engineer: ['private-local', 'systems', 'adoption', 'next-step'],
 }
 export function parsePersona(value: unknown): Persona {

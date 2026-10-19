@@ -3,15 +3,36 @@ import assert from 'node:assert/strict'
 import { existsSync, statSync, readFileSync, readdirSync } from 'node:fs'
 import { loadTs } from './helpers/load-ts.mjs'
 import { findHiddenTerms, localHiddenTerms } from '../scripts/lib/hidden-terms.mts'
-const { chapters, personaOrder, narratorLines, parsePersona } = loadTs(
-  new URL('../src/content/story.ts', import.meta.url),
-)
+const { chapters, portfolioAudience, portfolioOrder, personaOrder, narratorLines, parsePersona } =
+  loadTs(new URL('../src/content/story.ts', import.meta.url))
 const { storyCopy } = loadTs(new URL('../src/content/story-copy.ts', import.meta.url))
 const { projects } = loadTs(new URL('../src/content/projects.ts', import.meta.url))
 const { profile } = loadTs(new URL('../src/content/profile.ts', import.meta.url))
 const { guideSections, guideDestination, projectCommands } = loadTs(
   new URL('../src/content/portfolio.ts', import.meta.url),
 )
+
+test('homepage has one work-first reading order without audience selection', () => {
+  assert.deepEqual(portfolioOrder, ['systems', 'private-local', 'adoption', 'next-step'])
+  assert.deepEqual(portfolioOrder, personaOrder[portfolioAudience])
+  const scroller = readFileSync(
+    new URL('../src/components/features/story/story-scroller.tsx', import.meta.url),
+    'utf8',
+  )
+  assert.match(scroller, /portfolioOrder\.map/)
+  assert.doesNotMatch(scroller, /PersonaChooser|URLSearchParams|popstate|What brings you here/)
+  const hero = readFileSync(
+    new URL('../src/components/features/story/story-hero.tsx', import.meta.url),
+    'utf8',
+  )
+  assert.match(hero, /Forward Deployed AI Developer/)
+  assert.match(hero, /based in Halifax/)
+  assert.doesNotMatch(hero, /metricsFor|team of five|story-proof/)
+  assert.equal(profile.identity.company, 'AI-First Solutions')
+  assert.equal(profile.identity.title, 'Lead AI Developer')
+  assert.match(profile.headline, /local organizations/)
+  assert.match(profile.headline, /loop engineering, local AI systems/)
+})
 
 test('each persona is a complete permutation ending at next-step with complete narration', () => {
   for (const [persona, order] of Object.entries(personaOrder)) {

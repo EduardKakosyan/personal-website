@@ -3,7 +3,7 @@ import { profile } from '@/content/profile'
 export function ClientWork() {
   return (
     <section className="site-section" aria-labelledby="client-heading">
-      <p className="site-kicker">Through AI-First Consulting</p>
+      <p className="site-kicker">Through {profile.identity.company}</p>
       <h2 id="client-heading">Client work</h2>
       <p className="site-lead">
         I led some of these projects and contributed to others. The links open AI-First&apos;s

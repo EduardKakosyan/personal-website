@@ -1,6 +1,6 @@
 # Dev Template
 
-This is the development setup I put together for projects at AI-First Consulting. It collects the agent commands, checks, and Git hooks in one place so they can be reused when starting a project.
+This is the development setup I put together for projects at AI-First Solutions. It collects the agent commands, checks, and Git hooks in one place so they can be reused when starting a project.
 
 ## Working with agents
 

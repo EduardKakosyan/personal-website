@@ -181,7 +181,7 @@ export const profile: Profile = profileSchema.parse({
   identity: {
     name: 'Eduard Kakosyan',
     title: 'Lead AI Developer',
-    company: 'AI-First Consulting',
+    company: 'AI-First Solutions',
     companyUrl: 'https://www.ai-first.ca',
     location: 'Halifax, Nova Scotia',
     country: 'Canada',
@@ -192,13 +192,13 @@ export const profile: Profile = profileSchema.parse({
     email: 'kakosyaneduard@gmail.com',
   },
   headline:
-    'I work with clients, lead a team of five developers and write code alongside them. Outside client work, I build meeting tools and experiment with local coding agents.',
+    'I lead tech and AI at AI-First Solutions, where I work with local organizations and build software for our internal operations. This site covers my professional work, along with my passion projects in loop engineering, local AI systems and anything else new in AI.',
   roles: [
     {
       id: 'ai-first',
       title: 'Lead AI Developer',
       scope: 'Tech & AI lead, leadership team',
-      org: 'AI-First Consulting',
+      org: 'AI-First Solutions',
       orgUrl: 'https://www.ai-first.ca',
       location: 'Halifax, NS',
       start: '2025-02',
@@ -323,7 +323,7 @@ export const profile: Profile = profileSchema.parse({
       detail: '88% completion',
       label: 'learners',
       definition:
-        'Learners in the Skills for Hire Atlantic data science and ML program whose curriculum Eduard built and managed through AI-First Consulting, with 88% completion. This was a client engagement, separate from his teaching at ShiftKey Labs. Published in the AI-First Consulting case studies (https://www.ai-first.ca/work).',
+        'Learners in the Skills for Hire Atlantic data science and ML program whose curriculum Eduard built and managed through AI-First Solutions, with 88% completion. This was a client engagement, separate from his teaching at ShiftKey Labs. Published in the AI-First case studies (https://www.ai-first.ca/work).',
       surfaces: ['resume', 'site'],
     },
     {

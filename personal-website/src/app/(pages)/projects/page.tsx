@@ -6,7 +6,7 @@ import { ArchiveTable } from '@/components/features/work/archive-table'
 export const metadata: Metadata = {
   title: 'Work',
   description:
-    'Keystone, Keeper and dgx-autonomy: software I build at AI-First Consulting and my own experiments with local models.',
+    'Keystone, Keeper and dgx-autonomy: software I build at AI-First Solutions and my own experiments with local models.',
   alternates: { canonical: '/projects' },
 }
 

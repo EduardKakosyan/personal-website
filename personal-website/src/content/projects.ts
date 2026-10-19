@@ -224,7 +224,7 @@ export const projects: Project[] = [
     tier: 'archive',
     visibility: 'public-repo',
     description:
-      'Agent commands, checks and Git hooks for starting projects at AI-First Consulting.',
+      'Agent commands, checks and Git hooks for starting projects at AI-First Solutions.',
     detail:
       'Planning, implementation and review commands, plus saved notes between sessions and development checks.',
     aliases: ['dev template'],

@@ -7,67 +7,23 @@
 .site-page .story-hero h1 {
   font-size: var(--text-display);
 }
-.story-hero .site-role {
-  margin-top: var(--site-xl);
-}
 .story-actions,
-.story-chips,
-.story-chooser > div {
+.story-chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--site-md);
 }
-.story-proof {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-block);
-  margin-top: var(--space-block);
-  max-width: var(--site-reading);
-}
-.story-proof details {
-  border-top: var(--site-border) solid var(--color-line);
-  padding-top: var(--site-lg);
-}
-.story-proof summary {
-  cursor: pointer;
-}
-.story-proof strong {
-  font-size: var(--text-h2);
-  font-weight: 500;
-}
-.story-proof span {
-  display: block;
-  color: var(--color-muted);
-  font-size: var(--text-kicker);
-}
-.story-proof p {
-  font-size: var(--text-kicker);
-  margin-top: var(--site-lg);
-}
 .story-body {
+  scroll-margin-top: calc(var(--site-control) * 3 + var(--site-xl));
   padding-top: var(--space-block);
   background: linear-gradient(var(--color-surface), var(--color-paper));
   border-top: var(--site-border) solid var(--color-line);
 }
-.story-chooser legend {
-  font-size: var(--text-h2);
-}
-.story-chooser p {
-  margin-block: var(--site-md);
-}
-.story-chooser button,
 .story-narrator :is(input, button) {
   min-height: var(--site-control);
   padding: var(--site-sm) var(--site-md);
   border: var(--site-border) solid var(--color-line);
   border-radius: var(--radius-control);
-}
-.story-chooser button {
-  cursor: pointer;
-}
-.story-chooser button[aria-pressed='true'] {
-  background: var(--color-stage);
-  color: var(--color-stage-ink);
 }
 .story-layout {
   display: grid;

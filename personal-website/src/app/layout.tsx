@@ -45,14 +45,17 @@ const personJsonLd = {
   knowsAbout: profile.skills.flatMap((group) => group.items),
 }
 
+const siteTitle = 'Eduard Kakosyan | Forward Deployed AI Developer'
+const siteDescription =
+  'Eduard Kakosyan is a Forward Deployed AI Developer based in Halifax. He leads tech and AI at AI-First Solutions and builds local AI systems and coding-agent loops.'
+
 export const metadata: Metadata = {
   metadataBase: new URL(identity.website),
   title: {
-    default: 'Eduard Kakosyan | AI Developer',
+    default: siteTitle,
     template: '%s | Eduard Kakosyan',
   },
-  description:
-    'Eduard Kakosyan is Lead AI Developer at AI-First Consulting in Halifax. He leads a team of five developers and builds AI software with clients.',
+  description: siteDescription,
   keywords: [
     'AI Developer',
     'Forward Deployed Engineering',
@@ -97,16 +100,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: identity.website,
-    title: 'Eduard Kakosyan | AI Developer',
-    description:
-      'Eduard Kakosyan is Lead AI Developer at AI-First Consulting in Halifax. He leads a team of five developers and builds AI software with clients.',
+    title: siteTitle,
+    description: siteDescription,
     siteName: 'Eduard Kakosyan Portfolio',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Eduard Kakosyan | AI Developer',
-    description:
-      'Eduard Kakosyan is Lead AI Developer at AI-First Consulting in Halifax. He leads a team of five developers and builds AI software with clients.',
+    title: siteTitle,
+    description: siteDescription,
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,

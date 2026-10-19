@@ -2,7 +2,7 @@
 
 # Eduard Kakosyan
 
-Lead AI Developer at AI-First Consulting. I lead a team of five developers and build AI systems with clients, from discovery and architecture through integration and rollout.
+Lead AI Developer at AI-First Solutions. I lead a team of five developers and build AI systems with clients, from discovery and architecture through integration and rollout.
 
 [Website](https://kakosyaneduard.ca) · [Resume](https://kakosyaneduard.ca/eduard-kakosyan-resume.pdf) · [LinkedIn](https://www.linkedin.com/in/eduard-kakosyan) · [Email](mailto:kakosyaneduard@gmail.com)
 

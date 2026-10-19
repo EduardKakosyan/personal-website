@@ -1,6 +1,6 @@
 # VoxCoach
 
-VoxCoach is a practice tool for sales discovery calls at AI-First Consulting. You talk to a simulated buyer, then get feedback on the conversation. Speech recognition, the language model, and speech synthesis run locally on Apple Silicon.
+VoxCoach is a practice tool for sales discovery calls at AI-First Solutions. You talk to a simulated buyer, then get feedback on the conversation. Speech recognition, the language model, and speech synthesis run locally on Apple Silicon.
 
 It was built through [Claude Autonomous](/projects/claude-autonomous), with Claude Code working across more than twelve nightly runs.
 

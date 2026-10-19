@@ -26,12 +26,12 @@ export const projects: Project[] = [
     description:
       'A map of supervised beaches around Halifax, with public notices behind each swimming status.',
     detail:
-      'A newer Volta hackathon build, distinct from Second Brain. The repository documents fixture and live modes, source-page tests and mobile browser checks. Exact event dates, team composition and competition outcome are not verified.',
+      'Built at a Volta hackathon, September 12-14, 2026, with Harshil-varia (GitHub). Distinct from the earlier Second Brain project. The repository documents fixture and live modes, source-page tests and mobile browser checks. The competition outcome is not recorded.',
     aliases: ['beach open', 'new volta', 'volta-sep26'],
     facts: {
       role: 'Builder',
-      when: 'Newer Volta hackathon / exact dates unverified',
-      team: 'Team composition unverified',
+      when: 'Volta hackathon, September 2026',
+      team: 'Eduard and @Harshil-varia',
       stack: ['Next.js', 'MapLibre', 'Supabase', 'Vitest', 'Playwright'],
       links: [
         {
@@ -49,12 +49,12 @@ export const projects: Project[] = [
     description:
       'An educational sky explorer that changes the viewpoint from Earth to an exoplanet and lets visitors draw constellations.',
     detail:
-      'Built for NASA Space Apps Challenge 2024. The repository describes Gaia and NASA Exoplanet Archive data, coordinate transformations and a React sky viewer. Eduard is listed among the contributors; individual implementation ownership and competition outcome are not verified.',
+      'Built for NASA Space Apps Challenge 2024 with Huy Huynh, Hao Tang and quangphucthan (GitHub). Eduard worked on the constellation drawing, the interface and the Docker setup. The repository describes Gaia and NASA Exoplanet Archive data, coordinate transformations and a React sky viewer. The competition outcome is not recorded.',
     aliases: ['exosky', 'sky painters', 'nasa'],
     facts: {
       role: 'Team contributor',
       when: 'NASA Space Apps Challenge 2024',
-      team: 'Hackathon team; Eduard listed among contributors',
+      team: 'Huy Huynh, Hao Tang, @quangphucthan and Eduard',
       stack: ['React', 'Three.js', 'TypeScript', 'Python', 'PostgreSQL', 'Docker'],
       links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/exosky_nasa' }],
     },

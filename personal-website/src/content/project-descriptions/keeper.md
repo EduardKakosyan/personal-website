@@ -2,30 +2,30 @@
 
 ## Problem
 
-Meeting transcripts are useful only if you can find the decision again and check it against what was actually said. I built Keeper as a private archive, with a Mac app for capture and dictation and a server for retrieval.
+A meeting transcript is only useful if you can find the decision later and check what was actually said. I built Keeper to do that without handing the archive to anyone else: a Mac app captures meetings and handles dictation, and a server stores and searches everything.
 
 ## System
 
-The server stores transcripts and summary versions in SQLite, indexes them with FTS5, and exposes a server-rendered web interface, a REST API and MCP tools. A configured model endpoint can summarize meetings; archive search does not require a model.
+Transcripts and summaries live in SQLite with full-text search (FTS5). You can reach them three ways: a web interface, a REST API, and MCP tools for AI assistants. A model can write summaries, but search works without one.
 
-Live uploads enter a durable summary queue. If the inference machine is busy, the job waits and retries rather than making the Mac keep a connection open. Imports preserve the original summary instead of queuing the entire back catalogue for regeneration.
+When a meeting uploads, its summary goes into a queue. If the machine running the model is busy, the job waits and retries, so the Mac doesn't have to stay connected. Imported meetings keep their original summaries instead of regenerating the whole back catalogue.
 
 ## Decisions
 
-Ownership and sharing rules sit at the repository boundary, so search, exports, web pages and MCP read through the same access rule. A colleague can read a shared meeting without gaining the right to change it.
+**One access rule for everything.** Ownership and sharing are checked where the data is stored, so search, exports, web pages and MCP all follow the same rule. A colleague can read a meeting you shared without being able to change it.
 
-Summary versions remain available after regeneration. Speaker names are overlays on the original labels rather than destructive transcript rewrites. Unknown speakers stay unknown instead of being guessed from an attendee list.
+**Nothing gets overwritten.** Old summaries stay available after a new one is generated. Speaker names sit on top of the original labels instead of rewriting the transcript. If a speaker is unknown, Keeper leaves them unknown rather than guessing from the attendee list.
 
-Private storage does not make every connected assistant private. An external MCP client can send retrieved material to its provider. The credential used for that connection must match the access the person intended to grant.
+**Private storage isn't the whole story.** An AI assistant connected over MCP can still send what it retrieves to its own provider. So the credential for that connection should grant only the access the person meant to give.
 
 ## Result
 
-Keeper provides a searchable archive with timestamped evidence, portable exports and model-optional retrieval. Its documented tests exercise account isolation, import idempotency, paging, recovery and MCP over a real server connection. These are implementation checks, not a claim of measured business impact.
+A searchable archive with timestamps back to the source, exports you can take elsewhere, and search that doesn't need a model. The tests cover account isolation, repeat imports, paging, recovery, and MCP over a real server connection. I haven't measured business impact.
 
-The repository is currently private. Publication still requires the planned history scan and fixture review; no public source link is offered before that step.
+The code stays private until I've scanned its history and reviewed the test data.
 
 ## What broke
 
-An earlier search implementation treated SQLite's BM25 cost as relevance and displayed results in reverse order. Paging tests stayed green because the candidate rows were right while their ranking was wrong. The lesson was to test the meaning of the score, not just whether pages were reachable.
+Search results came back in reverse order. SQLite's BM25 score is a cost, where lower is better, and an early version treated it as relevance, where higher is better. The paging tests still passed because the right rows came back; they were just ranked wrong. Lesson: test what the score means, not just that the pages load.
 
-Another version changed the candidate window with the requested page, producing duplicates and gaps. Keeping that window fixed per query made paging a traversal of one ranked result set rather than a new search on every page.
+Paging also produced duplicates and gaps for a while, because each page ran a slightly different search. Fixing the set of candidates per query made every page a slice of one ranked list.

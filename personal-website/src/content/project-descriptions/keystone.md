@@ -2,32 +2,32 @@
 
 ## Discovery
 
-The earlier internal dashboard had metrics that were judged inaccurate and underused. Rebuilding the interface alone would not fix that. I started with discovery: how leadership and the team worked, what each role needed to know, and how files were stored.
+Our old internal dashboard had a problem a redesign couldn't fix: its numbers were inaccurate, and people barely used it. So I started with discovery instead of screens. What does leadership need to know? What does each role need? Where do the files actually live?
 
-I led Keystone and designed its architecture. A UX research contractor ran discovery with me, and two co-op developers build from my architecture.
+I led Keystone and designed the architecture. A UX researcher ran discovery with me, and two co-op developers are building it from my design.
 
 ## Definitions
 
-The scorecard follows the business from attract to convert to deliver to collect. KPI interviews with each role came before the views: a shared definition matters more than a polished chart if people disagree on what it measures.
+The scorecard follows the business from start to finish: attract, convert, deliver, collect. Before drawing any views, we interviewed each role about the numbers they rely on. If two people disagree on what a number means, a nicer chart won't help.
 
 ![Synthetic funnel diagram: attract, convert, deliver, collect.](/images/keystone/funnel.svg)
 
-The eight scorecard views below are schematic placeholders, not screenshots or a claim about the final interface. They contain no company records, real figures or identifying data.
+The eight views below are sketches, not screenshots. They contain no company data.
 
 ![Eight synthetic scorecard wireframes, labelled View A through View H.](/images/keystone/scorecards.svg)
 
 ## Architecture
 
-The architecture connects a capability registry to MCP. The diagram deliberately shows the boundary rather than private implementation details: named capabilities provide the operations an agent can call.
+Keystone keeps a registry of named capabilities and exposes them to AI agents through MCP. Each capability is one operation an agent is allowed to call. The diagram shows that boundary, not the private code behind it.
 
 ![Synthetic architecture diagram: capability registry to MCP to an agent.](/images/keystone/capabilities.svg)
 
 ## Build
 
-I handed the architecture to the development team and led the coding handoff. Keystone is rolling out; the target was the end of October 2026. There is no shipped adoption or performance result to claim here yet. The code stays private.
+I handed the architecture to the development team and led the move into code. Keystone is rolling out now, with a target of the end of October 2026. It hasn't shipped, so there are no adoption numbers yet. The code is private.
 
 ## What broke
 
-The predecessor's metrics were inaccurate and underused. That is the concrete failure this work addresses, not evidence that the replacement has already solved it. The new definitions and scorecard still need to prove useful in day-to-day use.
+The old dashboard. Its numbers were inaccurate and people barely used it. A new dashboard built on the same unclear definitions would have failed the same way, which is why this project started with discovery instead of design.
 
-This site follows the same design sequence: define who needs what, make the evidence readable, then test whether people can find it.
+The new scorecard still has to prove itself in daily use. That hasn't happened yet.

@@ -2,12 +2,14 @@
 
 ## Problem
 
-A beach map is only useful if it explains whether swimming is currently advised. This newer Volta hackathon project brings public notices into one map. It is separate from the earlier Second Brain study assistant.
+Can you swim at this beach right now? The answer is spread across three public sources: the municipality's supervised-beach table, provincial park notices, and the provincial blue-green algae feed. I built a map that answers it in one place, with the official notice underneath each status. It was a Volta hackathon project, September 12–14, 2026, built with [@Harshil-varia](https://github.com/Harshil-varia).
 
 ## System
 
-The public repository documents a Next.js app with MapLibre and Supabase. It reads municipal beach information, provincial park notices and algae notices, then normalizes them into swimming statuses. Fixture mode works without database credentials; live mode reads the configured database.
+A Next.js app with MapLibre and Supabase. The server reads the three sources and turns them into one status per beach: open, advisory, closed or off-season. It runs without a database in fixture mode, using captured copies of the source pages, and against Supabase in live mode.
 
-## Verification and limits
+## Testing
 
-The repository provides Vitest tests over captured source pages and Playwright browser checks. These were inspected, not executed as part of this portfolio update. Exact event dates, team composition and competition outcome remain unverified. Fixture results are not live safety advice; check the official notice before swimming.
+Vitest checks the parsing against captured copies of each source page, and Playwright checks the map in a mobile browser. The statuses are not safety advice; check the official notice before you swim.
+
+[Source code](https://github.com/EduardKakosyan/claude-hackathon-volta-sep26)

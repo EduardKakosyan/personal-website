@@ -2,12 +2,14 @@
 
 ## Problem
 
-What would the sky look like from another planet? Our NASA Space Apps Challenge 2024 project explored that question through an interactive sky viewer and constellation drawing.
+What would the night sky look like from another planet? For NASA Space Apps Challenge 2024, our team built a sky viewer that moves your viewpoint from Earth to an exoplanet and lets you draw your own constellations.
 
 ## System
 
-The public repository describes Gaia and NASA Exoplanet Archive data, coordinate transformations and brightness adjustments for a different viewpoint. A React and Three.js frontend works with a Python and PostgreSQL backend.
+Star positions come from Gaia and the NASA Exoplanet Archive. The app shifts each star's coordinates and brightness to the new viewpoint. It has a React and Three.js frontend and a Python and PostgreSQL backend.
 
-## Contribution and limits
+## My part
 
-I am listed among the hackathon contributors. Individual implementation ownership and competition outcome are not verified here. The repository documents a historical demo, but its availability and a complete fresh-machine setup have not been checked. This is an older educational prototype, not a claim of a maintained astronomy service.
+I worked on the constellation drawing, the interface, and the Docker setup. The team was Huy Huynh, Hao Tang, [@quangphucthan](https://github.com/quangphucthan) and me. It's a hackathon prototype and isn't maintained.
+
+[Source code](https://github.com/EduardKakosyan/exosky_nasa)

@@ -6,7 +6,7 @@ Camp Yahtzee is for passing one phone around a camp table. Players can use real 
 
 The original version was built with my [dgx-autonomy setup](/projects/dgx-autonomy). Qwen3.8-Flash-Next ran on one DGX Spark and worked through four conversations over about 24 hours on September 28–29, 2026. The run included a brief and two rounds of product feedback.
 
-## Verification and attribution
+## How it was checked
 
 The build record reports 24 out of 24 acceptance tests passing. The agent also checked the scoring rules across all 7,776 possible rolls against a separate reference implementation.
 

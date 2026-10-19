@@ -130,7 +130,9 @@ Set these for Preview and Production (Vercel dashboard → Project → Settings 
 | `DGX_NARRATE_MODEL`       | optional; defaults to `qwen3.6-35b-a3b`                                                  |
 | `HIDDEN_TERMS`            | optional; comma-separated client names. Replies mentioning one are dropped               |
 
-Redeploy, then check (on a protected preview, use `vercel curl`):
+For Preview, pass the branch as the third argument (`vercel env add DGX_NARRATE_API_KEY preview <branch> --value "$KEY" --yes`): in CLI 54.5 the all-branches form loops on `git_branch_required` in non-interactive mode. Read the key into a shell variable from the Spark rather than pasting it.
+
+Redeploy, then check (on a protected preview, use `vercel curl --deployment <url> /api/narrate -- -XPOST -d '<json>'`):
 
 ```bash
 curl -s -XPOST https://<deployment>/api/narrate \

@@ -1,6 +1,10 @@
 import { Mail, Linkedin, Github, MapPin, Calendar, Coffee } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import type { Metadata } from 'next'
+import { identity } from '@/content/profile'
+
+/** The last path segment of a profile URL, e.g. the LinkedIn handle. */
+const handle = (url: string) => url.replace(/\/+$/, '').split('/').pop() ?? url
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -10,29 +14,29 @@ export const metadata: Metadata = {
 const contactDetails = [
   {
     icon: Mail,
-    text: 'eduard@ai-first.ca',
-    href: 'mailto:eduard@ai-first.ca',
+    text: identity.email,
+    href: `mailto:${identity.email}`,
     label: 'Email',
     description: 'For questions about my work or a project',
   },
   {
     icon: Linkedin,
-    text: 'eduard-kakosyan',
-    href: 'https://linkedin.com/in/eduard-kakosyan',
+    text: handle(identity.linkedin),
+    href: identity.linkedin,
     label: 'LinkedIn',
     description: 'You can message me here too',
   },
   {
     icon: Github,
-    text: 'eduardkakosyan',
-    href: 'https://github.com/eduardkakosyan',
+    text: handle(identity.github),
+    href: identity.github,
     label: 'GitHub',
     description: 'Code for the projects on this site',
   },
   {
     icon: MapPin,
-    text: 'Halifax, Nova Scotia',
-    href: 'https://maps.google.com?q=Halifax,Nova Scotia',
+    text: identity.location,
+    href: `https://maps.google.com?q=${encodeURIComponent(identity.location)}`,
     label: 'Location',
     description: 'Where I’m based',
   },
@@ -67,7 +71,7 @@ export default function ContactPage() {
         <p className="mt-3 max-w-3xl mx-auto text-lg text-muted-foreground md:text-xl">
           You can find me on{' '}
           <a
-            href="https://linkedin.com/in/eduard-kakosyan"
+            href={identity.linkedin}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline font-semibold"

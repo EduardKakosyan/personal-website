@@ -1,5 +1,5 @@
 import { ArrowUpRight } from 'lucide-react'
-import { identity } from '@/content/portfolio'
+import { identity } from '@/content/profile'
 
 export function Footer() {
   return (
@@ -7,8 +7,10 @@ export function Footer() {
       <div className="lab-footer-inner">
         <div className="lab-footer-top">
           <div>
-            <strong>Eduard Kakosyan</strong>
-            <p>AI developer and educator.</p>
+            <strong>{identity.name}</strong>
+            <p>
+              {identity.title} at {identity.company}.
+            </p>
           </div>
           <div className="lab-footer-links">
             <a href={identity.github} target="_blank" rel="noopener noreferrer">
@@ -26,8 +28,10 @@ export function Footer() {
           </div>
         </div>
         <div className="lab-footer-bottom">
-          <span>© {new Date().getFullYear()} EDUARD KAKOSYAN</span>
-          <span>HALIFAX, NOVA SCOTIA</span>
+          <span>
+            © {new Date().getFullYear()} {identity.name.toUpperCase()}
+          </span>
+          <span>{identity.location.toUpperCase()}</span>
         </div>
       </div>
     </footer>

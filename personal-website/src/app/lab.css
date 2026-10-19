@@ -119,10 +119,16 @@ main {
   right: 0;
   bottom: 3px;
 }
-.lab-nav a:last-child {
+.lab-nav a {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.lab-nav .lab-nav-resume {
+  border: 1px solid #bcbeb3;
+  border-radius: 30px;
+  padding: 10px 17px;
+  white-space: nowrap;
 }
 .lab-nav .nav-divider {
   width: 1px;
@@ -886,6 +892,10 @@ main {
   .lab-nav a {
     display: inline-flex;
     align-items: center;
+    gap: 5px;
+  }
+  .lab-nav .lab-nav-resume {
+    padding-inline: 12px;
   }
   .eyebrow {
     font-size: 8px;
@@ -1039,5 +1049,12 @@ main {
   }
   .lab-button:hover {
     transform: none;
+  }
+}
+/* Phones: the Résumé button needs the room, so the wordmark shrinks to its monogram (the link keeps
+   its aria-label). Interim until the Phase 3 shell replaces this header. */
+@media (max-width: 420px) {
+  .lab-wordmark > span:not(.lab-monogram) {
+    display: none;
   }
 }

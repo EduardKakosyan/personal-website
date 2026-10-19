@@ -28,6 +28,7 @@ import {
   type ProjectCommand,
   retrieveWork,
   guideSections,
+  identity,
   type GuideAction,
   type Work,
 } from '@/content/portfolio'
@@ -206,7 +207,7 @@ export function PortfolioGuide() {
             .map((work) => `${work.title}: ${work.summary}`)
             .join('\n\n')
         : /\b(eduard|background|skills|contact|experience|education)\b/i.test(text)
-          ? 'Eduard builds local AI, autonomous systems and business tools at AI-First Consulting in Halifax. He is a Dalhousie CS graduate and also teaches AI courses and workshops. Reach him at eduard@ai-first.ca.'
+          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He builds AI systems for revenue and operations teams and local AI tools, and has taught AI courses and workshops. Reach him at ${identity.email}.`
           : 'I couldn’t find that in the project notes. Try asking about dgx-autonomy, HUGO, or Shoreline.'
       const direct = directGuideAction(text, currentProject?.slug)
       if (direct) {

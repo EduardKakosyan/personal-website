@@ -17,6 +17,7 @@ import { PageTransitionProvider } from '@/components/providers/page-transition-p
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { WebVitals } from '@/components/features/web-vitals'
+import { identity, profile } from '@/content/profile'
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -30,8 +31,27 @@ const geistMono = Geist_Mono({
   display: 'swap',
 })
 
+// Person structured data, built from the same facts as the résumé and the footer.
+const personJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: identity.name,
+  jobTitle: identity.title,
+  description: profile.headline,
+  url: identity.website,
+  email: `mailto:${identity.email}`,
+  homeLocation: { '@type': 'Place', name: `${identity.location}, ${identity.country}` },
+  sameAs: [identity.linkedin, identity.github],
+  worksFor: { '@type': 'Organization', name: identity.company, url: identity.companyUrl },
+  alumniOf: profile.education.map((entry) => ({
+    '@type': 'CollegeOrUniversity',
+    name: entry.school,
+  })),
+  knowsAbout: profile.skills.flatMap((group) => group.items),
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://kakosyaneduard.ca'),
+  metadataBase: new URL(identity.website),
   title: {
     default: 'Eduard Kakosyan | AI Developer',
     template: '%s | Eduard Kakosyan',
@@ -51,12 +71,11 @@ export const metadata: Metadata = {
     'Dalhousie University',
     'AI Education',
     'Agentic AI',
-    'Digital Nova Scotia',
     'Shiftkey Labs',
   ],
-  authors: [{ name: 'Eduard Kakosyan', url: 'https://kakosyaneduard.ca' }],
-  creator: 'Eduard Kakosyan',
-  publisher: 'Eduard Kakosyan',
+  authors: [{ name: identity.name, url: identity.website }],
+  creator: identity.name,
+  publisher: identity.name,
   robots: {
     index: true,
     follow: true,
@@ -80,7 +99,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://kakosyaneduard.ca',
+    url: identity.website,
     title: 'Eduard Kakosyan | AI Developer',
     description:
       'I’m Eduard, an AI developer in Halifax. These are my projects with local models, coding agents, and a small robot.',
@@ -96,7 +115,7 @@ export const metadata: Metadata = {
     google: process.env.GOOGLE_SITE_VERIFICATION,
   },
   alternates: {
-    canonical: 'https://kakosyaneduard.ca',
+    canonical: identity.website,
   },
   category: 'technology',
 }
@@ -116,39 +135,7 @@ export default function RootLayout({
         {/* Structured Data */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Person',
-              name: 'Eduard Kakosyan',
-              jobTitle: 'Lead AI Developer',
-              description: 'AI developer and educator based in Halifax, Nova Scotia',
-              url: 'https://kakosyaneduard.ca',
-              sameAs: [
-                'https://www.linkedin.com/in/eduard-kakosyan',
-                'https://github.com/eduardkakosyan',
-              ],
-              worksFor: {
-                '@type': 'Organization',
-                name: 'AI-First Consulting',
-              },
-              alumniOf: {
-                '@type': 'Organization',
-                name: 'Dalhousie University',
-              },
-              knowsAbout: [
-                'Artificial Intelligence',
-                'Machine Learning',
-                'Python',
-                'Next.js',
-                'OpenAI',
-                'Ollama',
-                'Claude',
-                'CrewAI',
-                'Agentic AI',
-              ],
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
         />
       </head>
       <body

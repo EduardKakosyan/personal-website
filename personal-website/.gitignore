@@ -71,3 +71,6 @@ ehthumbs.db
 
 # stylelint cache
 .stylelintcache
+
+# Client names for the hidden-term guard (never commit these; see scripts/lib/hidden-terms.mts)
+hidden-terms.local.txt

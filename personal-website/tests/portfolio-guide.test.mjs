@@ -1,20 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import ts from 'typescript'
+import { loadTs } from './helpers/load-ts.mjs'
 
 // Exercise the same TypeScript contract used by the browser, without a DOM or model download.
-const sourceUrl = new URL('../src/content/portfolio.ts', import.meta.url)
-const compiled = ts.transpileModule(readFileSync(sourceUrl, 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText
-const fixtureModule = { exports: {} }
-new Function('require', 'module', 'exports', compiled)(
-  createRequire(sourceUrl),
-  fixtureModule,
-  fixtureModule.exports,
-)
+// portfolio.ts imports ./profile, which the loader transpiles the same way.
+const fixtureModule = { exports: loadTs(new URL('../src/content/portfolio.ts', import.meta.url)) }
 const {
   guideActionSchema,
   guideOutputSchema,

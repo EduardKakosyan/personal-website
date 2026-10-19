@@ -1,17 +1,19 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowDown, ArrowUpRight } from 'lucide-react'
+import { identity, resumePdfPath } from '@/content/profile'
+import { analyticsEvents } from '@/lib/analytics'
 
 export function Header() {
   const pathname = usePathname()
   return (
     <header className="lab-header" data-tone={pathname === '/' ? 'dark' : 'light'}>
       <div className="lab-header-inner">
-        <Link href="/" className="lab-wordmark" aria-label="Eduard Kakosyan home">
+        <Link href="/" className="lab-wordmark" aria-label={`${identity.name} home`}>
           <span className="lab-monogram">ek.</span>
           <span>
-            <strong>Eduard Kakosyan</strong>
+            <strong>{identity.name}</strong>
             <small>AI ENGINEER & BUILDER</small>
           </span>
         </Link>
@@ -28,6 +30,16 @@ export function Header() {
             Let’s talk
             <ArrowUpRight size={12} />
           </Link>
+          <a
+            href={resumePdfPath}
+            download
+            className="lab-nav-resume"
+            aria-label="Download résumé (PDF)"
+            onClick={() => analyticsEvents.resumeDownloaded()}
+          >
+            Résumé
+            <ArrowDown size={12} aria-hidden="true" />
+          </a>
         </nav>
       </div>
     </header>

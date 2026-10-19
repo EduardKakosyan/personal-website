@@ -22,6 +22,7 @@ pnpm start            # Serve production build
 pnpm lint             # ESLint (eslint .)
 pnpm lint:fix         # Auto-fix lint + prettier
 pnpm type-check       # TypeScript checking (tsc --noEmit)
+pnpm test             # Node tests (node --test tests/**/*.test.mjs)
 
 # CI/CD
 pnpm changeset        # Create a changeset for versioning
@@ -32,7 +33,7 @@ pnpm secrets:scan     # Gitleaks scan on full repo
 ANALYZE=true pnpm build
 ```
 
-No test suite is configured.
+Tests live in `personal-website/tests/*.test.mjs` and use Node's built-in test runner (Node ≥ 22; CI uses Node 24). Locally the `node` on PATH may be a broken nvm shim, so prefix with `PATH=/opt/homebrew/bin:$PATH`.
 
 ## Architecture
 
@@ -40,14 +41,13 @@ No test suite is configured.
 
 ### Key directories (`personal-website/src/`)
 
-- `app/` — App Router pages. Route group `(pages)/` contains about, contact, projects. `blog/[slug]/` has dynamic routes with `generateStaticParams`.
-- `components/features/` — Domain components (chatbot, hero, AI sections, etc.)
+- `app/` — App Router pages. Route group `(pages)/` contains contact and projects. `projects/[slug]/` has dynamic routes with `generateStaticParams`.
+- `components/features/` — Domain components (homepage, portfolio guide, agent scene, project pages)
 - `components/ui/` — shadcn/ui components (new-york style, Lucide icons). Add via `npx shadcn@latest add <component>`.
 - `components/layouts/` — Header and Footer
-- `content/blog/` — Markdown/MDX blog posts with frontmatter (parsed by gray-matter + remark/rehype)
 - `content/projects.ts` — Project data source; long descriptions loaded from `content/project-descriptions/*.md`
-- `lib/` — Utilities: sanitizer (DOMPurify), validation (Zod schemas), markdown processing, token utils (tiktoken), guardrails (chatbot safety)
-- `lib/hooks/` — Custom hooks including `use-webllm.ts` (client-side LLM via WebLLM/Llama 3.2 1B)
+- `lib/` — Utilities: sanitizer (DOMPurify), validation (Zod schemas), markdown processing, guardrails (guide safety)
+- `components/providers/webllm-provider.tsx` — client-side LLM via WebLLM, run in a web worker
 
 ### Important patterns
 
@@ -57,13 +57,12 @@ No test suite is configured.
 - **WebLLM** — Requires `unsafe-eval` in CSP and WebAssembly experiments in webpack config. Client-side only with Node module fallbacks disabled.
 - **HTML sanitization** — All user/markdown content goes through DOMPurify (`lib/sanitizer.ts`). Use `SecureContent` component for rendering HTML.
 - **Input validation** — Zod schemas in `lib/validation.ts` for all user inputs
-- **Blog content** — Add `.md` or `.mdx` files to `src/content/blog/` with frontmatter (title, date, excerpt, tags)
 - **Project content** — Add entry to `allProjects` array in `src/content/projects.ts` and corresponding markdown file in `src/content/project-descriptions/`
 - **Console logs** — Stripped in production via `compiler.removeConsole`
 
 ### CI/CD
 
-- **GitHub Actions** — `.github/workflows/ci.yml` (lint, type-check, build, gitleaks) and `changeset-check.yml` on push/PR to main. Workflows are at the git root, not inside `personal-website/`.
+- **GitHub Actions** — `.github/workflows/ci.yml` (lint, type-check, test, build, gitleaks) and `changeset-check.yml` on push/PR to main. Workflows are at the git root, not inside `personal-website/`.
 - **Conventional commits** — Enforced by commitlint via husky `commit-msg` hook. Types: feat, fix, chore, refactor, docs, test, ci, perf. Example: `feat: add dark mode toggle`
 - **Pre-commit** — Husky runs gitleaks secret scan + lint-staged (eslint --fix + prettier) on staged files
 - **Pre-push** — Husky runs local CI via `act` (requires Docker). Skippable: `SKIP=act git push`

@@ -85,21 +85,12 @@ export const metadata: Metadata = {
     description:
       'I’m Eduard, an AI developer in Halifax. These are my projects with local models, coding agents, and a small robot.',
     siteName: 'Eduard Kakosyan Portfolio',
-    images: [
-      {
-        url: '/images/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Eduard Kakosyan - AI Developer',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Eduard Kakosyan | AI Developer',
     description:
       'Local AI, coding agents, and a small robot. Projects and notes from Eduard Kakosyan in Halifax.',
-    images: ['/images/og-image.jpg'],
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,

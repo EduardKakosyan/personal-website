@@ -29,31 +29,6 @@ export const analyticsEvents = {
   projectLinkClicked: (projectSlug: string, linkType: 'live' | 'repo') =>
     trackEvent('Project Link Clicked', { project: projectSlug, type: linkType }),
 
-  // Contact interactions
-  contactFormSubmitted: () => trackEvent('Contact Form Submitted'),
-
-  emailClicked: () => trackEvent('Email Clicked'),
-
-  linkedinClicked: () => trackEvent('LinkedIn Clicked'),
-
-  githubClicked: () => trackEvent('GitHub Clicked'),
-
-  // Navigation
-  achievementClicked: (achievement: string) => trackEvent('Achievement Clicked', { achievement }),
-
-  heroCtaClicked: (cta: string) => trackEvent('Hero CTA Clicked', { cta }),
-
-  // AI Assistant interactions
-  chatbotOpened: () => trackEvent('Chatbot Opened'),
-
-  chatbotMessageSent: () => trackEvent('Chatbot Message Sent'),
-
-  projectCategoryFiltered: (category: string) =>
-    trackEvent('Project Category Filtered', { category }),
-
-  // Download events
+  // Download events (wired to the header Résumé button in Phase 2)
   resumeDownloaded: () => trackEvent('Resume Downloaded'),
-
-  // Search events
-  siteSearched: (query: string) => trackEvent('Site Searched', { query }),
 }

@@ -1,32 +1,6 @@
 import { z } from 'zod'
 
 /**
- * Contact form validation schema
- */
-export const contactFormSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Name is required')
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be less than 100 characters')
-    .regex(/^[a-zA-Z\s\-'\.]+$/, 'Name contains invalid characters'),
-
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address')
-    .max(254, 'Email is too long'),
-
-  message: z
-    .string()
-    .min(1, 'Message is required')
-    .min(10, 'Message must be at least 10 characters')
-    .max(5000, 'Message must be less than 5000 characters'),
-})
-
-export type ContactFormData = z.infer<typeof contactFormSchema>
-
-/**
  * Chat message validation schema
  */
 export const chatMessageSchema = z.object({
@@ -57,15 +31,6 @@ export const projectMetaSchema = z.object({
 export type ProjectMeta = z.infer<typeof projectMetaSchema>
 
 /**
- * Rate limiting validation
- */
-export const rateLimitSchema = z.object({
-  identifier: z.string().min(1),
-  action: z.enum(['contact', 'chat', 'general']),
-  timestamp: z.number(),
-})
-
-/**
  * Safe validation helper that returns both success status and data/errors
  */
 export function safeValidate<T>(
@@ -80,13 +45,6 @@ export function safeValidate<T>(
 
   const errors = result.error.errors.map((err) => err.message)
   return { success: false, errors }
-}
-
-/**
- * Sanitizes and validates contact form data
- */
-export function validateContactForm(data: unknown) {
-  return safeValidate(contactFormSchema, data)
 }
 
 /**

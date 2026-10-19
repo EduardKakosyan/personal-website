@@ -221,12 +221,6 @@ html.lenis body {
 
 /* Mobile-first optimizations */
 @layer utilities {
-  /* Touch-friendly interactions */
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
   /* Mobile optimizations */
   @media (max-width: 768px) {
     html {
@@ -265,11 +259,6 @@ html.lenis body {
       text-size-adjust: 100%;
     }
 
-    /* Smooth transitions for mobile interactions */
-    .mobile-smooth {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
     /* Better mobile scrollbars */
     ::-webkit-scrollbar {
       width: 4px;
@@ -287,51 +276,6 @@ html.lenis body {
 
     ::-webkit-scrollbar-thumb:hover {
       background: hsl(var(--muted-foreground) / 0.5);
-    }
-  }
-
-  /* Enhanced mobile chat styles */
-  .chat-mobile {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  /* Mobile keyboard safe area */
-  .keyboard-safe {
-    padding-bottom: env(keyboard-inset-height, 0px);
-  }
-
-  /* Pull-to-refresh override */
-  .no-pull-refresh {
-    overscroll-behavior-y: contain;
-  }
-
-  /* Mobile drag handle */
-  .drag-handle {
-    cursor: grab;
-    touch-action: pan-y;
-  }
-
-  .drag-handle:active {
-    cursor: grabbing;
-  }
-
-  /* Haptic feedback simulation */
-  @media (max-width: 768px) {
-    .haptic-light {
-      transition: transform 0.1s ease;
-    }
-
-    .haptic-light:active {
-      transform: scale(0.98);
-    }
-
-    .haptic-medium {
-      transition: transform 0.15s ease;
-    }
-
-    .haptic-medium:active {
-      transform: scale(0.95);
     }
   }
 }
@@ -367,23 +311,9 @@ html.lenis body {
       0 10px 15px -3px rgb(0 0 0 / 0.3),
       0 4px 6px -2px rgb(0 0 0 / 0.2);
   }
-
-  .shadow-2xl {
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
-  }
 }
 
 /* Gradient text utility — use inline styles for bg-clip since Lightning CSS strips background-clip: text */
-
-/* Dark section background */
-.section-dark {
-  background: oklch(0.16 0.005 285);
-  color: oklch(0.95 0 0);
-}
-
-.dark .section-dark {
-  background: oklch(0.11 0.005 285);
-}
 
 /* Glass card utility */
 .glass-card {

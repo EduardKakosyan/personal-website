@@ -210,8 +210,7 @@
   font: 15px monospace;
   color: #a0cfb5;
 }
-.workshop-coordinate,
-.workshop-scene-caption {
+.workshop-coordinate {
   position: absolute;
   font:
     9px var(--font-geist-mono),
@@ -222,13 +221,6 @@
 .workshop-coordinate {
   top: 33px;
   left: 32px;
-}
-.workshop-scene-caption {
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: 8px;
 }
 .workshop-agent-tag {
   position: absolute;
@@ -570,9 +562,6 @@
   .workshop-hardware-tag {
     bottom: 35px;
     left: 10px;
-  }
-  .workshop-scene-caption {
-    display: none;
   }
   .hero-signature > span:last-child,
   .hero-signature i {

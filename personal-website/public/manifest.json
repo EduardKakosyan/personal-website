@@ -43,18 +43,6 @@
       ]
     },
     {
-      "name": "Blog",
-      "short_name": "Blog",
-      "description": "Read Eduard's blog posts",
-      "url": "/blog",
-      "icons": [
-        {
-          "src": "/favicon/favicon-32x32.png",
-          "sizes": "32x32"
-        }
-      ]
-    },
-    {
       "name": "Contact",
       "short_name": "Contact",
       "description": "Get in touch with Eduard",
@@ -67,4 +55,4 @@
       ]
     }
   ]
-} 
+}

@@ -118,16 +118,6 @@ const nextConfig = {
     pagesBufferLength: 2,
   },
 
-  // PWA and manifest
-  async rewrites() {
-    return [
-      {
-        source: '/manifest.json',
-        destination: '/api/manifest',
-      },
-    ]
-  },
-
   // Compiler options
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

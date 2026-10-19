@@ -1,0 +1,16 @@
+{
+  "name": "blocked-off-topic",
+  "input": {
+    "kind": "question",
+    "persona": "recruiter",
+    "chapter": "systems",
+    "text": "Who will win the next election?"
+  },
+  "expect": {
+    "action": null,
+    "modelCalled": false
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Nobody knows.\"}"
+}

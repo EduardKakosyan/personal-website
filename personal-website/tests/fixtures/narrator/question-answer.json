@@ -1,0 +1,16 @@
+{
+  "name": "question-answer",
+  "input": {
+    "kind": "question",
+    "persona": "hiring-manager",
+    "chapter": "private-local",
+    "text": "What has he built with local models?"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["dgx-autonomy"]
+  },
+  "source": "hand-written",
+  "record": true,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"dgx-autonomy runs a coding agent on his DGX Spark, and HUGO is a voice assistant for a Reachy Mini robot that runs on the same machine.\"}"
+}

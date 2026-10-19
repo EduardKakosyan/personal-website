@@ -27,6 +27,8 @@ export const analyticsEvents = {
   personaChosen: (persona: Persona) => trackEvent('Persona Chosen', { persona }),
   chapterReached: (chapter: ChapterId, persona: Persona) =>
     trackEvent('Chapter Reached', { chapter, persona }),
+  // Where a narrator question was answered: the DGX Spark, or the on-page guide fallback.
+  narratorAnswered: (source: 'dgx' | 'script') => trackEvent('Narrator Answered', { source }),
   // Project interactions
   projectViewed: (projectSlug: string) => trackEvent('Project Viewed', { project: projectSlug }),
 

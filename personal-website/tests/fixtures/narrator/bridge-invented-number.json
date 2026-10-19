@@ -1,0 +1,14 @@
+{
+  "name": "bridge-invented-number",
+  "input": {
+    "kind": "bridge",
+    "persona": "hiring-manager",
+    "chapter": "systems"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Keystone cut reporting time by 40% across 12 teams.\"}"
+}

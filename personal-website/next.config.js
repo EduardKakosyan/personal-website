@@ -120,7 +120,9 @@ const nextConfig = {
 
   // Compiler options
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Keep error/warn/info: /api/narrate logs one anonymised info line per request.
+    removeConsole:
+      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn', 'info'] } : false,
   },
 
   // Logging

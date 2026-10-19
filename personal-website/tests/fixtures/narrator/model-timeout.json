@@ -1,0 +1,14 @@
+{
+  "name": "model-timeout",
+  "input": {
+    "kind": "bridge",
+    "persona": "engineer",
+    "chapter": "adoption"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "error": "timeout"
+}

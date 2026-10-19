@@ -1,0 +1,15 @@
+{
+  "name": "bridge-hiring-systems",
+  "input": {
+    "kind": "bridge",
+    "persona": "hiring-manager",
+    "chapter": "systems"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["Keystone"]
+  },
+  "source": "hand-written",
+  "record": true,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Keystone began with interviews about the numbers each role relies on, so the scorecard measures what the team agreed on. It is still rolling out.\"}"
+}

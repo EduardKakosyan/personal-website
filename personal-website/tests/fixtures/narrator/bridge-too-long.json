@@ -1,0 +1,14 @@
+{
+  "name": "bridge-too-long",
+  "input": {
+    "kind": "bridge",
+    "persona": "recruiter",
+    "chapter": "systems"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. Keystone is the system he leads. \"}"
+}

@@ -134,6 +134,21 @@
   min-height: 6em;
   margin-block: var(--site-lg);
 }
+.story-narration p + p {
+  margin-top: var(--site-md);
+}
+.story-bridge {
+  padding-left: var(--site-md);
+  border-left: var(--site-border) dashed var(--color-accent);
+}
+.story-live {
+  padding-inline: var(--site-sm);
+  border: var(--site-border) solid var(--color-accent);
+  border-radius: var(--radius-control);
+}
+.story-narrator-label .story-live {
+  color: var(--color-accent);
+}
 .story-narrator form > div {
   display: flex;
   gap: var(--site-sm);

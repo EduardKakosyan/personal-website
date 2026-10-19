@@ -1,0 +1,14 @@
+{
+  "name": "bridge-tries-navigation",
+  "input": {
+    "kind": "bridge",
+    "persona": "engineer",
+    "chapter": "systems"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"open_project\", \"target\": \"keystone\", \"reply\": \"Here is Keystone.\"}"
+}

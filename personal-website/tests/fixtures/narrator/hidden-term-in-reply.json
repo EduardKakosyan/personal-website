@@ -1,0 +1,17 @@
+{
+  "name": "hidden-term-in-reply",
+  "input": {
+    "kind": "bridge",
+    "persona": "hiring-manager",
+    "chapter": "systems"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"He also built a scorecard for Example Client Corp.\"}",
+  "env": {
+    "HIDDEN_TERMS": "Example Client Corp"
+  }
+}

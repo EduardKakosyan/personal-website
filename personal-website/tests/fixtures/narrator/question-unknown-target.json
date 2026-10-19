@@ -1,0 +1,15 @@
+{
+  "name": "question-unknown-target",
+  "input": {
+    "kind": "question",
+    "persona": "recruiter",
+    "chapter": "systems",
+    "text": "Open his secret project"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"open_project\", \"target\": \"secret-project\", \"reply\": \"Opening it.\"}"
+}

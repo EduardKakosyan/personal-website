@@ -1,0 +1,17 @@
+{
+  "name": "question-highlight-section",
+  "input": {
+    "kind": "question",
+    "persona": "engineer",
+    "chapter": "private-local",
+    "text": "Where can I see how the agent's code is tested?"
+  },
+  "expect": {
+    "action": "highlight_section",
+    "target": "dgx-verification",
+    "href": "/projects/dgx-autonomy#dgx-verification"
+  },
+  "source": "hand-written",
+  "record": true,
+  "raw": "{\"action\": \"highlight_section\", \"target\": \"dgx-verification\", \"reply\": \"The verification section explains how the code is tested in a separate container.\"}"
+}

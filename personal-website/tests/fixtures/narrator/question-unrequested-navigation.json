@@ -1,0 +1,15 @@
+{
+  "name": "question-unrequested-navigation",
+  "input": {
+    "kind": "question",
+    "persona": "recruiter",
+    "chapter": "systems",
+    "text": "What is Keeper?"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"open_project\", \"target\": \"keeper\", \"reply\": \"Here is Keeper.\"}"
+}

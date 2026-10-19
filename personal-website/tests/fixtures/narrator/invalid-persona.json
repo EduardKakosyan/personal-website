@@ -1,0 +1,15 @@
+{
+  "name": "invalid-persona",
+  "input": {
+    "kind": "bridge",
+    "persona": "ceo",
+    "chapter": "systems"
+  },
+  "expect": {
+    "action": null,
+    "modelCalled": false
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Hello.\"}"
+}

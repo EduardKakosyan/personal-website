@@ -1,0 +1,14 @@
+{
+  "name": "invalid-json",
+  "input": {
+    "kind": "bridge",
+    "persona": "recruiter",
+    "chapter": "next-step"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "Sure! Here is a line: {action: answer"
+}

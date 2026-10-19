@@ -1,0 +1,17 @@
+{
+  "name": "question-open-project",
+  "input": {
+    "kind": "question",
+    "persona": "recruiter",
+    "chapter": "systems",
+    "text": "Show me Keeper"
+  },
+  "expect": {
+    "action": "open_project",
+    "target": "keeper",
+    "href": "/projects/keeper"
+  },
+  "source": "hand-written",
+  "record": true,
+  "raw": "{\"action\": \"open_project\", \"target\": \"keeper\", \"reply\": \"Here is Keeper, his private archive for meeting transcripts.\"}"
+}

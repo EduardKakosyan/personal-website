@@ -1,0 +1,15 @@
+{
+  "name": "bridge-engineer-private",
+  "input": {
+    "kind": "bridge",
+    "persona": "engineer",
+    "chapter": "private-local"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["build records", "acceptance"]
+  },
+  "source": "hand-written",
+  "record": true,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"The Shoreline and Camp Yahtzee build records are public, so you can check the acceptance checks the agent could not edit.\"}"
+}

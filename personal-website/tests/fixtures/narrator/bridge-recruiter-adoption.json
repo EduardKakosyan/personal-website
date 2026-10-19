@@ -1,0 +1,15 @@
+{
+  "name": "bridge-recruiter-adoption",
+  "input": {
+    "kind": "bridge",
+    "persona": "recruiter",
+    "chapter": "adoption"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["curriculum", "Dalhousie"]
+  },
+  "source": "hand-written",
+  "record": true,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Teaching sits next to his developer work: he built the curriculum for a provincial data science program and co-taught a course at Dalhousie.\"}"
+}

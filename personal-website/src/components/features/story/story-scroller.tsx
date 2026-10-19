@@ -4,7 +4,7 @@ import { parsePersona, personaOrder, type ChapterId, type Persona } from '@/cont
 import { analyticsEvents } from '@/lib/analytics'
 import { PersonaChooser } from '@/components/features/story/persona-chooser'
 import { ChapterObserver } from '@/components/features/story/chapter-observer'
-import { StageStill } from '@/components/features/story/stage-still'
+import { StoryStage } from '@/components/features/story/story-stage'
 import { Narrator } from '@/components/features/story/narrator'
 
 export function StoryScroller({ chapters }: { chapters: { id: ChapterId; content: ReactNode }[] }) {
@@ -33,12 +33,12 @@ export function StoryScroller({ chapters }: { chapters: { id: ChapterId; content
       <div className="site-width">
         <PersonaChooser persona={persona} onChoose={choose} />
         <a className="work-link" href="#next-step">
-          Skip to resume and contact
+          Skip to résumé and contact
         </a>
       </div>
       <div className="story-layout site-width">
         <aside className="story-stage">
-          <StageStill current={current} />
+          <StoryStage current={current} order={personaOrder[persona]} />
           <Narrator persona={persona} chapter={current} />
         </aside>
         <div className="story-chapters">

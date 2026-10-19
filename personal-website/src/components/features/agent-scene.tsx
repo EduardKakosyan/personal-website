@@ -1,12 +1,12 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Lightformer, RoundedBox } from '@react-three/drei'
-import { useReducedMotion } from 'motion/react'
+import { useEffect, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { type GuideMood } from '@/components/providers/guide-provider'
-import { useWebLLMContext } from '@/components/providers/webllm-provider'
+
+// EK—01 and its frame cadence. Only the story canvas (a dynamic chunk) imports this file.
 
 export function Cadence({ animated }: { animated: boolean }) {
   const { invalidate } = useThree()
@@ -247,71 +247,5 @@ export function Character({
         <meshBasicMaterial color={orange} transparent opacity={0.35} side={THREE.DoubleSide} />
       </mesh>
     </group>
-  )
-}
-export function AgentVisual({
-  mood,
-  pointing = false,
-  direction = -1,
-  attentive = false,
-}: {
-  mood: GuideMood
-  pointing?: boolean
-  direction?: -1 | 1
-  attentive?: boolean
-}) {
-  const reducedMotion = useReducedMotion()
-  const { isGenerating, isInitializing } = useWebLLMContext()
-  const visualMood = isInitializing ? 'thinking' : attentive && mood === 'idle' ? 'ready' : mood
-  const animated = !reducedMotion && !isGenerating && !isInitializing
-  const [lost, setLost] = useState(false)
-  const [supported] = useState(() => {
-    if (typeof document === 'undefined') return false
-    const context = document.createElement('canvas').getContext('webgl2')
-    const available = !!context
-    context?.getExtension('WEBGL_lose_context')?.loseContext()
-    return available
-  })
-  if (!supported || lost)
-    return (
-      <span className="companion-fallback" data-mood={visualMood} aria-hidden="true">
-        <i />
-        <i />
-        <em className="fallback-mouth" />
-        <b />
-      </span>
-    )
-  return (
-    <Canvas
-      dpr={[1, 1.5]}
-      frameloop="demand"
-      camera={{ position: [0, 0.08, 4.4], fov: 36 }}
-      gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-      onCreated={({ gl }) =>
-        gl.domElement.addEventListener('webglcontextlost', () => setLost(true), { once: true })
-      }
-    >
-      <Suspense fallback={null}>
-        <Cadence animated={animated} />
-        <ambientLight intensity={0.65} />
-        <directionalLight position={[3, 4, 4]} intensity={3} />
-        <directionalLight position={[-3, -1, 2]} color="#ffc39c" intensity={2} />
-        <Character mood={visualMood} pointing={pointing} direction={direction} still={!animated} />
-        <Environment frames={1} resolution={128}>
-          <Lightformer
-            intensity={4}
-            scale={[3, 5, 1]}
-            position={[3, 2, 3]}
-            rotation={[0, -Math.PI / 4, 0]}
-          />
-          <Lightformer
-            intensity={3}
-            scale={[3, 5, 1]}
-            position={[-4, 1, 2]}
-            rotation={[0, Math.PI / 3, 0]}
-          />
-        </Environment>
-      </Suspense>
-    </Canvas>
   )
 }

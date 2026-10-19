@@ -96,6 +96,19 @@
 .story-stills picture[data-active='true'] {
   opacity: 1;
 }
+.story-visual {
+  position: relative;
+}
+.story-visual .story-stills {
+  transition: opacity var(--duration-scene) var(--ease-standard);
+}
+.story-visual[data-live='true'] .story-stills {
+  opacity: 0;
+}
+.story-canvas {
+  position: absolute;
+  inset: 0;
+}
 .story-stills img {
   width: 100%;
   height: auto;

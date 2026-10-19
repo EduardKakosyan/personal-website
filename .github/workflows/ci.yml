@@ -51,6 +51,9 @@ jobs:
       - name: Build project
         run: pnpm build
 
+      - name: Check 3D bundle budget
+        run: pnpm check:3d
+
       - name: Scan for secrets (GitHub)
         if: ${{ !env.ACT }}
         uses: gitleaks/gitleaks-action@v2

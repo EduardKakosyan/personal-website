@@ -85,3 +85,19 @@ test('initial story client islands do not import profile validation or guide kno
     }
   }
 })
+
+test('3D story stage is reachable only through its dynamic canvas chunk', () => {
+  // Static imports from the stage gate must stay free of three.js (visit() asserts this).
+  visit(path.join(src, 'components/features/story/story-stage.tsx'))
+  const stage = readFileSync(path.join(src, 'components/features/story/story-stage.tsx'), 'utf8')
+  assert.match(stage, /dynamic\(\s*\(\) => import\('\.\/story-canvas'\)/)
+  assert.match(stage, /ssr: false/)
+  assert.match(stage, /capable && state !== 'lost' && \(\s*<StoryCanvas/)
+  const importers = files(src).filter((file) =>
+    imports(file).some((specifier) => /(?:story-canvas|agent-scene)$/.test(specifier)),
+  )
+  assert.deepEqual(
+    importers.map((file) => path.relative(src, file)),
+    ['components/features/story/story-canvas.tsx'],
+  )
+})

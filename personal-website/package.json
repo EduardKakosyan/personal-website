@@ -17,7 +17,8 @@
     "changeset": "changeset",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.mjs\"",
     "resume": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-resume.mts --pdf",
-    "readme": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-github-readme.mts"
+    "readme": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-github-readme.mts",
+    "check:3d": "node scripts/check-3d-budget.mjs"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",

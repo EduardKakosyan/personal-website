@@ -321,9 +321,12 @@ body {
   font-size: var(--text-kicker);
 }
 .site-monogram {
-  font-family: var(--site-emphasis);
-  font-size: var(--text-h2);
-  color: var(--color-accent);
+  display: block;
+  flex: 0 0 var(--site-control);
+  width: var(--site-control);
+  height: var(--site-control);
+  background: var(--color-accent);
+  mask: url('/monogram.svg') center / contain no-repeat;
 }
 .site-nav {
   gap: var(--site-sm);

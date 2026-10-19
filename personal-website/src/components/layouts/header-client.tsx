@@ -22,7 +22,7 @@ export function HeaderClient({
           aria-current={pathname === '/' ? 'page' : undefined}
           aria-label={`${identity.name} home`}
         >
-          <span className="site-monogram">ek.</span>
+          <span className="site-monogram" aria-hidden="true" />
           <span>
             <strong>{identity.name}</strong>
             <small>

@@ -19,7 +19,8 @@
     "resume": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-resume.mts --pdf",
     "readme": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-github-readme.mts",
     "check:3d": "node scripts/check-3d-budget.mjs",
-    "narrator:record": "node --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/record-narrator-evals.mts"
+    "narrator:record": "node --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/record-narrator-evals.mts",
+    "icons": "node scripts/render-icons.mjs"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",
@@ -65,6 +66,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.0",
     "typescript": "^5"

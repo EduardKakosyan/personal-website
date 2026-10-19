@@ -8,9 +8,12 @@
   },
   "expect": {
     "action": "answer",
-    "mentions": ["dgx-autonomy"]
+    "mentions": ["dgx-autonomy", "Keeper", "HUGO", "VoxCoach"]
   },
-  "source": "hand-written",
+  "source": "dgx",
   "record": true,
-  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"dgx-autonomy runs a coding agent on his DGX Spark, and HUGO is a voice assistant for a Reachy Mini robot that runs on the same machine.\"}"
+  "raw": "{\n  \"action\": \"answer\",\n  \"target\": \"\",\n  \"reply\": \"Eduard built Keeper, a private archive for meeting transcripts that uses a configured local model for summaries, and VoxCoach, a sales-call practice tool using local voice and language models on Apple Silicon. He also created dgx-autonomy, a setup for running a coding agent on a DGX Spark that supports local models like SGLang and llama.cpp.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:35.934Z",
+  "ms": 1954
 }

@@ -9,7 +9,10 @@
     "action": "answer",
     "mentions": ["curriculum", "Dalhousie"]
   },
-  "source": "hand-written",
+  "source": "dgx",
   "record": true,
-  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Teaching sits next to his developer work: he built the curriculum for a provincial data science program and co-taught a course at Dalhousie.\"}"
+  "raw": "{\n\"action\": \"answer\",\n\"target\": \"\",\n\"reply\": \"He built the curriculum for a provincial data science program with 226 learners and an 88% completion rate. He also co-founded CarGrep, an AI car-recommendation platform for the Canadian market.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:33.978Z",
+  "ms": 1496
 }

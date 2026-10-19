@@ -23,7 +23,7 @@ const hidden = [...profile.hidden, ...localHiddenTerms()]
 test('narrator fixtures cover success and every failure path', () => {
   assert.ok(fixtures.length >= 15)
   const actions = new Set(fixtures.map((fixture) => fixture.expect.action))
-  for (const action of ['answer', 'open_project', 'highlight_section', null])
+  for (const action of ['answer', 'open_project', 'highlight_section', 'navigate', null])
     assert.ok(actions.has(action), `no fixture expects ${action}`)
   assert.ok(fixtures.some((fixture) => fixture.error === 'timeout'))
   assert.ok(fixtures.some((fixture) => fixture.expect.modelCalled === false))
@@ -46,9 +46,15 @@ for (const fixture of fixtures) {
       assert.equal(result, null)
       return
     }
-    assert.equal(result.action, expect.action)
-    if (expect.target) assert.equal(result.target, expect.target)
-    assert.equal(result.href, expect.href)
+    if (expect.action === 'navigate') {
+      // Either opening the project or pointing at one of its sections is a correct answer.
+      assert.ok(['open_project', 'highlight_section'].includes(result.action), result.action)
+      assert.ok(result.href.startsWith(expect.hrefPrefix), result.href)
+    } else {
+      assert.equal(result.action, expect.action)
+      if (expect.target) assert.equal(result.target, expect.target)
+      assert.equal(result.href, expect.href)
+    }
     if (expect.mentions)
       assert.ok(
         expect.mentions.some((word) => result.reply.includes(word)),

@@ -1,0 +1,19 @@
+{
+  "name": "question-current-title",
+  "input": {
+    "kind": "question",
+    "persona": "recruiter",
+    "chapter": "adoption",
+    "text": "What is his current job title and where?"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["Lead AI Developer"]
+  },
+  "source": "dgx",
+  "record": true,
+  "raw": "{\n  \"action\": \"answer\",\n  \"target\": \"\",\n  \"reply\": \"Eduard is the Lead AI Developer at AI-First Consulting, a role he has held since February 2025.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:37.208Z",
+  "ms": 1273
+}

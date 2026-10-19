@@ -1,0 +1,19 @@
+{
+  "name": "question-keystone-results",
+  "input": {
+    "kind": "question",
+    "persona": "hiring-manager",
+    "chapter": "systems",
+    "text": "What results has Keystone delivered so far?"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["rolling out"]
+  },
+  "source": "dgx",
+  "record": true,
+  "raw": "{\n\"action\": \"answer\",\n\"target\": \"\",\n\"reply\": \"This site does not say what results Keystone has delivered so far. The project is currently rolling out, and the notes state it is not a claimed shipped result.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:38.529Z",
+  "ms": 1319
+}

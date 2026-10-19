@@ -27,6 +27,15 @@ llama-server \
 - 16K context is plenty: a request is about 1,500 tokens of notes plus a short reply.
 - SGLang works as well; serve on `127.0.0.1:8090` with `--served-model-name qwen3.6-35b-a3b`.
 
+**Running now (set up 2026-10-19):** on `dgx1` this runs as the user service `ek-narrator.service` (`~/.config/systemd/user/ek-narrator.service`; lingering is on, so it starts at boot without a login). It uses the native CUDA build at `~/src/llama.cpp/build/bin/llama-server`, because the `jim` account has no Docker access, and adds `--reasoning-budget 0`. It loads in about 3 seconds and answers in 1–2 seconds.
+
+```bash
+systemctl --user status ek-narrator      # state
+journalctl --user -u ek-narrator -f      # logs
+systemctl --user stop ek-narrator        # free the memory (about 18 GiB)
+systemctl --user disable --now ek-narrator   # stop it starting at boot
+```
+
 Check it on the Spark:
 
 ```bash
@@ -83,13 +92,13 @@ curl -s https://narrator.example.com/v1/models \
 
 Set these for Preview and Production (Vercel dashboard → Project → Settings → Environment Variables, or `vercel env add <NAME> <environment>`):
 
-| Name | Value |
-|---|---|
-| `DGX_NARRATE_URL` | `https://narrator.example.com` |
-| `CF_ACCESS_CLIENT_ID` | the service token's Client ID |
-| `CF_ACCESS_CLIENT_SECRET` | the service token's Client Secret |
-| `DGX_NARRATE_MODEL` | optional; defaults to `qwen3.6-35b-a3b` |
-| `HIDDEN_TERMS` | optional; comma-separated client names. Replies mentioning one are dropped |
+| Name                      | Value                                                                      |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `DGX_NARRATE_URL`         | `https://narrator.example.com`                                             |
+| `CF_ACCESS_CLIENT_ID`     | the service token's Client ID                                              |
+| `CF_ACCESS_CLIENT_SECRET` | the service token's Client Secret                                          |
+| `DGX_NARRATE_MODEL`       | optional; defaults to `qwen3.6-35b-a3b`                                    |
+| `HIDDEN_TERMS`            | optional; comma-separated client names. Replies mentioning one are dropped |
 
 Redeploy, then check (on a protected preview, use `vercel curl`):
 
@@ -127,7 +136,15 @@ Review the fixture diff before committing. If a recorded output fails its expect
 Each request writes one JSON line to the Vercel runtime logs, for example:
 
 ```json
-{"evt":"narrate","kind":"question","persona":"engineer","chapter":"systems","q":"Show me Keeper","source":"dgx","ms":640}
+{
+  "evt": "narrate",
+  "kind": "question",
+  "persona": "engineer",
+  "chapter": "systems",
+  "q": "Show me Keeper",
+  "source": "dgx",
+  "ms": 640
+}
 ```
 
 No IP, user agent or headers are logged. Questions are truncated to 200 characters, and the site tells visitors their questions are logged.

@@ -1,0 +1,14 @@
+{
+  "name": "bridge-first-person",
+  "input": {
+    "kind": "bridge",
+    "persona": "hiring-manager",
+    "chapter": "adoption"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"I build AI tools that your team will actually adopt.\"}"
+}

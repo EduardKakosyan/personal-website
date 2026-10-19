@@ -1,0 +1,14 @@
+{
+  "name": "bridge-sales-language",
+  "input": {
+    "kind": "bridge",
+    "persona": "hiring-manager",
+    "chapter": "private-local"
+  },
+  "expect": {
+    "action": null
+  },
+  "source": "hand-written",
+  "record": false,
+  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Keeper ensures your meeting data stays secure.\"}"
+}

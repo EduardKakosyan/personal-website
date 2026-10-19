@@ -1,6 +1,22 @@
-import type { CallModel } from './narrate'
+import type { CallModel, ModelRequest } from './narrate'
 
 export const MODEL_TIMEOUT_MS = 3000
+
+/** The exact chat request the site sends; shared with the eval recorder. */
+export function chatBody({ messages, schema, maxTokens }: ModelRequest, model?: string) {
+  return {
+    model: model ?? 'qwen3.6-35b-a3b',
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.3,
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'guide_action', schema: JSON.parse(schema) },
+    },
+    // Qwen3 thinks by default; a 3-second budget has no room for it.
+    chat_template_kwargs: { enable_thinking: false },
+  }
+}
 
 /**
  * An OpenAI-compatible chat call to the DGX Spark (SGLang or llama.cpp's llama-server) behind a
@@ -11,7 +27,7 @@ export function dgxModel(
   env: Record<string, string | undefined> = process.env,
   fetcher: typeof fetch = fetch,
 ): CallModel {
-  return async ({ messages, schema, maxTokens }) => {
+  return async (request) => {
     const base = env.DGX_NARRATE_URL
     const id = env.CF_ACCESS_CLIENT_ID
     const secret = env.CF_ACCESS_CLIENT_SECRET
@@ -25,18 +41,7 @@ export function dgxModel(
         'CF-Access-Client-Id': id,
         'CF-Access-Client-Secret': secret,
       },
-      body: JSON.stringify({
-        model: env.DGX_NARRATE_MODEL ?? 'qwen3.6-35b-a3b',
-        messages,
-        max_tokens: maxTokens,
-        temperature: 0.3,
-        response_format: {
-          type: 'json_schema',
-          json_schema: { name: 'guide_action', schema: JSON.parse(schema) },
-        },
-        // Qwen3 thinks by default; a 3-second budget has no room for it.
-        chat_template_kwargs: { enable_thinking: false },
-      }),
+      body: JSON.stringify(chatBody(request, env.DGX_NARRATE_MODEL)),
       signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       cache: 'no-store',
       redirect: 'error', // an Access login redirect means the token is wrong

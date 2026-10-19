@@ -28,7 +28,9 @@ const audience: Record<Persona, string> = {
   engineer: 'an engineer who wants to see how the systems actually work',
 }
 
-const month = (value?: string) => value ?? 'present'
+// Plain-voice rules shared by every request (the site's copy guide, in short).
+const voice =
+  'Write about Eduard as "Eduard" or "he"; never write "I", "my", "we" or "our". Plain, specific sentences. State facts from the notes; do not claim benefits, guarantees or outcomes the notes do not state, and avoid words like ensures, enables, seamless, robust or leverage. Use past tense for roles that have ended. Do not comment on the visitor, the page or this conversation, and never mention "the notes"; if something is not covered, say this site does not say.'
 
 // The facts the model may use: the chapter, the line already shown, his roles and the
 // relevant project notes. Nothing else from the site is sent.
@@ -43,12 +45,12 @@ function notesFor(input: NarrateInput): string {
     `Line EK-01 already said: ${narratorLines[input.persona][input.chapter]}`,
     ...profile.roles.map(
       (role) =>
-        `Role: ${role.title}, ${role.org} (${role.start} to ${month(role.end)}). ${role.summary}`,
+        `Role: ${role.title}, ${role.org} (${role.start} to ${role.end ?? 'now'}; ${role.end ? 'ended' : 'current role'}). ${role.summary}`,
     ),
     ...works.map((work) => `Project ${work.title} [${work.slug}]: ${work.summary} ${work.detail}`),
     ...clientWork.map(
       (work) =>
-        `Client work: ${work.title} (${work.role === 'managed' ? 'project lead' : 'team contributor'}).`,
+        `Separate client project, not part of the projects above: ${work.title} (Eduard was ${work.role === 'managed' ? 'project lead' : 'a team contributor'}).`,
     ),
   ].join('\n')
 }
@@ -61,7 +63,7 @@ export function buildPrompt(input: NarrateInput): NarratePrompt {
       messages: [
         {
           role: 'system',
-          content: `${portfolioContext}\n${visitor} They are reading the chapter below, and EK-01's scripted line was already shown. Add one or two short sentences (under 45 words) that the scripted line does not already say, connecting this chapter to what this visitor cares about. Do not repeat the scripted line or greet the visitor. Use only the notes. Never use a number that is not in the notes. Return JSON with action="answer", target="" and your sentences in reply.\nNotes:\n${notes}`,
+          content: `${portfolioContext}\n${visitor} They are reading the chapter below, and EK-01's scripted line was already shown. Add one or two short sentences (under 40 words) with one concrete fact about this chapter's topic or projects that the scripted line does not mention and that this visitor would want to know. Do not repeat the scripted line or greet the visitor. ${voice} Use only the notes. Never use a number that is not in the notes. Example of the tone: "Keeper's search works without a model, and its tests cover account isolation and paging." Return JSON with action="answer", target="" and your sentences in reply.\nNotes:\n${notes}`,
         },
         { role: 'user', content: 'Write the follow-on line.' },
       ],
@@ -77,7 +79,7 @@ export function buildPrompt(input: NarrateInput): NarratePrompt {
     messages: [
       {
         role: 'system',
-        content: `${portfolioContext}\n${visitor} Answer in two or three sentences using only the notes. Never use a number that is not in the notes. If the notes do not cover the question, say so briefly. ${navigation}\nNotes:\n${notes}`,
+        content: `${portfolioContext}\n${visitor} Answer in two or three sentences using only the notes. ${voice} Never use a number that is not in the notes. If the notes do not cover the question, say briefly that this site does not say. ${navigation}\nNotes:\n${notes}`,
       },
       { role: 'user', content: input.text },
     ],

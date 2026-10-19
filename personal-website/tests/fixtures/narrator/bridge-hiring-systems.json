@@ -7,9 +7,12 @@
   },
   "expect": {
     "action": "answer",
-    "mentions": ["Keystone"]
+    "mentions": ["Keystone", "discovery", "metrics", "architecture"]
   },
-  "source": "hand-written",
+  "source": "dgx",
   "record": true,
-  "raw": "{\"action\": \"answer\", \"target\": \"\", \"reply\": \"Keystone began with interviews about the numbers each role relies on, so the scorecard measures what the team agreed on. It is still rolling out.\"}"
+  "raw": "{\n\"action\": \"answer\",\n\"target\": \"\",\n\"reply\": \"Eduard led Keystone's architecture while a UX research contractor ran discovery. Two co-op developers are building the system from his design.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:32.480Z",
+  "ms": 1296
 }

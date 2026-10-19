@@ -1,0 +1,19 @@
+{
+  "name": "question-where-tested",
+  "input": {
+    "kind": "question",
+    "persona": "engineer",
+    "chapter": "private-local",
+    "text": "Where can I see how the agent's code is tested?"
+  },
+  "expect": {
+    "action": "navigate",
+    "hrefPrefix": "/projects/dgx-autonomy"
+  },
+  "source": "dgx",
+  "record": true,
+  "raw": "{\n  \"action\": \"open_project\",\n  \"target\": \"dgx-autonomy\",\n  \"reply\": \"Eduard built the controller around OpenHands to test code in a separate container, and the build records are public. The agent's code must pass tests it cannot edit.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:42.888Z",
+  "ms": 1521
+}

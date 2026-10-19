@@ -1,0 +1,19 @@
+{
+  "name": "question-not-in-notes",
+  "input": {
+    "kind": "question",
+    "persona": "engineer",
+    "chapter": "systems",
+    "text": "Does he know Kubernetes?"
+  },
+  "expect": {
+    "action": "answer",
+    "mentions": ["does not say", "doesn't say", "not mention", "doesn't mention"]
+  },
+  "source": "dgx",
+  "record": true,
+  "raw": "{\n  \"action\": \"answer\",\n  \"target\": \"\",\n  \"reply\": \"This site does not mention whether Eduard knows Kubernetes.\"\n}",
+  "model": "qwen3.6-35b-a3b",
+  "recordedAt": "2026-10-19T20:44:39.588Z",
+  "ms": 1058
+}

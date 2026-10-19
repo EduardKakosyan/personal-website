@@ -43,6 +43,15 @@ export function numbersGrounded(reply: string, grounding: string) {
   return (reply.match(/\d+(?:[.,]\d+)*/g) ?? []).every((value) => known.has(value))
 }
 
+// The site's voice: EK-01 describes Eduard in the third person, without sales language.
+const FIRST_PERSON_I = /\b(?:I|I'm|I've|I'd|I'll)\b/
+const FIRST_PERSON = /\b(?:me|my|mine|we|we're|our|ours)\b/i
+const HYPE =
+  /\b(?:ensur\w*|guarantee\w*|seamless\w*|leverag\w*|robust|cutting-edge|empower\w*|revolution\w*|game-?chang\w*|synerg\w*|unlock\w*)\b/i
+export function offVoice(reply: string) {
+  return FIRST_PERSON_I.test(reply) || FIRST_PERSON.test(reply) || HYPE.test(reply)
+}
+
 /**
  * Validate the request, ask the model, validate the answer. Any failure returns null, and the
  * site keeps its authored line (or hands the question to the on-page guide).
@@ -64,6 +73,7 @@ export async function narrate(
   const action = parseGuideResponse(output, input.kind === 'question' ? input.text : '')
   if (!action) return null
   if (input.kind === 'bridge' && action.reply.length > MAX_BRIDGE_CHARS) return null
+  if (offVoice(action.reply)) return null
   if (mentionsHiddenTerm(action.reply, hiddenTerms(deps.env ?? {}))) return null
   if (!numbersGrounded(action.reply, prompt.grounding)) return null
   const destination = guideDestination(action)

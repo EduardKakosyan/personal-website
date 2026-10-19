@@ -72,7 +72,6 @@ test('external URLs, script URLs, traversal and unknown actions cannot execute',
     'javascript:alert(1)',
     '../../admin',
     '__proto__',
-    'voxcoach',
   ]) {
     const action = { action: 'open_project', target, reply: 'Go here' }
     assert.equal(guideActionSchema.safeParse(action).success, false)

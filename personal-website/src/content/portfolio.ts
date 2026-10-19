@@ -1,148 +1,22 @@
 import { z } from 'zod'
 import { identity, profile } from './profile'
+import { projects } from './projects'
 
 // Identity facts live in profile.ts; re-exported so existing callers keep one import.
 export { identity }
 
-export const portfolioWorks = [
-  {
-    slug: 'dgx-autonomy',
-    title: 'dgx-autonomy',
-    year: '2026',
-    label: 'Local AI / autonomous systems',
-    summary:
-      'A setup for running a coding agent on a DGX Spark. It saves progress between conversations and submits its code to tests it can’t edit.',
-    detail:
-      'Eduard built the controller around OpenHands to save progress, recover interrupted runs, test code in a separate container, and pause for review. Recent app runs use SGLang and NVFP4; llama.cpp and a Qwen3.6 fallback are also supported. The 40-hour figure is a maximum run budget. Shoreline and the original Camp Yahtzee release are documented outputs. Human and Claude supervision supplied product briefs and reviews.',
-    tags: ['Qwen3.8', 'DGX Spark', 'OpenHands', 'SGLang', 'Python', 'Docker'],
-    aliases: ['dgx', 'autonomy', 'autonomous loops', 'local ai', 'qwen', 'spark'],
-    repo: 'https://github.com/EduardKakosyan/dgx-autonomy',
-    featured: true,
-  },
-  {
-    slug: 'hugo',
-    title: 'HUGO',
-    year: '2026',
-    label: 'Embodied AI / voice',
-    summary:
-      'A voice assistant for a Reachy Mini robot. Speech recognition, language models, tool calls, and speech synthesis run locally on a DGX Spark.',
-    detail:
-      'HUGO uses Nemotron through vLLM, NVIDIA Parakeet for speech recognition, Qwen3-TTS for speech, openWakeWord and Silero VAD. The voice loop streams speech while generation continues and supports follow-up conversation. This is a newer Python/DGX implementation than the original Go version.',
-    tags: ['DGX Spark', 'Reachy Mini', 'Python', 'vLLM', 'Voice'],
-    aliases: ['hugo', 'reachy', 'robot', 'voice'],
-    repo: 'https://github.com/EduardKakosyan/hugo',
-    featured: true,
-  },
-  {
-    slug: 'shoreline',
-    title: 'Shoreline',
-    year: '2026',
-    label: 'Built by dgx-autonomy',
-    summary:
-      'Weather, tides, and sea conditions for a day at the water. A local coding agent built it over three runs, with briefs and review feedback along the way.',
-    detail:
-      'Built September 24–28, 2026. The final run passed 19/19 fixed acceptance checks. The builder wrote the app from product briefs and reviews; a separate final commit added documentation. Weather, tides and sea-state data come from Open-Meteo.',
-    tags: ['Local AI', 'Open-Meteo', 'Playwright'],
-    aliases: ['shoreline', 'beach', 'fishing'],
-    repo: 'https://github.com/EduardKakosyan/shoreline',
-    featured: true,
-  },
-  {
-    slug: 'yahtzee',
-    title: 'Camp Yahtzee',
-    year: '2026',
-    label: 'Built by dgx-autonomy',
-    summary:
-      'Yahtzee for one phone passed around a camp table, with real or on-screen dice and offline play. The original version was built by a local coding agent.',
-    detail:
-      'The original build ran September 28–29 over about 24 hours and four conversations, with two product-feedback rounds. It passed 24/24 fixed acceptance checks; its rules audit covered all 7,776 possible rolls. Later undo, reset and game-management controls were added separately through CodeLayer.',
-    tags: ['Local AI', 'Offline', 'Playwright'],
-    aliases: ['yahtzee', 'dice', 'camp'],
-    repo: 'https://github.com/EduardKakosyan/yahtzee',
-    featured: false,
-  },
-  {
-    slug: 'claude-autonomous',
-    title: 'Claude Autonomous',
-    year: '2026',
-    label: 'Developer tooling',
-    summary:
-      'An earlier harness for running Claude Code autonomously in an isolated Docker container, with scheduling, budget controls and persistent task state.',
-    detail:
-      'An earlier chapter in the autonomous-development work, before the fully local dgx-autonomy environment.',
-    tags: ['Docker', 'Claude Code'],
-    aliases: ['claude autonomous'],
-    repo: 'https://github.com/EduardKakosyan/claude-autonomous',
-    featured: false,
-  },
-  {
-    slug: 'dev-template',
-    title: 'Dev Template',
-    year: '2026',
-    label: 'Developer tooling',
-    summary: 'Agent commands, checks, and Git hooks for starting projects at AI-First Consulting.',
-    detail:
-      'Includes commands for planning, implementation, and review, plus saved notes between sessions.',
-    tags: ['Claude Code', 'Tooling'],
-    aliases: ['dev template'],
-    repo: 'https://github.com/AI-First-Consulting/dev-template',
-    featured: false,
-  },
-  {
-    slug: 'healthbyte',
-    title: 'HealthByte',
-    year: '2025',
-    label: 'Hackathon / applied AI',
-    summary: 'A hackathon project exploring how simulated readers respond to healthcare articles.',
-    detail:
-      'Eduard built it with Huy Huynh, Hao Tang, and Tobi Onibudo. Their team took first place at the Atlantic AI Summit 2025. One agent simulates readers; another revises the article from their feedback.',
-    tags: ['Agents', 'Reinforcement Learning'],
-    aliases: ['healthbyte', 'health', 'hackathon'],
-    repo: 'https://github.com/EduardKakosyan/atlantic-ai-conference-hackathon',
-    featured: false,
-  },
-  {
-    slug: 'cargrep',
-    title: 'CarGrep',
-    year: '2024',
-    label: 'Product / full stack',
-    summary: 'A car search app built around a conversation about your budget and what you need.',
-    detail:
-      'Searches Canadian marketplaces and tracks prices. The project was backed by Shiftkey Labs at Dalhousie.',
-    tags: ['Next.js', 'AI'],
-    aliases: ['cargrep', 'cars'],
-    repo: 'https://www.cargrep.com',
-    featured: false,
-  },
-  {
-    slug: 'second-brain',
-    title: 'Second Brain',
-    year: '2024',
-    label: 'Hackathon / agents',
-    summary:
-      'A hackathon study assistant connecting course files in Google Drive with chat and a calendar.',
-    detail:
-      'Eduard built it with Huy Huynh and Hao Tang at the 2024 Volta Hackathon, where their team took second place.',
-    tags: ['Agents', 'Retrieval'],
-    aliases: ['second brain', 'volta'],
-    repo: 'https://github.com/EduardKakosyan/volta_hackathon',
-    featured: false,
-  },
-  {
-    slug: 'network-sim',
-    title: 'Q-Learning Network Simulator',
-    year: '2024',
-    label: 'Research',
-    summary:
-      'A network simulation comparing reinforcement-learning routing with Dijkstra and OSPF.',
-    detail:
-      'Research using Python, SimPy and NetworkX across network topologies and traffic patterns.',
-    tags: ['Python', 'Research'],
-    aliases: ['network', 'routing', 'q-learning'],
-    repo: 'https://github.com/EduardKakosyan/q-learning-network-sim',
-    featured: false,
-  },
-] as const
+export const portfolioWorks = projects.map((project) => ({
+  slug: project.slug,
+  title: project.title,
+  year: project.facts.when,
+  label: project.beat ?? 'Archive',
+  summary: project.description,
+  detail: project.detail,
+  tags: project.facts.stack,
+  aliases: project.aliases,
+  repo: project.facts.links.find((link) => link.label === 'Source code')?.href,
+  featured: project.tier === 'case-study',
+}))
 
 export type Work = (typeof portfolioWorks)[number]
 export const featuredWorks = portfolioWorks.filter((work) => work.featured)
@@ -306,7 +180,7 @@ export function directGuideAction(
   )
   const scope = explicitProject?.slug ?? currentProject
   if (scope) {
-    const command = projectCommands[scope].find((item) =>
+    const command = projectCommands[scope]?.find((item) =>
       item.keywords.some((keyword) => query.toLowerCase().includes(keyword)),
     )
     if (command) return projectCommandAction(scope, command.id)
@@ -369,6 +243,84 @@ export interface ProjectCommand {
 
 // Authored shortcuts work without downloading a model. IDs resolve only within their project.
 export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = {
+  keystone: [
+    {
+      id: 'discovery',
+      label: 'Why discovery first?',
+      question: 'Why did Keystone start with discovery?',
+      keywords: ['discovery'],
+      reply:
+        'The earlier metrics were inaccurate and underused. Eduard ran discovery and KPI interviews before defining the new scorecard.',
+    },
+    {
+      id: 'ownership',
+      label: 'Who built what?',
+      question: 'Who built Keystone?',
+      keywords: ['team', 'built'],
+      reply:
+        'Eduard led Keystone and designed its architecture. A UX research contractor ran discovery with him, and two co-op developers build from that architecture.',
+    },
+    {
+      id: 'status',
+      label: 'Rollout status',
+      question: 'Has Keystone shipped?',
+      keywords: ['status', 'ship'],
+      reply:
+        'Keystone is rolling out. The case study does not claim a shipped result or a measured improvement yet.',
+    },
+  ],
+  keeper: [
+    {
+      id: 'privacy',
+      label: 'Where does data live?',
+      question: 'Where does Keeper store meetings?',
+      keywords: ['privacy', 'store'],
+      reply:
+        'Keeper stores its archive in SQLite and recordings in a directory the operator controls. Summaries use the configured model endpoint.',
+    },
+    {
+      id: 'access',
+      label: 'How is access scoped?',
+      question: 'How does Keeper scope access?',
+      keywords: ['access', 'token'],
+      reply:
+        'Keeper applies the caller’s ownership and sharing rules to search, web pages and MCP tools. An external assistant can send retrieved content to its own provider.',
+    },
+    {
+      id: 'search',
+      label: 'What broke in search?',
+      question: 'What broke in Keeper search?',
+      keywords: ['search', 'broke'],
+      reply:
+        'An earlier build interpreted SQLite BM25 cost as relevance, reversing the result order. Paging tests alone did not catch the ranking error.',
+    },
+  ],
+  voxcoach: [
+    {
+      id: 'practice',
+      label: 'Sales-call practice',
+      question: 'What is VoxCoach for?',
+      keywords: ['practice'],
+      reply:
+        'VoxCoach simulates a buyer for sales-call practice and reviews the conversation afterwards.',
+    },
+    {
+      id: 'voice',
+      label: 'Local voice stack',
+      question: 'Where does VoxCoach run?',
+      keywords: ['voice', 'local'],
+      reply:
+        'VoxCoach runs voice and language models locally on Apple Silicon, with overlapped generation and speech synthesis.',
+    },
+    {
+      id: 'build',
+      label: 'Earlier harness build',
+      question: 'How was VoxCoach built?',
+      keywords: ['build', 'built'],
+      reply:
+        'VoxCoach was built using Claude Code through the earlier Claude Autonomous harness. It is archive work, not a featured case study.',
+    },
+  ],
   'dgx-autonomy': [
     {
       id: 'build',

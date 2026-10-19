@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 
+const stageLabels = ['Brief', 'Build', 'Handoff', 'Verify', 'Review', 'Accept']
 const stages = [
   {
     title: 'Set the brief and tests',
@@ -114,33 +115,31 @@ export function RunReplay() {
   const stage = stages[step]
   const Icon = stage.icon
   return (
-    <div className="run-replay">
-      <header className="replay-header">
-        <span>
-          <span className="status-dot" /> RECORDED RUN / CAMP YAHTZEE
-        </span>
+    <div className="work-replay">
+      <header className="work-replay-header">
+        <span>RECORDED RUN / CAMP YAHTZEE</span>
         <small>28–29 SEP 2026</small>
       </header>
-      <div className="replay-main">
-        <div className="replay-copy">
-          <span className="eyebrow">{stage.label}</span>
+      <div className="work-replay-main">
+        <div className="work-replay-copy">
+          <span className="site-kicker">{stage.label}</span>
           <h3>
             <Icon size={24} />
             {stage.title}
           </h3>
           <p>{stage.text}</p>
-          <span className="replay-state">
+          <span className="work-replay-state">
             <Check size={13} /> {stage.state}
           </span>
         </div>
-        <div className="replay-terminal" aria-live="polite" aria-atomic="true">
+        <div className="work-replay-terminal" aria-live="polite" aria-atomic="true">
           <div>
             <i />
             <i />
             <i />
             <span>run / evidence</span>
           </div>
-          <ol key={step} className={reducedMotion ? '' : 'replay-lines'}>
+          <ol key={step} className={reducedMotion ? '' : 'work-replay-lines'}>
             {stage.lines.map((line, index) => (
               <li key={line} style={{ animationDelay: `${index * 100}ms` }}>
                 <span>0{index + 1}</span>
@@ -171,7 +170,7 @@ export function RunReplay() {
           </footer>
         </div>
       </div>
-      <div className="replay-timeline" aria-label="Run stages">
+      <div className="work-replay-timeline" role="group" aria-label="Run stages">
         {stages.map((item, index) => (
           <button
             key={item.title}
@@ -181,14 +180,14 @@ export function RunReplay() {
               setPlaying(false)
               setStep(index)
             }}
-            aria-label={`Stage ${index + 1}: ${item.title}`}
+            title={item.title}
           >
             <span>{index < step ? <Check size={12} /> : `0${index + 1}`}</span>
-            <small>{['Brief', 'Build', 'Handoff', 'Verify', 'Review', 'Accept'][index]}</small>
+            <small>{stageLabels[index]}</small>
           </button>
         ))}
       </div>
-      <footer className="replay-controls">
+      <footer className="work-replay-controls">
         <p>
           A walkthrough of the recorded build.
           <br />
@@ -205,7 +204,7 @@ export function RunReplay() {
             <RotateCcw size={15} />
           </button>
           <button
-            className="lab-button lab-button-dark"
+            className="site-button"
             onClick={() => {
               if (step === stages.length - 1) setStep(0)
               setPlaying(!playing)

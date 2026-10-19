@@ -1,352 +1,285 @@
-import { getMarkdownContent } from '../lib/markdown'
-import { portfolioWorks } from './portfolio'
-
 export interface Project {
   slug: string
   title: string
+  tier: 'case-study' | 'archive'
+  beat?: 'systems' | 'private-local' | 'adoption'
+  visibility: 'public-repo' | 'described-only'
   description: string
-  longDescription: string
-  tags: string[]
-  imageUrl?: string
-  previewImageUrl?: string
-  liveUrl?: string
-  repoUrl?: string
-  placement?: string
-  featured?: boolean
-  category?: string
-  completionDate?: string
-  teamSize?: number
-  duration?: string
-  highlights?: string[]
+  detail: string
+  aliases: string[]
+  outcome?: string
+  facts: {
+    role: string
+    when: string
+    team: string
+    stack: string[]
+    links: { label: string; href: string }[]
+  }
 }
 
-const getProjectMarkdown = (slug: string): string => {
-  return getMarkdownContent(`src/content/project-descriptions/${slug}.md`)
-}
-
-const newProjects: Project[] = portfolioWorks
-  .filter((work) => ['dgx-autonomy', 'shoreline', 'yahtzee'].includes(work.slug))
-  .map((work) => ({
-    slug: work.slug,
-    title: work.title,
-    description: work.summary,
-    longDescription: getProjectMarkdown(work.slug),
-    tags: [...work.tags],
-    repoUrl: work.repo,
-    featured: work.featured,
-    completionDate: 'September 2026',
-    category: work.slug === 'dgx-autonomy' ? 'AI/ML' : 'Agent-built Apps',
-    previewImageUrl:
-      work.slug === 'shoreline'
-        ? '/images/shoreline.png'
-        : work.slug === 'yahtzee'
-          ? '/images/yahtzee.png'
-          : undefined,
-    liveUrl:
-      work.slug === 'shoreline'
-        ? 'https://eduardkakosyan.github.io/shoreline/'
-        : work.slug === 'yahtzee'
-          ? 'https://eduardkakosyan.github.io/yahtzee/'
-          : undefined,
-    highlights:
-      work.slug === 'dgx-autonomy'
-        ? [
-            'Independent evaluation against frozen checks',
-            'Validated handoffs across conversations',
-            'Isolated builder and evaluator containers',
-          ]
-        : undefined,
-  }))
-
-const allProjects: Project[] = [
-  ...newProjects,
+export const projects: Project[] = [
   {
-    slug: 'claude-autonomous',
-    title: 'Claude Autonomous',
+    slug: 'keystone',
+    title: 'Keystone',
+    tier: 'case-study',
+    beat: 'systems',
+    visibility: 'described-only',
     description:
-      'My earlier setup for running Claude Code overnight, with a Docker container, spending limits, and saved progress between runs.',
-    longDescription: getProjectMarkdown('claude-autonomous'),
-    previewImageUrl: undefined,
-    tags: [
-      'Docker',
-      'Bash',
-      'Claude Code',
-      'launchd',
-      'iptables',
-      'Go',
-      'OrbStack',
-      'GitHub Actions',
-    ],
-    repoUrl: 'https://github.com/EduardKakosyan/claude-autonomous',
-    featured: true,
-    category: 'Developer Tools',
-    completionDate: 'March 2026',
-    teamSize: 1,
-    duration: '1 week',
-    highlights: [
-      'One-command setup: Docker build, launchd install, git hooks',
-      'Budget enforcement: $100/day cap, 3-hour timeout, 500 max turns',
-      'Container firewall blocking private network access',
-      'Persistent task backlog with dependency tracking across runs',
-      'Used for the VoxCoach build across 47 tasks',
-    ],
+      'A discovery-led operating system for revenue and delivery, from shared definitions to an actionable scorecard.',
+    detail:
+      'Eduard led Keystone and designed its architecture. A UX research contractor ran discovery with him, and two co-op developers build from his architecture. The earlier metrics were inaccurate and underused. Keystone is rolling out, not a claimed shipped result.',
+    aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
+    outcome: 'Shared definitions before dashboards. Rolling out.',
+    facts: {
+      role: 'Lead and architect',
+      when: '2026 / rolling out',
+      team: 'Eduard, a UX research contractor and two co-op developers',
+      stack: ['Capability registry', 'MCP', 'Scorecards'],
+      links: [],
+    },
   },
   {
-    slug: 'voxcoach',
-    title: 'VoxCoach',
+    slug: 'keeper',
+    title: 'Keeper',
+    tier: 'case-study',
+    beat: 'private-local',
+    visibility: 'described-only',
     description:
-      'A tool for practising sales calls with a simulated buyer and reviewing the conversation afterwards. The voice and language models run locally on Apple Silicon.',
-    longDescription: getProjectMarkdown('voxcoach'),
-    previewImageUrl: '/images/voxcoach.png',
-    tags: [
-      'Go',
-      'voxtral.c',
-      'Silero VAD',
-      'Qwen 3',
-      'Kokoro TTS',
-      'Ollama',
-      'Supabase',
-      'WebSocket',
-      'CGo',
-      'Metal GPU',
-    ],
-    repoUrl: 'https://github.com/EduardKakosyan/voxcoach',
-    featured: false,
-    category: 'AI/ML',
-    completionDate: 'March 2026',
-    teamSize: 1,
-    duration: '2 weeks',
-    highlights: [
-      'Local speech recognition and synthesis on Apple Silicon',
-      'Overlapped LLM/TTS streaming with barge-in support',
-      '6-phase discovery call simulation with 5 buyer archetypes',
-      'Post-call scoring on 7 consultative selling criteria',
-      'Built autonomously by Claude Code across 12+ nightly runs',
-    ],
+      'A private meeting archive with search, summaries and MCP access, paired with a Mac capture and dictation app.',
+    detail:
+      'Keeper stores transcripts and summary versions in SQLite, serves a web UI and MCP tools, and can summarize with a configured local model. Access is scoped to the person whose token is on the request. The repository remains private pending its publication audit.',
+    aliases: ['keeper', 'meeting', 'archive', 'dictation'],
+    outcome: 'Meeting evidence you can retrieve without giving up control of the archive.',
+    facts: {
+      role: 'Builder',
+      when: 'October 2026',
+      team: 'Personal project',
+      stack: ['Python', 'FastAPI', 'SQLite FTS5', 'MCP', 'Swift'],
+      links: [],
+    },
   },
   {
-    slug: 'dev-template',
-    title: 'Dev Template',
+    slug: 'dgx-autonomy',
+    title: 'dgx-autonomy',
+    tier: 'case-study',
+    beat: 'private-local',
+    visibility: 'public-repo',
     description:
-      'The agent commands, checks, and Git hooks I put together for starting projects at AI-First Consulting.',
-    longDescription: getProjectMarkdown('dev-template'),
-    previewImageUrl: undefined,
-    tags: [
-      'TypeScript',
-      'Claude Code',
-      'CrewAI',
-      'Vitest',
-      'ESLint 9',
-      'Husky',
-      'Gitleaks',
-      'GitHub Actions',
-      'Changesets',
-      'pnpm',
-    ],
-    repoUrl: 'https://github.com/AI-First-Consulting/dev-template',
-    featured: true,
-    category: 'Developer Tools',
-    completionDate: '2026',
-    teamSize: 1,
-    duration: 'Ongoing',
-    highlights: [
-      '6 specialized sub-agents for codebase research',
-      '30+ slash commands for plan-driven development',
-      'Git hooks for secret scanning, linting, and local CI',
-      'Persistent knowledge base across sessions',
-      'Zero application code — pure development infrastructure',
-    ],
+      'A setup for running a coding agent on a DGX Spark. It saves progress between conversations and submits its code to tests it cannot edit.',
+    detail:
+      'Eduard built the controller around OpenHands to save progress, recover interrupted runs, test code in a separate container, and pause for review. Recent app runs use SGLang and NVFP4; llama.cpp and a Qwen3.6 fallback are also supported. Shoreline and the original Camp Yahtzee release are documented outputs. Human and Claude supervision supplied product briefs and reviews.',
+    aliases: ['dgx', 'autonomy', 'autonomous loops', 'local ai', 'qwen', 'spark'],
+    outcome: 'Local builds, independently checked, with human product review.',
+    facts: {
+      role: 'Build controller and tests',
+      when: '2026',
+      team: 'Eduard; local builder with human and Claude supervision',
+      stack: ['Qwen3.8', 'DGX Spark', 'OpenHands', 'SGLang', 'Python', 'Docker'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/dgx-autonomy' }],
+    },
+  },
+  {
+    slug: 'shoreline',
+    title: 'Shoreline',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'Weather, tides and sea conditions for a day at the water, built by a local coding agent.',
+    detail:
+      'Built September 24-28, 2026 over three runs. The final run passed 19/19 fixed acceptance checks. The operator supplied briefs and product reviews. Data comes from Open-Meteo.',
+    aliases: ['shoreline', 'beach', 'fishing'],
+    facts: {
+      role: 'Briefs and review',
+      when: 'September 2026',
+      team: 'Local coding agent with operator supervision',
+      stack: ['Local AI', 'Open-Meteo', 'Playwright'],
+      links: [
+        { label: 'Source code', href: 'https://github.com/EduardKakosyan/shoreline' },
+        { label: 'Live app', href: 'https://eduardkakosyan.github.io/shoreline/' },
+      ],
+    },
+  },
+  {
+    slug: 'yahtzee',
+    title: 'Camp Yahtzee',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'An offline game for one phone passed around a camp table, with real or on-screen dice.',
+    detail:
+      'The original local-agent build crossed four conversations and two product reviews, passing 24/24 fixed acceptance checks. Its rules audit covered all 7,776 rolls. Later undo, reset and game-management controls were added separately through CodeLayer.',
+    aliases: ['yahtzee', 'dice', 'camp'],
+    facts: {
+      role: 'Briefs and review',
+      when: 'September 2026',
+      team: 'Local coding agent with operator supervision',
+      stack: ['Local AI', 'Offline', 'Playwright'],
+      links: [
+        { label: 'Source code', href: 'https://github.com/EduardKakosyan/yahtzee' },
+        { label: 'Live app', href: 'https://eduardkakosyan.github.io/yahtzee/' },
+      ],
+    },
   },
   {
     slug: 'hugo',
     title: 'HUGO',
+    tier: 'archive',
+    visibility: 'public-repo',
     description:
-      'A voice assistant for my Reachy Mini robot, with speech recognition, language models, tool calls, and speech synthesis running locally on a DGX Spark.',
-    longDescription: getProjectMarkdown('hugo'),
-    previewImageUrl: undefined,
-    tags: [
-      'Python',
-      'DGX Spark',
-      'Reachy Mini',
-      'vLLM',
-      'Nemotron',
-      'Parakeet',
-      'Qwen3-TTS',
-      'Silero VAD',
-    ],
-    repoUrl: 'https://github.com/EduardKakosyan/hugo',
-    featured: true,
-    category: 'AI/ML',
-    completionDate: '2026',
-    teamSize: 1,
-    duration: 'Ongoing',
-    highlights: [
-      'Local speech recognition, reasoning, tools and synthesis',
-      'Streaming voice loop with follow-up conversation',
-      'Wake-word and voice-activity detection',
-      'Integration with a Reachy Mini robot body',
-    ],
+      'A voice assistant for a Reachy Mini robot, running speech recognition, reasoning, tools and synthesis on a DGX Spark.',
+    detail:
+      'HUGO uses Nemotron through vLLM, Parakeet, Qwen3-TTS, openWakeWord and Silero VAD. The voice loop streams speech and supports follow-up conversation. This is a newer Python/DGX implementation than the original Go version.',
+    aliases: ['hugo', 'reachy', 'robot', 'voice'],
+    facts: {
+      role: 'Builder',
+      when: '2026',
+      team: 'Solo',
+      stack: ['Python', 'DGX Spark', 'Reachy Mini', 'vLLM', 'Voice'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/hugo' }],
+    },
+  },
+  {
+    slug: 'claude-autonomous',
+    title: 'Claude Autonomous',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'An earlier harness for running Claude Code overnight in an isolated Docker container.',
+    detail:
+      'Scheduling, budget controls and persistent task state came before the fully local dgx-autonomy environment.',
+    aliases: ['claude autonomous'],
+    facts: {
+      role: 'Builder',
+      when: 'March 2026',
+      team: 'Solo',
+      stack: ['Docker', 'Bash', 'Claude Code', 'launchd'],
+      links: [
+        { label: 'Source code', href: 'https://github.com/EduardKakosyan/claude-autonomous' },
+      ],
+    },
+  },
+  {
+    slug: 'voxcoach',
+    title: 'VoxCoach',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'Sales-call practice with a simulated buyer and a review afterwards, using local voice and language models on Apple Silicon.',
+    detail:
+      'The voice loop overlaps language generation and speech synthesis, supports barge-in and scores the conversation afterwards. Built with the earlier Claude Autonomous harness.',
+    aliases: ['voxcoach', 'sales calls'],
+    facts: {
+      role: 'Builder',
+      when: 'March 2026',
+      team: 'Solo, using Claude Code',
+      stack: ['Go', 'voxtral.c', 'Silero VAD', 'Qwen 3', 'Kokoro TTS', 'Ollama'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/voxcoach' }],
+    },
+  },
+  {
+    slug: 'dev-template',
+    title: 'Dev Template',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'Agent commands, checks and Git hooks for starting projects at AI-First Consulting.',
+    detail:
+      'Planning, implementation and review commands, plus saved notes between sessions and development checks.',
+    aliases: ['dev template'],
+    facts: {
+      role: 'Builder',
+      when: '2026',
+      team: 'Solo',
+      stack: ['TypeScript', 'Claude Code', 'Vitest', 'Husky', 'Gitleaks'],
+      links: [
+        { label: 'Source code', href: 'https://github.com/AI-First-Consulting/dev-template' },
+      ],
+    },
   },
   {
     slug: 'healthbyte',
     title: 'HealthByte',
+    tier: 'archive',
+    visibility: 'public-repo',
     description:
-      'A hackathon project we built to explore how simulated readers respond to healthcare articles, with a second agent revising the text from their feedback.',
-    longDescription: getProjectMarkdown('healthbyte'),
-    previewImageUrl: undefined,
-    tags: [
-      'Python',
-      'OpenAI o4-mini',
-      'Gemini 2.5 flash',
-      'Reinforcement Learning',
-      'Multi-Agent Systems',
-      'Prompt Engineering',
-    ],
-    liveUrl: 'https://healthbyte-dashboard.vercel.app/',
-    repoUrl: 'https://github.com/EduardKakosyan/atlantic-ai-conference-hackathon',
-    placement: 'First Place',
-    featured: true,
-    category: 'AI/ML',
-    completionDate: 'May 2025',
-    teamSize: 4,
-    duration: '48 hours',
-    highlights: [
-      'Our team took first place at the Atlantic AI Summit 2025',
-      'Two-agent reinforcement learning loop (persona + editor)',
-      'Persona modeling across diverse demographics',
-      'Article revisions and simulated reactions shown side by side',
-    ],
+      'A hackathon experiment in simulated reader reactions to healthcare articles and revisions from that feedback.',
+    detail:
+      'Eduard built it with Huy Huynh, Hao Tang and Tobi Onibudo. Their team took first place at the Atlantic AI Summit 2025. One agent simulates readers; another revises the article.',
+    aliases: ['healthbyte', 'health', 'hackathon'],
+    facts: {
+      role: 'Team contributor',
+      when: 'May 2025',
+      team: 'Four-person hackathon team',
+      stack: ['Python', 'Agents', 'Reinforcement Learning'],
+      links: [
+        {
+          label: 'Source code',
+          href: 'https://github.com/EduardKakosyan/atlantic-ai-conference-hackathon',
+        },
+        { label: 'Live demo', href: 'https://healthbyte-dashboard.vercel.app/' },
+      ],
+    },
   },
   {
     slug: 'second-brain',
     title: 'Second Brain',
+    tier: 'archive',
+    visibility: 'public-repo',
     description:
-      'A study assistant we built at a hackathon. It searches course files in Google Drive and helps put study sessions and exam dates on a calendar.',
-    longDescription: getProjectMarkdown('second-brain'),
-    previewImageUrl: undefined,
-    tags: [
-      'n8n',
-      'Pinecone',
-      'Vector Database',
-      'Google Drive API',
-      'Calendar Integration',
-      'Workflow Automation',
-      'AI Assistant',
-      'RAG',
-    ],
-    repoUrl: 'https://github.com/EduardKakosyan/volta_hackathon',
-    placement: 'Second Place',
-    featured: false,
-    category: 'Productivity',
-    completionDate: '2024',
-    teamSize: 3,
-    duration: '48 hours',
-    highlights: [
-      'Automated document processing every 10 minutes',
-      'Syllabus parsing for automatic exam scheduling',
-      'Vector-based knowledge retrieval system',
-      'Calendar integration with conflict detection',
-    ],
+      'A hackathon study assistant connecting course files in Google Drive with chat and a calendar.',
+    detail:
+      'Eduard built it with Huy Huynh and Hao Tang at the 2024 Volta Hackathon, where their team took second place.',
+    aliases: ['second brain', 'volta'],
+    facts: {
+      role: 'Team contributor',
+      when: '2024',
+      team: 'Three-person hackathon team',
+      stack: ['n8n', 'Pinecone', 'Google Drive API', 'RAG'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/volta_hackathon' }],
+    },
   },
   {
     slug: 'cargrep',
     title: 'CarGrep',
+    tier: 'archive',
+    visibility: 'described-only',
     description:
-      'A car search app I built around a conversation: describe your budget and what you need, then browse matching listings from Canadian marketplaces.',
-    longDescription: getProjectMarkdown('cargrep'),
-    previewImageUrl: '/images/cargrep.png',
-    tags: [
-      'Next.js 15',
-      'Vercel AI SDK',
-      'Azure OpenAI',
-      'Supabase',
-      'TypeScript',
-      'Tailwind CSS',
-      'Radix UI',
-      'Clerk',
-      'Stripe',
-      'Real-time Data',
-    ],
-    liveUrl: 'https://www.cargrep.com',
-    featured: true,
-    category: 'Full-Stack',
-    completionDate: '2024',
-    teamSize: 1,
-    highlights: [
-      'Startup backed by Shiftkey Labs (Dalhousie University)',
-      'Pitched at StFX entrepreneurship competition',
-      'Aggregates data from major Canadian marketplaces',
-      'Conversational search interface',
-      'Real-time deal alerts and price monitoring',
-    ],
+      'A car search app built around a conversation about your budget and what you need.',
+    detail:
+      'Searches Canadian marketplaces and tracks prices. Backed by ShiftKey Labs at Dalhousie.',
+    aliases: ['cargrep', 'cars'],
+    facts: {
+      role: 'Co-founder and builder',
+      when: '2024',
+      team: 'Solo build',
+      stack: ['Next.js', 'Vercel AI SDK', 'Azure OpenAI', 'Supabase', 'TypeScript'],
+      links: [{ label: 'Website', href: 'https://www.cargrep.com' }],
+    },
   },
   {
     slug: 'network-sim',
     title: 'Q-Learning Network Simulator',
-    description:
-      'A simulator I worked on with Ethan Rozee and Jack Whitmar to compare learning-based routing with Dijkstra and OSPF.',
-    longDescription: getProjectMarkdown('network-sim'),
-    previewImageUrl: undefined,
-    tags: [
-      'Python 3.13',
-      'SimPy',
-      'NetworkX',
-      'Q-Learning',
-      'Reinforcement Learning',
-      'Network Simulation',
-      'Performance Analysis',
-      'OSPF',
-      'Graph Theory',
-    ],
-    repoUrl: 'https://github.com/EduardKakosyan/q-learning-network-sim',
-    featured: true,
-    category: 'Research',
-    completionDate: '2024',
-    teamSize: 3,
-    duration: '4 months',
-    highlights: [
-      'Discrete event simulation using SimPy',
-      'Comparative analysis of 3 routing algorithms',
-      'Support for multiple network topologies',
-      'Performance metrics: throughput, delay, packet loss, link utilization',
-      'Adaptive routing decisions based on learned Q-values',
-    ],
+    tier: 'archive',
+    visibility: 'public-repo',
+    description: 'A network simulation comparing learning-based routing with Dijkstra and OSPF.',
+    detail:
+      'Research with Ethan Rozee and Jack Whitmar, using Python, SimPy and NetworkX across network topologies and traffic patterns.',
+    aliases: ['network', 'routing', 'q-learning'],
+    facts: {
+      role: 'Research contributor',
+      when: '2024',
+      team: 'Three-person team',
+      stack: ['Python', 'SimPy', 'NetworkX', 'Q-Learning'],
+      links: [
+        { label: 'Source code', href: 'https://github.com/EduardKakosyan/q-learning-network-sim' },
+      ],
+    },
   },
 ]
 
-export async function getAllProjects(): Promise<Project[]> {
-  return allProjects
+export const caseStudies = projects.filter((project) => project.tier === 'case-study')
+export const archiveProjects = projects.filter((project) => project.tier === 'archive')
+export function getProjectBySlug(slug: string): Project | undefined {
+  return projects.find((project) => project.slug === slug)
 }
-
-export async function getProjectBySlug(slug: string): Promise<Project | undefined> {
-  return allProjects.find((project) => project.slug === slug)
-}
-
-export async function getFeaturedProjects(limit?: number): Promise<Project[]> {
-  const featured = allProjects.filter((project) => project.featured)
-  return limit ? featured.slice(0, limit) : featured
-}
-
-export async function getProjectsByCategory(category: string): Promise<Project[]> {
-  return allProjects.filter((project) => project.category === category)
-}
-
-export async function getCompetitionProjects(): Promise<Project[]> {
-  return allProjects.filter((project) => project.placement)
-}
-
-export function getCategories(): string[] {
-  const categories = new Set(allProjects.map((p) => p.category).filter(Boolean) as string[])
-  return ['All', ...Array.from(categories)]
-}
-
-export function getAdjacentProjects(slug: string): { prev: Project | null; next: Project | null } {
-  const index = allProjects.findIndex((p) => p.slug === slug)
-  if (index === -1) return { prev: null, next: null }
-  return {
-    prev: index > 0 ? allProjects[index - 1] : null,
-    next: index < allProjects.length - 1 ? allProjects[index + 1] : null,
-  }
-}
-
-export default allProjects
+export default projects

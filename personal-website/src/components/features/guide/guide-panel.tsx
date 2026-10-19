@@ -413,7 +413,12 @@ function GuideBody() {
             {!!message.sources?.length && (
               <div className="guide-sources">
                 {message.sources.map((work) => (
-                  <a key={work.slug} href={work.repo} target="_blank" rel="noopener noreferrer">
+                  <a
+                    key={work.slug}
+                    href={work.repo ?? `/projects/${work.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {work.title}
                     <ArrowUpRight size={12} />
                   </a>

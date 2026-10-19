@@ -19,6 +19,47 @@ export interface Project {
 
 export const projects: Project[] = [
   {
+    slug: 'volta-sep26',
+    title: 'Is the Beach Open',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'A map of supervised beaches around Halifax, with public notices behind each swimming status.',
+    detail:
+      'A newer Volta hackathon build, distinct from Second Brain. The repository documents fixture and live modes, source-page tests and mobile browser checks. Exact event dates, team composition and competition outcome are not verified.',
+    aliases: ['beach open', 'new volta', 'volta-sep26'],
+    facts: {
+      role: 'Builder',
+      when: 'Newer Volta hackathon / exact dates unverified',
+      team: 'Team composition unverified',
+      stack: ['Next.js', 'MapLibre', 'Supabase', 'Vitest', 'Playwright'],
+      links: [
+        {
+          label: 'Source code',
+          href: 'https://github.com/EduardKakosyan/claude-hackathon-volta-sep26',
+        },
+      ],
+    },
+  },
+  {
+    slug: 'exosky',
+    title: 'Sky Painters',
+    tier: 'archive',
+    visibility: 'public-repo',
+    description:
+      'An educational sky explorer that changes the viewpoint from Earth to an exoplanet and lets visitors draw constellations.',
+    detail:
+      'Built for NASA Space Apps Challenge 2024. The repository describes Gaia and NASA Exoplanet Archive data, coordinate transformations and a React sky viewer. Eduard is listed among the contributors; individual implementation ownership and competition outcome are not verified.',
+    aliases: ['exosky', 'sky painters', 'nasa'],
+    facts: {
+      role: 'Team contributor',
+      when: 'NASA Space Apps Challenge 2024',
+      team: 'Hackathon team; Eduard listed among contributors',
+      stack: ['React', 'Three.js', 'TypeScript', 'Python', 'PostgreSQL', 'Docker'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/exosky_nasa' }],
+    },
+  },
+  {
     slug: 'keystone',
     title: 'Keystone',
     tier: 'case-study',

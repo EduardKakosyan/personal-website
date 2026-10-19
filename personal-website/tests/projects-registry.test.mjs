@@ -31,6 +31,8 @@ test('one pure registry owns unique slugs and preserves all previous routes', as
     'second-brain',
     'cargrep',
     'network-sim',
+    'volta-sep26',
+    'exosky',
   ]) {
     assert.ok(getProjectBySlug(slug), slug)
   }

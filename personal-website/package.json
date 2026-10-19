@@ -16,7 +16,8 @@
     "secrets:scan": "gitleaks detect --verbose --config=../.gitleaks.toml",
     "changeset": "changeset",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.mjs\"",
-    "resume": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-resume.mts --pdf"
+    "resume": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-resume.mts --pdf",
+    "readme": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-github-readme.mts"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",

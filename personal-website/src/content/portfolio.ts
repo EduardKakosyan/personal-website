@@ -243,6 +243,58 @@ export interface ProjectCommand {
 
 // Authored shortcuts work without downloading a model. IDs resolve only within their project.
 export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = {
+  'volta-sep26': [
+    {
+      id: 'sources',
+      label: 'Where do statuses come from?',
+      question: 'Where does Is the Beach Open get statuses?',
+      keywords: ['source', 'status'],
+      reply:
+        'The repository documents municipal beach information, provincial park notices and algae notices. Fixture mode is not live safety advice.',
+    },
+    {
+      id: 'tests',
+      label: 'How is it checked?',
+      question: 'How is Is the Beach Open tested?',
+      keywords: ['test', 'check'],
+      reply:
+        'The repository provides source-page fixture tests with Vitest and browser checks with Playwright. They were not executed for this portfolio update.',
+    },
+    {
+      id: 'event',
+      label: 'Which Volta project?',
+      question: 'Which Volta project is Is the Beach Open?',
+      keywords: ['event', 'volta'],
+      reply:
+        'This is the newer Volta hackathon build, not the earlier Second Brain assistant. Exact event dates, team composition and competition outcome are unverified.',
+    },
+  ],
+  exosky: [
+    {
+      id: 'viewpoint',
+      label: 'What changes in the sky?',
+      question: 'What does Sky Painters show?',
+      keywords: ['viewpoint', 'show'],
+      reply:
+        'Sky Painters explores the sky from an exoplanet viewpoint and lets visitors draw constellations.',
+    },
+    {
+      id: 'data',
+      label: 'Astronomy data',
+      question: 'What data does Sky Painters use?',
+      keywords: ['data', 'source'],
+      reply:
+        'The repository describes Gaia and NASA Exoplanet Archive data, coordinate transformations and brightness adjustments.',
+    },
+    {
+      id: 'credit',
+      label: 'Hackathon context',
+      question: 'Who built Sky Painters?',
+      keywords: ['credit', 'built'],
+      reply:
+        'Eduard is listed among the NASA Space Apps Challenge 2024 contributors. Individual implementation ownership and competition outcome are not verified here.',
+    },
+  ],
   keystone: [
     {
       id: 'discovery',

@@ -15,12 +15,99 @@ const { profile, metricsFor, resumePdfPath, clientWorkIndex } = loadTs(
 // The render scripts are ESM that import .ts files with extensions, so they load through
 // Node's built-in type stripping (Node ≥ 22.18; CI runs Node 24).
 const { renderResume } = await import('../scripts/render-resume.mts')
+const { renderGithubReadme } = await import('../scripts/render-github-readme.mts')
+const { projects } = await import('../src/content/projects.ts')
+const { githubContent } = await import('../profile-readme/content.ts')
 const { fill } = await import('../scripts/lib/fill.mts')
 const { tex } = await import('../scripts/lib/tex.mts')
 const { findHiddenTerms, hiddenTermPattern, localHiddenTerms } =
   await import('../scripts/lib/hidden-terms.mts')
 
 const resumeTex = readFileSync(join(root, 'resume/resume.tex'), 'utf8')
+const githubReadme = readFileSync(join(root, 'profile-readme/README.md'), 'utf8')
+const draftNames = [
+  'keeper',
+  'dgx-autonomy',
+  'hugo',
+  'claude-hackathon-volta-sep26',
+  'personal-website',
+  'shoreline',
+  'yahtzee',
+  'atlantic-ai-conference-hackathon',
+  'volta_hackathon',
+  'voxcoach',
+  'claude-autonomous',
+  'q-learning-network-sim',
+  'exosky_nasa',
+]
+
+test('GitHub README matches a fresh render and the cleared selection', async () => {
+  assert.equal(githubReadme, await renderGithubReadme())
+  assert.deepEqual(githubContent.selected, [
+    'keeper',
+    'dgx-autonomy',
+    'hugo',
+    'volta-sep26',
+    'personal-website',
+  ])
+  assert.doesNotMatch(githubReadme, /github\.com\/[^\s/]+\/keeper\b/i)
+  assert.match(githubReadme, /source private; audit pending/)
+  assert.equal((githubReadme.match(/^- \*\*/gm) ?? []).length, 4)
+  assert.doesNotMatch(githubReadme, /\d+\s*(?:%|\+|clients|learners|deals)/i)
+})
+
+test('README kit has exactly the cleared drafts in the template heading order', () => {
+  const folder = join(root, 'repo-readmes')
+  const files = readdirSync(folder).filter((file) => !/^[A-Z]+\.md$/.test(file))
+  assert.deepEqual(files.sort(), draftNames.map((name) => `${name}.md`).sort())
+  const headings = (text) => [...text.matchAll(/^## (.+)$/gm)].map((match) => match[1])
+  const expected = headings(readFileSync(join(folder, 'TEMPLATE.md'), 'utf8'))
+  assert.deepEqual(expected, [
+    'What',
+    'Why',
+    'Demo',
+    'Run it',
+    "How it's tested",
+    'How it works',
+    'Status',
+    'More',
+  ])
+  for (const file of files) {
+    const text = readFileSync(join(folder, file), 'utf8')
+    assert.deepEqual(headings(text), expected, file)
+    assert.match(text, /https:\/\/kakosyaneduard\.ca/, file)
+  }
+  assert.equal(
+    readFileSync(join(root, '../README.md'), 'utf8'),
+    readFileSync(join(folder, 'personal-website.md'), 'utf8'),
+  )
+})
+
+test('all GitHub kit site links resolve and all output files exclude hidden terms', () => {
+  const texts = [
+    githubReadme,
+    readFileSync(join(root, '../README.md'), 'utf8'),
+    ...readdirSync(join(root, 'repo-readmes')).map((name) =>
+      readFileSync(join(root, 'repo-readmes', name), 'utf8'),
+    ),
+  ]
+  const terms = [...profile.hidden, ...localHiddenTerms()]
+  const routes = new Set([
+    '/',
+    '/projects',
+    '/about',
+    '/contact',
+    resumePdfPath,
+    ...projects.map((project) => `/projects/${project.slug}`),
+  ])
+  for (const text of texts) {
+    assert.equal(findHiddenTerms(text, terms).length, 0, 'hidden term in GitHub kit')
+    for (const [, href] of text.matchAll(/\]\((https:\/\/kakosyaneduard\.ca[^)]*)\)/g)) {
+      assert.ok(routes.has(new URL(href).pathname), href)
+    }
+  }
+  assert.doesNotMatch(readFileSync(join(root, 'repo-readmes/CHECKLIST.md'), 'utf8'), /^- \[x\]/m)
+})
 // Client names are never committed: they come from the gitignored hidden-terms.local.txt or the
 // HIDDEN_TERMS env var. In CI the names are a secret, so failures there name the term by number.
 const localTerms = localHiddenTerms()

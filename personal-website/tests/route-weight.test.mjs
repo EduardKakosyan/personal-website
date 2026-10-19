@@ -67,3 +67,21 @@ test('guide panel mounts only when open through a dynamic boundary', () => {
   assert.match(launcher, /import\('\.\/guide-panel'\)/)
   assert.match(launcher, /open && <LazyGuidePanel/)
 })
+
+test('initial story client islands do not import profile validation or guide knowledge', () => {
+  for (const entry of [
+    'components/layouts/header-client.tsx',
+    'components/features/about/resume-link-client.tsx',
+    'components/features/story/story-scroller.tsx',
+    'components/features/guide/guide-launcher.tsx',
+  ]) {
+    const reached = visit(path.join(src, entry))
+    for (const file of reached) {
+      assert.ok(
+        !/content\/(profile|portfolio|story-copy)\.ts$/.test(file),
+        `${entry} reaches ${file}`,
+      )
+      assert.ok(!imports(file).includes('zod'), `${entry} imports Zod through ${file}`)
+    }
+  }
+})

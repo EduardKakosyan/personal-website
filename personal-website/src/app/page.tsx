@@ -1,11 +1,11 @@
-import { LabHome } from '@/components/features/lab-home'
+import { StoryHome } from '@/components/features/story/story-home'
+import { profile } from '@/content/profile'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Eduard Kakosyan — Local AI & Autonomous Systems',
-  description:
-    'Eduard Kakosyan is an AI developer in Halifax. Projects include local coding agents, a voice-controlled robot, and business software.',
+  title: 'Eduard Kakosyan — AI for Revenue & Operations',
+  description: profile.headline,
 }
 export default function HomePage() {
-  return <LabHome />
+  return <StoryHome />
 }

@@ -1,11 +1,11 @@
 # GitHub publication checklist
 
-Nothing here has been executed. Approve each outward action separately in Phase 9. Thirteen drafts and five proposed pins remain; one candidate is withheld pending explicit clearance, with no replacement assumed. Keeper's pin is conditional on audit and publication approval.
+Only the profile README approval and publication below are complete. It was published to `EduardKakosyan/EduardKakosyan` main via API commit `6a867472810d905c73b0f373450923aac35d34ad`. Phase 5 website work was committed locally as `59574ad`; the website branch was not pushed or merged. Approve every remaining outward action separately. Thirteen drafts and five proposed pins remain; one candidate is withheld pending explicit clearance, with no replacement assumed. Keeper's pin is conditional on audit and publication approval.
 
 ## Profile and privacy
 
-- [ ] Approve the generated profile README voice and facts.
-- [ ] Publish the generated README to the profile repository.
+- [x] Approve the generated profile README voice and facts (user approved Phase 5 and publication).
+- [x] Publish the generated README to the profile repository (profile main only, API commit `6a867472810d905c73b0f373450923aac35d34ad`).
 - [ ] Set bio to "Lead AI Developer at AI-First Consulting. Revenue and operations systems; private and local AI."
 - [ ] Link and verify dev@ai-first.ca on the account without rewriting history.
 - [ ] Enable private contribution counts after reviewing privacy implications.

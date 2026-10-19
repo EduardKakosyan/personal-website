@@ -12,7 +12,7 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
       <motion.div
         key={pathname}
         className="w-full"
-        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}

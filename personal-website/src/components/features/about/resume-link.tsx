@@ -1,16 +1,6 @@
-'use client'
 import { resumePdfPath } from '@/content/profile'
-import { analyticsEvents } from '@/lib/analytics'
+import { ResumeLinkClient } from './resume-link-client'
 
 export function ResumeLink() {
-  return (
-    <a
-      className="site-button"
-      href={resumePdfPath}
-      download
-      onClick={() => analyticsEvents.resumeDownloaded()}
-    >
-      Résumé ↓ <span className="site-kicker">PDF</span>
-    </a>
-  )
+  return <ResumeLinkClient resumePdfPath={resumePdfPath} />
 }

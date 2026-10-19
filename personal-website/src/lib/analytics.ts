@@ -1,4 +1,5 @@
 import { track } from '@vercel/analytics'
+import type { ChapterId, Persona } from '@/content/story'
 
 /**
  * Analytics utility functions for tracking custom events
@@ -23,6 +24,9 @@ export function trackEvent(event: string, properties?: EventProperties) {
  * Pre-defined analytics events for common actions
  */
 export const analyticsEvents = {
+  personaChosen: (persona: Persona) => trackEvent('Persona Chosen', { persona }),
+  chapterReached: (chapter: ChapterId, persona: Persona) =>
+    trackEvent('Chapter Reached', { chapter, persona }),
   // Project interactions
   projectViewed: (projectSlug: string) => trackEvent('Project Viewed', { project: projectSlug }),
 

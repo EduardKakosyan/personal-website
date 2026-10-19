@@ -22,6 +22,10 @@ export type Work = (typeof portfolioWorks)[number]
 export const featuredWorks = portfolioWorks.filter((work) => work.featured)
 
 export const guideSections = {
+  systems: { path: '/', id: 'systems', label: 'revenue and operations systems' },
+  'private-local': { path: '/', id: 'private-local', label: 'private and local AI' },
+  adoption: { path: '/', id: 'adoption', label: 'adoption and teaching' },
+  'next-step': { path: '/', id: 'next-step', label: 'resume and contact' },
   'selected-work': { path: '/', id: 'selected-work', label: 'selected work' },
   about: { path: '/', id: 'about', label: 'about Eduard' },
   'dgx-workflow': {

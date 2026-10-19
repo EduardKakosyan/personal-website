@@ -106,7 +106,14 @@ test('all GitHub kit site links resolve and all output files exclude hidden term
       assert.ok(routes.has(new URL(href).pathname), href)
     }
   }
-  assert.doesNotMatch(readFileSync(join(root, 'repo-readmes/CHECKLIST.md'), 'utf8'), /^- \[x\]/m)
+  const completed =
+    readFileSync(join(root, 'repo-readmes/CHECKLIST.md'), 'utf8').match(/^- \[x\].+$/gm) ?? []
+  assert.equal(completed.length, 2)
+  assert.match(completed[0], /Approve the generated profile README/)
+  assert.match(
+    completed[1],
+    /Publish the generated README.*6a867472810d905c73b0f373450923aac35d34ad/,
+  )
 })
 // Client names are never committed: they come from the gitignored hidden-terms.local.txt or the
 // HIDDEN_TERMS env var. In CI the names are a secret, so failures there name the term by number.

@@ -6,8 +6,8 @@ export function ClientWork() {
       <p className="site-kicker">Through AI-First Consulting</p>
       <h2 id="client-heading">Client work</h2>
       <p className="site-lead">
-        Published engagements, described here by sector. Each link opens the company&apos;s public
-        work index.
+        Projects I did through AI-First Consulting. Client names stay off this site; the links go to
+        the company&apos;s case studies.
       </p>
       <ul className="work-clients">
         {profile.clientWork.map((work) => (

@@ -5,7 +5,8 @@ import { ArchiveTable } from '@/components/features/work/archive-table'
 
 export const metadata: Metadata = {
   title: 'Work',
-  description: 'Revenue and operations systems, private AI, and the decisions behind the builds.',
+  description:
+    'Case studies: a sales and delivery scorecard, private meeting search, and a coding agent on my own hardware.',
   alternates: { canonical: '/projects' },
 }
 
@@ -15,11 +16,9 @@ export default function ProjectsPage() {
       <header>
         <p className="site-kicker">Work / Eduard Kakosyan</p>
         <h1>
-          Systems, with <em>the evidence.</em>
+          Things I&apos;ve built, <em>and how.</em>
         </h1>
-        <p className="site-lead">
-          What I built, the decisions behind it, and what needed another pass.
-        </p>
+        <p className="site-lead">What I built, why I built it that way, and what broke.</p>
       </header>
       <FeaturedCaseStudies />
       <ClientWork />

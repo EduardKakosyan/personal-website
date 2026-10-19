@@ -33,7 +33,7 @@ export function FactsBox({ project }: { project: Project }) {
         </a>
       ))}
       {project.visibility === 'described-only' && (
-        <p className="site-muted">Described here; source code is not public.</p>
+        <p className="site-muted">The code is private.</p>
       )}
     </aside>
   )

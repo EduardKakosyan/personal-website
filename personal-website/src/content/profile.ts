@@ -193,7 +193,7 @@ export const profile: Profile = profileSchema.parse({
     email: 'kakosyaneduard@gmail.com',
   },
   headline:
-    'I build the AI systems revenue and operations teams run on, on their own data, and I lead the adoption that makes people use them.',
+    'I build AI tools that sales and operations teams actually use, connect them to the team’s own data, and stay until people use them.',
   roles: [
     {
       id: 'ai-first',
@@ -204,7 +204,7 @@ export const profile: Profile = profileSchema.parse({
       location: 'Halifax, NS',
       start: '2025-02',
       summary:
-        'I build the company’s internal systems and its client AI builds, hold the tech and AI seat on the leadership team, and run the dev team.',
+        'I run the dev team, build our internal systems and client AI projects, and sit on the leadership team.',
     },
     {
       id: 'teaching',

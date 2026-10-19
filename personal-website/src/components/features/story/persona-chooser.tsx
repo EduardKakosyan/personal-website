@@ -10,8 +10,8 @@ export function PersonaChooser({
 }) {
   return (
     <fieldset className="story-chooser">
-      <legend>Who&apos;s visiting?</legend>
-      <p className="site-muted">Choose a starting point. The same evidence stays available.</p>
+      <legend>What brings you here?</legend>
+      <p className="site-muted">Pick one and the most relevant work comes first.</p>
       <div>
         {(Object.keys(personaLabels) as Persona[]).map((value) => (
           <button

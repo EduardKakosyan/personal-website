@@ -1,4 +1,4 @@
-import { identity, metricsFor, profile } from '@/content/profile'
+import { identity, metricsFor } from '@/content/profile'
 import { ResumeLink } from '@/components/features/about/resume-link'
 
 export function StoryHero() {
@@ -11,11 +11,11 @@ export function StoryHero() {
         {identity.title} at {identity.company}
       </p>
       <h1>
-        AI for revenue.
-        <br />
-        <em>Systems for people.</em>
+        I build AI tools that sales and operations teams <em>actually use.</em>
       </h1>
-      <p className="site-lead">{profile.headline}</p>
+      <p className="site-lead">
+        I connect the tools to the team&apos;s own data and stay until people use them.
+      </p>
       <div className="story-actions">
         <a className="site-button" href="#selected-work">
           See the work
@@ -27,7 +27,7 @@ export function StoryHero() {
           <details key={metric.id}>
             <summary>
               <strong>{metric.value}</strong> {metric.label}
-              <span>Definition and scope</span>
+              <span>How this is counted</span>
             </summary>
             <p>{metric.definition}</p>
           </details>

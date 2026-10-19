@@ -60,7 +60,7 @@ test('story copy contains no hidden terms or literal count claims and fills only
   assert.doesNotMatch(copy, /\d/)
   assert.match(
     storyCopy(chapters.find((c) => c.id === 'adoption').line),
-    /226 learners, with 88% completion/,
+    /226 learners, 88% completion\./,
   )
   assert.throws(() => storyCopy('{metric:oppsWon}'))
   assert.throws(() => storyCopy('{metric:missing}'))

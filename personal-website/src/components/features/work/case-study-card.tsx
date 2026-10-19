@@ -19,9 +19,9 @@ export function CaseStudyCard({ project }: { project: Project }) {
       <Link
         className="work-link"
         href={`/projects/${project.slug}`}
-        aria-label={`Learn more about ${project.title}`}
+        aria-label={`Read the ${project.title} case study`}
       >
-        Learn more &rarr;
+        Read the case study &rarr;
       </Link>
     </article>
   )

@@ -3,7 +3,7 @@ import { identity } from '@/content/profile'
 
 export const metadata: Metadata = {
   title: 'Contact',
-  description: 'Talk with Eduard about AI systems, GTM engineering, and the work on this site.',
+  description: 'Email, LinkedIn and GitHub for Eduard Kakosyan.',
   alternates: { canonical: '/contact' },
 }
 
@@ -13,11 +13,10 @@ export default function ContactPage() {
       <header className="site-intro">
         <p className="site-kicker">Contact / {identity.location}</p>
         <h1>
-          Let's talk <em>about the work.</em>
+          Get in <em>touch.</em>
         </h1>
         <p className="site-lead">
-          Have a revenue or operations workflow to improve, a role to discuss, or a question about a
-          project? Send me a note.
+          Hiring, a project, or a question about something here? Email is best.
         </p>
       </header>
       <section className="site-section" aria-labelledby="contact-heading">
@@ -26,28 +25,28 @@ export default function ContactPage() {
           <article className="site-card">
             <h3>Email</h3>
             <a href={`mailto:${identity.email}`}>{identity.email}</a>
-            <p>A direct way to start a conversation.</p>
+            <p>The best way to reach me.</p>
           </article>
           <article className="site-card">
             <h3>LinkedIn</h3>
             <a href={identity.linkedin} target="_blank" rel="noopener noreferrer">
-              Connect with {identity.name} ↗
+              LinkedIn ↗
             </a>
-            <p>Roles, collaborations and professional updates.</p>
+            <p>For roles and introductions.</p>
           </article>
           <article className="site-card">
             <h3>GitHub</h3>
             <a href={identity.github} target="_blank" rel="noopener noreferrer">
-              Explore the code ↗
+              GitHub ↗
             </a>
-            <p>For project questions, issues and contributions.</p>
+            <p>Public code and build records.</p>
           </article>
           <article className="site-card site-stage">
             <h3>Based in {identity.location}</h3>
             <p>
               {identity.title} at {identity.company}.
             </p>
-            <p>AI systems, private and local models, and the adoption that makes them useful.</p>
+            <p>AI tools for sales and operations teams, on data they control.</p>
           </article>
         </div>
       </section>

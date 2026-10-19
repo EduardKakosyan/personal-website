@@ -19,7 +19,7 @@ export function AboutIntro() {
             <h2>{metric.label}</h2>
             <p>{metric.detail}</p>
             <details>
-              <summary>What this measures</summary>
+              <summary>How this is counted</summary>
               <p>{metric.definition}</p>
             </details>
           </article>

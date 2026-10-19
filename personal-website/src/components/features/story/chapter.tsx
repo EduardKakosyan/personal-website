@@ -7,7 +7,7 @@ import { ResumeLink } from '@/components/features/about/resume-link'
 export function Chapter({ chapter }: { chapter: StoryChapter }) {
   return (
     <section id={chapter.id} className="story-chapter" aria-labelledby={`${chapter.id}-heading`}>
-      <p className="site-kicker">{chapter.id.replace('-', ' / ')}</p>
+      <p className="site-kicker">{chapter.kicker}</p>
       <h2 id={`${chapter.id}-heading`}>{chapter.headline}</h2>
       <p>{storyCopy(chapter.line)}</p>
       <ul className="story-chips">
@@ -24,18 +24,7 @@ export function Chapter({ chapter }: { chapter: StoryChapter }) {
         })}
       </ul>
       <a className="work-link" href={chapter.learnMore}>
-        Learn more{' '}
-        <span className="sr-only">
-          about{' '}
-          {chapter.id === 'next-step'
-            ? 'getting in touch'
-            : chapter.id === 'adoption'
-              ? 'the experience'
-              : chapter.id === 'systems'
-                ? 'Keystone'
-                : 'Keeper'}
-        </span>{' '}
-        &rarr;
+        {chapter.learnMoreLabel} &rarr;
       </a>
       {chapter.id === 'next-step' && (
         <div id="about" className="story-actions">

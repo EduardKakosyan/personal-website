@@ -65,12 +65,11 @@ export const projects: Project[] = [
     tier: 'case-study',
     beat: 'systems',
     visibility: 'described-only',
-    description:
-      'A discovery-led operating system for revenue and delivery, from shared definitions to an actionable scorecard.',
+    description: 'One scorecard for sales and delivery, built on numbers the team agreed on first.',
     detail:
       'Eduard led Keystone and designed its architecture. A UX research contractor ran discovery with him, and two co-op developers build from his architecture. The earlier metrics were inaccurate and underused. Keystone is rolling out, not a claimed shipped result.',
     aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
-    outcome: 'Shared definitions before dashboards. Rolling out.',
+    outcome: 'Agree on the numbers, then build the dashboard. Rolling out now.',
     facts: {
       role: 'Lead and architect',
       when: '2026 / rolling out',
@@ -86,11 +85,11 @@ export const projects: Project[] = [
     beat: 'private-local',
     visibility: 'described-only',
     description:
-      'A private meeting archive with search, summaries and MCP access, paired with a Mac capture and dictation app.',
+      'A private archive for meeting transcripts, with search, summaries and access from AI tools. Comes with a Mac app for recording and dictation.',
     detail:
       'Keeper stores transcripts and summary versions in SQLite, serves a web UI and MCP tools, and can summarize with a configured local model. Access is scoped to the person whose token is on the request. The repository remains private pending its publication audit.',
     aliases: ['keeper', 'meeting', 'archive', 'dictation'],
-    outcome: 'Meeting evidence you can retrieve without giving up control of the archive.',
+    outcome: 'Search past meetings without handing the archive to someone else.',
     facts: {
       role: 'Builder',
       when: 'October 2026',
@@ -110,7 +109,8 @@ export const projects: Project[] = [
     detail:
       'Eduard built the controller around OpenHands to save progress, recover interrupted runs, test code in a separate container, and pause for review. Recent app runs use SGLang and NVFP4; llama.cpp and a Qwen3.6 fallback are also supported. Shoreline and the original Camp Yahtzee release are documented outputs. Human and Claude supervision supplied product briefs and reviews.',
     aliases: ['dgx', 'autonomy', 'autonomous loops', 'local ai', 'qwen', 'spark'],
-    outcome: 'Local builds, independently checked, with human product review.',
+    outcome:
+      'Code written on my own hardware, checked by tests the agent can’t change, reviewed by me.',
     facts: {
       role: 'Build controller and tests',
       when: '2026',

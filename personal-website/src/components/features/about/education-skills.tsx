@@ -5,7 +5,6 @@ export function EducationSkills() {
   return (
     <>
       <section className="site-section" aria-labelledby="skills-heading">
-        <p className="site-kicker">Tools for the problem</p>
         <h2 id="skills-heading">Skills</h2>
         <div className="site-grid">
           {profile.skills.map((group) => (

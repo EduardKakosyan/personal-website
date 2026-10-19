@@ -13,13 +13,13 @@ Lead AI Developer at AI-First Consulting. I build revenue and operations systems
 
 ## Selected work
 
-| Project                                                                             | What to inspect                                                                                                                          | Context                                                  |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Keeper (source private; audit pending)                                              | A private meeting archive with search, summaries and MCP access, paired with a Mac capture and dictation app.                            | [Notes](https://kakosyaneduard.ca/projects/keeper)       |
-| [dgx-autonomy](https://github.com/EduardKakosyan/dgx-autonomy)                      | A setup for running a coding agent on a DGX Spark. It saves progress between conversations and submits its code to tests it cannot edit. | [Notes](https://kakosyaneduard.ca/projects/dgx-autonomy) |
-| [HUGO](https://github.com/EduardKakosyan/hugo)                                      | A voice assistant for a Reachy Mini robot, running speech recognition, reasoning, tools and synthesis on a DGX Spark.                    | [Notes](https://kakosyaneduard.ca/projects/hugo)         |
-| [Is the Beach Open](https://github.com/EduardKakosyan/claude-hackathon-volta-sep26) | A map of supervised beaches around Halifax, with public notices behind each swimming status.                                             | [Notes](https://kakosyaneduard.ca/projects/volta-sep26)  |
-| [personal-website](https://github.com/EduardKakosyan/personal-website)              | This site: shared facts, case studies and an on-demand guide.                                                                            | [Site](https://kakosyaneduard.ca)                        |
+| Project                                                                             | What to inspect                                                                                                                               | Context                                                  |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Keeper (source private; audit pending)                                              | A private archive for meeting transcripts, with search, summaries and access from AI tools. Comes with a Mac app for recording and dictation. | [Notes](https://kakosyaneduard.ca/projects/keeper)       |
+| [dgx-autonomy](https://github.com/EduardKakosyan/dgx-autonomy)                      | A setup for running a coding agent on a DGX Spark. It saves progress between conversations and submits its code to tests it cannot edit.      | [Notes](https://kakosyaneduard.ca/projects/dgx-autonomy) |
+| [HUGO](https://github.com/EduardKakosyan/hugo)                                      | A voice assistant for a Reachy Mini robot, running speech recognition, reasoning, tools and synthesis on a DGX Spark.                         | [Notes](https://kakosyaneduard.ca/projects/hugo)         |
+| [Is the Beach Open](https://github.com/EduardKakosyan/claude-hackathon-volta-sep26) | A map of supervised beaches around Halifax, with public notices behind each swimming status.                                                  | [Notes](https://kakosyaneduard.ca/projects/volta-sep26)  |
+| [personal-website](https://github.com/EduardKakosyan/personal-website)              | This site: shared facts, case studies and an on-demand guide.                                                                                 | [Site](https://kakosyaneduard.ca)                        |
 
 ## Tech
 

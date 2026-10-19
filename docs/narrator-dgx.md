@@ -3,9 +3,11 @@
 The homepage narrator (EK—01) always shows its scripted line first. When the Spark is reachable, `/api/narrate` adds a short follow-on line for the visitor type and answers questions inline. When it isn't (Spark off, tunnel down, slow, bad output), the endpoint returns `null` and the site behaves exactly as it does today: script only, and questions go to the on-page guide.
 
 ```
-browser ──POST /api/narrate──▶ Vercel function ──HTTPS + Access token──▶ Cloudflare Tunnel ──▶ model server on the Spark (127.0.0.1)
+browser ──POST /api/narrate──▶ Vercel function ──HTTPS + API key──▶ Tailscale Funnel (one path) ──▶ model server on the Spark (127.0.0.1)
                                   │ 3 s timeout, validates every reply, logs one line (no IP)
 ```
+
+Vercel can't reach into a home network by itself; it needs a public HTTPS address to call. This setup uses **Tailscale Funnel** (step 2), which the Spark already has, so no Cloudflare or DNS changes are needed. A Cloudflare Tunnel with Access is the alternative (step 2b): it blocks unauthenticated requests at Cloudflare's edge instead of at the model server.
 
 Nothing here is needed for the site to work. Do the steps in order; each one can be checked before the next.
 
@@ -27,7 +29,7 @@ llama-server \
 - 16K context is plenty: a request is about 1,500 tokens of notes plus a short reply.
 - SGLang works as well; serve on `127.0.0.1:8090` with `--served-model-name qwen3.6-35b-a3b`.
 
-**Running now (set up 2026-10-19):** on `dgx1` this runs as the user service `ek-narrator.service` (`~/.config/systemd/user/ek-narrator.service`; lingering is on, so it starts at boot without a login). It uses the native CUDA build at `~/src/llama.cpp/build/bin/llama-server`, because the `jim` account has no Docker access, and adds `--reasoning-budget 0`. It loads in about 3 seconds and answers in 1–2 seconds.
+**Running now (set up 2026-10-19):** on `dgx1` this runs as the user service `ek-narrator.service` (`~/.config/systemd/user/ek-narrator.service`; lingering is on, so it starts at boot without a login). It uses the native CUDA build at `~/src/llama.cpp/build/bin/llama-server`, because the `jim` account has no Docker access, and adds `--reasoning-budget 0` and `--api-key-file ~/.config/ek-narrator/api-key`. It loads in about 3 seconds and answers in 1–2 seconds.
 
 ```bash
 systemctl --user status ek-narrator      # state
@@ -46,7 +48,34 @@ curl -s 127.0.0.1:8090/v1/chat/completions -H 'content-type: application/json' \
 
 Optionally run it as a systemd service so it survives reboots.
 
-## 2. Publish it with a Cloudflare Tunnel
+## 2. Publish it with Tailscale Funnel (in use)
+
+The model server requires an API key (`--api-key-file`; on `dgx1` the key is in `~/.config/ek-narrator/api-key`, mode 600). Generate one with:
+
+```bash
+mkdir -p ~/.config/ek-narrator && chmod 700 ~/.config/ek-narrator
+(umask 077; openssl rand -hex 32 > ~/.config/ek-narrator/api-key)
+```
+
+Publish **only** the chat endpoint, not the server's other pages (`/v1/models`, `/props` and `/health` answer without a key):
+
+```bash
+tailscale funnel --bg --https=443 \
+  --set-path=/v1/chat/completions http://127.0.0.1:8090/v1/chat/completions
+```
+
+The first time, Tailscale prints a link to enable Funnel for the tailnet; a tailnet admin approves it, then run the command again. Check it from outside the tailnet:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -XPOST https://dgx1.tail31115a.ts.net/v1/chat/completions   # 401
+curl -s -o /dev/null -w '%{http_code}\n' https://dgx1.tail31115a.ts.net/v1/models                    # 404
+```
+
+Stop publishing with `tailscale funnel --https=443 off`. Funnel is served by `tailscaled`, so it survives reboots.
+
+Then use these Vercel variables in step 4: `DGX_NARRATE_URL=https://dgx1.tail31115a.ts.net` and `DGX_NARRATE_API_KEY=<the key>`. Skip step 3.
+
+## 2b. Or publish it with a Cloudflare Tunnel
 
 > **DNS caveat.** A tunnel's public hostname must be on a domain whose DNS is managed by Cloudflare. `kakosyaneduard.ca` is moving to Porkbun nameservers, so either use another domain you keep on Cloudflare, or keep `kakosyaneduard.ca` on Cloudflare DNS (with the Vercel A/CNAME records there instead of at Porkbun). The examples use `narrator.example.com`.
 
@@ -73,7 +102,7 @@ ingress:
 sudo cloudflared service install   # runs the tunnel at boot
 ```
 
-## 3. Lock it with Cloudflare Access
+## 3. Lock it with Cloudflare Access (Cloudflare route only)
 
 In Cloudflare Zero Trust:
 
@@ -92,13 +121,14 @@ curl -s https://narrator.example.com/v1/models \
 
 Set these for Preview and Production (Vercel dashboard → Project → Settings → Environment Variables, or `vercel env add <NAME> <environment>`):
 
-| Name                      | Value                                                                      |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `DGX_NARRATE_URL`         | `https://narrator.example.com`                                             |
-| `CF_ACCESS_CLIENT_ID`     | the service token's Client ID                                              |
-| `CF_ACCESS_CLIENT_SECRET` | the service token's Client Secret                                          |
-| `DGX_NARRATE_MODEL`       | optional; defaults to `qwen3.6-35b-a3b`                                    |
-| `HIDDEN_TERMS`            | optional; comma-separated client names. Replies mentioning one are dropped |
+| Name                      | Value                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `DGX_NARRATE_URL`         | `https://dgx1.tail31115a.ts.net` (Funnel) or `https://narrator.example.com` (Cloudflare) |
+| `DGX_NARRATE_API_KEY`     | Funnel: the model server's API key                                                       |
+| `CF_ACCESS_CLIENT_ID`     | Cloudflare: the service token's Client ID                                                |
+| `CF_ACCESS_CLIENT_SECRET` | Cloudflare: the service token's Client Secret                                            |
+| `DGX_NARRATE_MODEL`       | optional; defaults to `qwen3.6-35b-a3b`                                                  |
+| `HIDDEN_TERMS`            | optional; comma-separated client names. Replies mentioning one are dropped               |
 
 Redeploy, then check (on a protected preview, use `vercel curl`):
 
@@ -124,7 +154,7 @@ The tests in `tests/narrator-evals.test.mjs` run offline against fixtures in `te
 
 ```bash
 cd personal-website
-vercel env pull .env.local     # or write the three variables into .env.local
+vercel env pull .env.local     # or write the variables into .env.local
 pnpm narrator:record
 pnpm test
 ```
@@ -151,4 +181,4 @@ No IP, user agent or headers are logged. Questions are truncated to 200 characte
 
 ## Turning it off
 
-Stop the model server or the tunnel. The endpoint returns `null` within 3 seconds, the narrator stops asking after one failed follow-on line per visit, and the site runs from its script.
+Stop the model server, the Funnel or the tunnel. The endpoint returns `null` within 3 seconds, the narrator stops asking after one failed follow-on line per visit, and the site runs from its script.

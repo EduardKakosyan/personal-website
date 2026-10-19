@@ -19,9 +19,11 @@ export function chatBody({ messages, schema, maxTokens }: ModelRequest, model?: 
 }
 
 /**
- * An OpenAI-compatible chat call to the DGX Spark (SGLang or llama.cpp's llama-server) behind a
- * Cloudflare Tunnel protected by a Cloudflare Access service token. Throws on anything other
- * than a well-formed reply within MODEL_TIMEOUT_MS; narrate() turns that into null.
+ * An OpenAI-compatible chat call to the DGX Spark (SGLang or llama.cpp's llama-server), reached
+ * either through Tailscale Funnel with the model server's API key (DGX_NARRATE_API_KEY) or
+ * through a Cloudflare Tunnel with an Access service token (CF_ACCESS_CLIENT_ID/SECRET).
+ * Throws on anything other than a well-formed reply within MODEL_TIMEOUT_MS; narrate() turns
+ * that into null.
  */
 export function dgxModel(
   env: Record<string, string | undefined> = process.env,
@@ -29,22 +31,24 @@ export function dgxModel(
 ): CallModel {
   return async (request) => {
     const base = env.DGX_NARRATE_URL
+    const apiKey = env.DGX_NARRATE_API_KEY
     const id = env.CF_ACCESS_CLIENT_ID
     const secret = env.CF_ACCESS_CLIENT_SECRET
-    if (!base || !id || !secret) throw new Error('narrator is not configured')
+    const access = Boolean(id && secret)
+    if (!base || (!apiKey && !access)) throw new Error('narrator is not configured')
     const url = new URL('v1/chat/completions', base.endsWith('/') ? base : `${base}/`)
     if (url.protocol !== 'https:') throw new Error('narrator URL must be https')
     const response = await fetcher(url, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'CF-Access-Client-Id': id,
-        'CF-Access-Client-Secret': secret,
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        ...(access ? { 'CF-Access-Client-Id': id!, 'CF-Access-Client-Secret': secret! } : {}),
       },
       body: JSON.stringify(chatBody(request, env.DGX_NARRATE_MODEL)),
       signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       cache: 'no-store',
-      redirect: 'error', // an Access login redirect means the token is wrong
+      redirect: 'error', // a login redirect means the credentials are wrong
     })
     if (!response.ok) throw new Error(`narrator returned ${response.status}`)
     const data = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }

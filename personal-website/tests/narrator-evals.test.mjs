@@ -112,6 +112,32 @@ test('the Spark client sends Access credentials, a timeout and no thinking', asy
   assert.equal(body.response_format.type, 'json_schema')
 })
 
+test('the Spark client can use the model server API key instead of Cloudflare Access', async () => {
+  let headers
+  const fetcher = async (_url, init) => {
+    headers = init.headers
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] }))
+  }
+  await dgxModel(
+    { DGX_NARRATE_URL: 'https://dgx1.example.ts.net', DGX_NARRATE_API_KEY: 'k3y' },
+    fetcher,
+  )({ messages: [], schema: '{}', maxTokens: 10 })
+  assert.equal(headers.Authorization, 'Bearer k3y')
+  assert.equal(headers['CF-Access-Client-Id'], undefined)
+  // Half an Access pair is not a credential.
+  await assert.rejects(
+    dgxModel(
+      { DGX_NARRATE_URL: 'https://x.example.test', CF_ACCESS_CLIENT_ID: 'a' },
+      fetcher,
+    )({
+      messages: [],
+      schema: '{}',
+      maxTokens: 10,
+    }),
+    /not configured/,
+  )
+})
+
 test('the Spark client fails closed', async () => {
   const ok = async () => new Response('{}')
   const request = { messages: [], schema: '{}', maxTokens: 10 }

@@ -20,7 +20,6 @@ export function HeaderClient({
           href="/"
           className="site-wordmark"
           aria-current={pathname === '/' ? 'page' : undefined}
-          aria-label={`${identity.name}, ${identity.title} at ${identity.company}, home`}
         >
           <span className="site-monogram" aria-hidden="true" />
           <span>
@@ -29,6 +28,7 @@ export function HeaderClient({
               {identity.title} at {identity.company}
             </small>
           </span>
+          <span className="sr-only"> home</span>
         </Link>
         <nav className="site-nav" aria-label="Main navigation">
           <Link

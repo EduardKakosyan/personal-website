@@ -16,12 +16,9 @@ export function CaseStudyCard({ project }: { project: Project }) {
       </h3>
       <p>{project.description}</p>
       <p className="work-outcome">{project.outcome}</p>
-      <Link
-        className="work-link"
-        href={`/projects/${project.slug}`}
-        aria-label={`Read the ${project.title} case study`}
-      >
-        Read the case study &rarr;
+      <Link className="work-link" href={`/projects/${project.slug}`}>
+        Read the case study<span className="sr-only">: {project.title}</span>{' '}
+        <span aria-hidden="true">&rarr;</span>
       </Link>
     </article>
   )

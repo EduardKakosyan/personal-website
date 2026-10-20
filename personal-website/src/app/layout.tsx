@@ -169,7 +169,7 @@ export default function RootLayout({
             </div>
           </GuideProvider>
         </ErrorBoundary>
-        <Analytics />
+        {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS_ENABLED === 'true' && <Analytics />}
         <SpeedInsights />
       </body>
     </html>

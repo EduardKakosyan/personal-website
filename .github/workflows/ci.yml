@@ -46,7 +46,12 @@ jobs:
         run: pnpm type-check
 
       - name: Run Tests
-        run: pnpm test
+        env:
+          HIDDEN_TERMS: ${{ secrets.HIDDEN_TERMS }}
+          REQUIRE_HIDDEN_TERMS: ${{ github.event_name == 'push' && !env.ACT }}
+        run: |
+          node --input-type=module -e 'import { localHiddenTerms } from "./scripts/lib/hidden-terms.mts"; if (process.env.REQUIRE_HIDDEN_TERMS === "true" && !localHiddenTerms().length) throw new Error("HIDDEN_TERMS must be configured for branch builds");'
+          pnpm test
 
       - name: Build project
         run: pnpm build

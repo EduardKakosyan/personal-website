@@ -77,7 +77,7 @@ test('story copy contains no hidden terms or literal count claims and fills only
     ...chapters.flatMap((c) => [c.headline, c.line, c.still.alt]),
     ...Object.values(narratorLines).flatMap(Object.values),
   ].join('\n')
-  assert.deepEqual(findHiddenTerms(copy, [...profile.hidden, ...localHiddenTerms()]), [])
+  assert.equal(findHiddenTerms(copy, [...profile.hidden, ...localHiddenTerms()]).length, 0)
   assert.doesNotMatch(copy.replace(/\bn8n\b/g, ''), /\d/)
   assert.match(
     storyCopy(chapters.find((c) => c.id === 'adoption').line),

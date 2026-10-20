@@ -11,6 +11,18 @@ Vercel can't reach into a home network by itself; it needs a public HTTPS addres
 
 Nothing here is needed for the site to work. Do the steps in order; each one can be checked before the next.
 
+## Production closeout (2026-10-20)
+
+- Production now has `DGX_NARRATE_URL`, `DGX_NARRATE_API_KEY` and `HIDDEN_TERMS`, all supplied without printing credential values. The existing branch-scoped preview configuration remains unchanged.
+- The production deployment at `https://www.kakosyaneduard.ca` returned validated live bridge and question answers in approximately 1.6-2.0 seconds. A browser check confirmed the live Spark badge. Intercepting the browser request with a `null` reply confirmed that authored narration remains visible when the model is unavailable; the real Spark was not stopped.
+- The systemd service remains on the Spark and uses the existing path-scoped Funnel. No new public model endpoints or DNS changes were introduced.
+- Keep the Spark powered and online for live answers. The website and project pages do not depend on it being available.
+- `HIDDEN_TERMS` is also a GitHub Actions secret. CI passes it only to the test step and fails hosted branch builds if it is missing. Fork PRs cannot receive repository secrets, so their local-list scan can skip; main branch builds run the private scan.
+
+## Optional website analytics
+
+Vercel Web Analytics is not enabled for this project: its script endpoint returned 404 in the production audit. The layout now mounts `<Analytics />` only when `NEXT_PUBLIC_VERCEL_ANALYTICS_ENABLED=true`. To enable it later, first enable Web Analytics in the Vercel project after reviewing plan and usage implications, then set that variable and redeploy. Do not set the flag while the endpoint is unavailable. Speed Insights is separate and remains unchanged.
+
 ## 1. Serve the model on the Spark
 
 Use the Qwen3.6-35B-A3B GGUF that dgx-autonomy already qualified (`config/models.yaml`: about 17.6 GiB, fits next to `claude-qwen`). Any OpenAI-compatible server works; llama.cpp's `llama-server` matches the qualified setup:

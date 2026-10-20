@@ -1,12 +1,12 @@
 # GitHub publication checklist
 
-Only the profile README approval and publication below are complete. It was published to `EduardKakosyan/EduardKakosyan` main via API commit `6a867472810d905c73b0f373450923aac35d34ad`. Phase 5 website work was committed locally as `59574ad`; the website branch was not pushed or merged. Approve every remaining outward action separately. Thirteen drafts and five proposed pins remain; one candidate is withheld pending explicit clearance, with no replacement assumed. Keeper's pin is conditional on audit and publication approval.
+Closeout update (2026-10-20): the website redesign, resume and custom monogram are deployed to production and merged into main through `3389ad9`. The corrected profile README was republished to `EduardKakosyan/EduardKakosyan` main as `69ec8988a6daf065fd6c516807bce5fc79f82379`. The positioning is forward deployed AI development, not GTM. The production narrator and private-term secrets are configured. The CI workflow now passes HIDDEN_TERMS to tests and requires it on hosted branch builds. Repository privacy changes, audits, archiving, deletions and other repository README publication remain separately approved work, not website launch blockers.
 
 ## Profile and privacy
 
 - [x] Approve the generated profile README voice and facts (user approved Phase 5 and publication).
 - [x] Publish the generated README to the profile repository (profile main only, API commit `6a867472810d905c73b0f373450923aac35d34ad`).
-- [ ] Set bio to "Lead AI Developer at AI-First Consulting. Revenue and operations systems; private and local AI."
+- [ ] Set bio to "Forward Deployed AI Developer in Halifax. Lead AI Developer at AI-First Solutions. Local AI systems and coding-agent loops." Blocked: the current GitHub CLI login lacks the user scope; edit the bio manually or authorize that scope.
 - [ ] Link and verify dev@ai-first.ca on the account without rewriting history.
 - [ ] Enable private contribution counts after reviewing privacy implications.
 - [ ] Run a full-history gitleaks scan of Keeper in its own repository; resolve findings privately.
@@ -18,8 +18,8 @@ Only the profile README approval and publication below are complete. It was publ
 - [ ] Pin claude-hackathon-volta-sep26.
 - [ ] Pin personal-website.
 - [ ] Leave the sixth pin unassigned pending explicit selection and clearance.
-- [ ] Add HIDDEN_TERMS as a GitHub Actions secret using the private comma-separated list; never commit or log its values.
-- [ ] Pass that secret as HIDDEN_TERMS in the CI test step and confirm the guard runs; this is a separately approved change, not implemented here.
+- [x] Add HIDDEN_TERMS as a GitHub Actions secret using the private comma-separated list; never commit or log its values.
+- [x] Pass that secret as HIDDEN_TERMS in the CI test step. Hosted push builds fail if the list is missing; fork PRs can still run without secrets. Confirm the hosted scan in the closeout CI run.
 
 ## README publication
 
@@ -29,7 +29,7 @@ Recheck source, attribution, licensing, unknown setup instructions and demo avai
 - [ ] Approve and publish dgx-autonomy.md.
 - [ ] Approve and publish hugo.md.
 - [ ] Approve and publish claude-hackathon-volta-sep26.md after confirming dates and team credit.
-- [ ] Approve and publish the root personal-website README with the website changes.
+- [x] Approve and publish the root personal-website README with the website changes (merged into main).
 - [ ] Approve and publish shoreline.md.
 - [ ] Approve and publish yahtzee.md.
 - [ ] Approve and publish atlantic-ai-conference-hackathon.md after verifying setup.

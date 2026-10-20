@@ -60,7 +60,7 @@ for (const fixture of fixtures) {
         expect.mentions.some((word) => result.reply.includes(word)),
         `reply mentions none of ${expect.mentions.join(', ')}: ${result.reply}`,
       )
-    assert.deepEqual(findHiddenTerms(result.reply, hidden), [])
+    assert.equal(findHiddenTerms(result.reply, hidden).length, 0, 'hidden term in reply')
     if (fixture.input.kind === 'bridge') assert.ok(result.reply.length <= 320)
   })
 }
@@ -73,7 +73,11 @@ test('prompts for every persona and chapter carry no hidden terms', () => {
         { kind: 'question', persona, chapter, text: 'What did he build for clients?' },
       ]) {
         const prompt = buildPrompt(input)
-        assert.deepEqual(findHiddenTerms(prompt.grounding, hidden), [])
+        assert.equal(
+          findHiddenTerms(prompt.grounding, hidden).length,
+          0,
+          'hidden term in grounding',
+        )
         assert.ok(prompt.grounding.includes(chapters.find((c) => c.id === chapter).headline))
         assert.ok(prompt.maxTokens <= 300)
       }

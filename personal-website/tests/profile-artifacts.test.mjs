@@ -109,12 +109,15 @@ test('all GitHub kit site links resolve and all output files exclude hidden term
   }
   const completed =
     readFileSync(join(root, 'repo-readmes/CHECKLIST.md'), 'utf8').match(/^- \[x\].+$/gm) ?? []
-  assert.equal(completed.length, 2)
+  assert.equal(completed.length, 5)
   assert.match(completed[0], /Approve the generated profile README/)
   assert.match(
     completed[1],
     /Publish the generated README.*6a867472810d905c73b0f373450923aac35d34ad/,
   )
+  assert.match(completed[2], /Add HIDDEN_TERMS as a GitHub Actions secret/)
+  assert.match(completed[3], /Pass that secret as HIDDEN_TERMS/)
+  assert.match(completed[4], /publish the root personal-website README/)
 })
 // Client names are never committed: they come from the gitignored hidden-terms.local.txt or the
 // HIDDEN_TERMS env var. In CI the names are a secret, so failures there name the term by number.

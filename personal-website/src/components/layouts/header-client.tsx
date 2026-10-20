@@ -20,7 +20,7 @@ export function HeaderClient({
           href="/"
           className="site-wordmark"
           aria-current={pathname === '/' ? 'page' : undefined}
-          aria-label={`${identity.name} home`}
+          aria-label={`${identity.name}, ${identity.title} at ${identity.company}, home`}
         >
           <span className="site-monogram" aria-hidden="true" />
           <span>

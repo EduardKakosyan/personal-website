@@ -70,9 +70,9 @@ const stages = [
     title: 'Review the product',
     icon: MessageSquare,
     label: '05 / HUMAN JUDGMENT',
-    text: 'Reviewing the app led to two more rounds of changes: making real-dice input easier and keeping the keypad readable.',
+    text: 'Two rounds of feedback followed: Eduard clarified that the dice are real and the phone keeps score, then review caught a keypad bug no check could see.',
     lines: [
-      'review 1 → make real-dice input easier',
+      'feedback 1 → add real-dice mode (the phone keeps score)',
       'review 2 → keep every pip visible',
       'builder → revise, then re-evaluate',
     ],

@@ -282,3 +282,27 @@ test('forward-deployed questions about Keystone land on the matching notes', () 
     assert.doesNotMatch(answer, /rolling/i, question)
   }
 })
+
+test('every project has topic notes, and questions land on the matching note', () => {
+  for (const work of portfolioWorks) {
+    const topics = Object.keys(work.casebook)
+    assert.ok(topics.includes('problem'), `${work.slug} has no problem note`)
+    assert.ok(topics.includes('status'), `${work.slug} has no status note`)
+    assert.ok(topics.length >= 5, `${work.slug} has only ${topics.length} notes`)
+    assert.equal(notesAnswer(work, 'What problem was it solving?'), work.casebook.problem)
+    if (work.casebook.hard)
+      assert.match(
+        notesAnswer(work, 'What was hard?'),
+        new RegExp(escape(work.casebook.hard.slice(0, 30))),
+      )
+    assert.doesNotMatch(
+      notesAnswer(work, 'What was the problem?'),
+      new RegExp(escape(work.casebook.status.slice(0, 30))),
+    )
+    assert.ok(guideNotes(work, '').includes(work.detail), `${work.slug} notes drop the detail line`)
+  }
+})
+
+function escape(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}

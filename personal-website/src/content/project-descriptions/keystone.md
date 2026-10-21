@@ -12,7 +12,7 @@ An audit showed the numbers were also wrong. The weekly snapshot job had stopped
 
 I brought in a UX researcher. She reviewed the old dashboard and comparable firms, then wrote an interview guide for each leadership seat. The guides tested specific options instead of asking for wishes: should the capacity view flag overbooked people, unassigned won work, or a thin pipeline first?
 
-She wrote the questions and I ran the interviews to her script. The CEO's was a 77-minute one-on-one on a 16-question guide. The operations and finance lead answered a 30-question set, and I answered my own on custom development, adoption and reusable IP. The delivery lead's set was never completed.
+She wrote the questions and I ran the interviews to her script. The CEO's was a 77-minute one-on-one on a 16-question guide. The operations and finance lead answered a 30-question set, and I answered my own on custom development, adoption and reusable IP. The delivery lead's input comes next, so some pipeline definitions are still open.
 
 People describe a tidier version of how they work, so I checked against behaviour: eight AI agents measured feature usage read-only in the production database, and I read months of Monday-meeting transcripts to see how project risk was discussed.
 

@@ -2,4 +2,4 @@
 'personal-website': minor
 ---
 
-Rebuild the Keystone case study and guide around how discovery shaped the system, answer page-specific questions in the guide, and correct Keystone claims on the résumé.
+Retell every project through its problem, discovery, decisions and testing, so the guide answers from topic notes that match the question. Correct project claims against their records, retire VoxCoach and Claude Autonomous, and fix Keystone claims on the résumé.

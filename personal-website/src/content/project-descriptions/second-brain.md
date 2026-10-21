@@ -1,22 +1,22 @@
 # Second Brain
 
-Huy Huynh, Hao Tang, and I built Second Brain at the Volta Hackathon in 2024, where our team took second place. It connects course documents with a chat assistant and calendar to help students plan their studying.
+Huy Huynh, Hao Tang and I built Second Brain at the Volta Agentic AI Hackathon in Halifax in November 2024, where our team took second place. We wanted one assistant that knew a student's course material and could help plan around it.
 
 ## From course files to answers
 
-We used Google Drive for assignments, slides, notes, and syllabuses. An n8n workflow checks for new files every ten minutes, extracts their text, and adds it to Pinecone so the assistant can search it when answering a question.
+Students keep assignments, slides, notes and syllabuses in a Google Drive folder. An n8n workflow watches the folder for new files, splits their text into chunks and stores embeddings in Pinecone, so the assistant can search them when answering a question.
 
 ![Google Drive workflow](/images/image.png)
 
-Files attached directly in chat go through the same process. The assistant can use the file in the current conversation and retrieve it later.
+A file attached in the chat goes through the same steps. The assistant uses its text right away, and it stays searchable later. If there's no attachment, the assistant answers from the stored documents.
 
 ![Main assistant workflow](/images/main.png)
 
 ## Planning study time
 
-The assistant can pull exam dates from a syllabus and add them to a calendar. It checks for existing events before scheduling anything. We also gave it a tool for email.
+Given a syllabus, the assistant looks for exam, test and quiz dates and creates a calendar event for each one, after checking that the time slot is free. A third tool reads the day's Gmail and summarises it.
 
-These tools were separate n8n workflows with their own inputs and outputs:
+We built each tool as its own n8n workflow and wrote a description of its inputs and outputs. That made the agent better at choosing the right tool.
 
 ![Email workflow](/images/email.png)
 

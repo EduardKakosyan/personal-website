@@ -30,7 +30,7 @@ export const chapters: Chapter[] = [
     id: 'private-local',
     kicker: 'My own projects',
     headline: 'Meeting tools and a local coding agent.',
-    line: "I built Keeper to record meetings and search their transcripts. It can also write summaries using a local model. On my DGX Spark, dgx-autonomy runs a coding agent whose work is checked against tests it can't edit. I supply briefs and review the results with help from Claude.",
+    line: "Keeper is a private meeting archive I'm building to replace our cloud notetaker, with summaries from a local model. On AI-First's DGX Spark, dgx-autonomy runs a coding agent whose work is checked against tests it can't edit; it wrote Keeper's first version. I set the direction, and a supervising Claude session writes the briefs and reviews the results.",
     proof: ['keeper', 'dgx-autonomy'],
     learnMore: '/projects/keeper',
     learnMoreLabel: 'Read the Keeper case study',

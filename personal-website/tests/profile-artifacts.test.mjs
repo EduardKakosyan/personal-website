@@ -36,8 +36,6 @@ const draftNames = [
   'yahtzee',
   'atlantic-ai-conference-hackathon',
   'volta_hackathon',
-  'voxcoach',
-  'claude-autonomous',
   'q-learning-network-sim',
   'exosky_nasa',
 ]

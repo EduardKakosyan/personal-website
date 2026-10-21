@@ -197,7 +197,10 @@ const caseTopics: [CaseTopic, RegExp][] = [
     'architecture',
     /\b(architect|design|registry|capabilit|mcp|agent|claude|sharepoint|linear|quickbooks|connect|integrat|stack|built|build|tech|how does it)/i,
   ],
-  ['team', /\b(team|who (built|leads|worked|owns)|role|developers?|ownership)/i],
+  [
+    'team',
+    /\b(team|who (did what|built|leads|worked|owns|wrote)|role|developers?|ownership|credit|contribut|his part)/i,
+  ],
   ['hard', /\b(hard|difficult|challeng|struggle|obstacle|lesson|messy|went wrong|broke)/i],
   [
     'status',
@@ -216,9 +219,11 @@ function casebookNotes(work: Work, query: string): string[] {
 }
 
 // Notes the model may draw on for one project.
+// The detail line always goes in; without a matching topic, so do the first two notes.
 export function guideNotes(work: Work, query: string): string {
-  const notes = casebookNotes(work, query)
-  return `${work.title} [${work.slug}]: ${work.summary} ${notes.length ? notes.join(' ') : work.detail}`
+  const asked = caseTopics.some(([topic, pattern]) => work.casebook[topic] && pattern.test(query))
+  const notes = casebookNotes(work, query).slice(0, asked ? 3 : 2)
+  return `${work.title} [${work.slug}]: ${work.summary} ${work.detail} ${notes.join(' ')}`.trim()
 }
 
 // The reply when no model is running: the notes that best fit the question.
@@ -309,54 +314,62 @@ export interface ProjectCommand {
 export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = {
   'volta-sep26': [
     {
-      id: 'sources',
-      label: 'Where do statuses come from?',
-      question: 'Where does Is the Beach Open get statuses?',
-      keywords: ['source', 'status'],
+      id: 'problem',
+      label: 'Why beaches?',
+      question: 'Why did Eduard build Is the Beach Open?',
+      keywords: ['problem', 'why'],
       reply:
-        'The repository documents municipal beach information, provincial park notices and algae notices. Fixture mode is not live safety advice.',
+        'At the Halifax Claude Hackathon, city staff named beach status as a common complaint: Halifax tests its supervised beaches but posts results in one text table, and provincial park and algae notices sit on separate pages with no map.',
     },
     {
-      id: 'tests',
-      label: 'How is it checked?',
-      question: 'How is Is the Beach Open tested?',
-      keywords: ['test', 'check'],
+      id: 'discovery',
+      label: 'How did he check the idea?',
+      question: 'How did Eduard find out what was needed for Is the Beach Open?',
+      keywords: ['research', 'discovery'],
       reply:
-        'The repository provides source-page fixture tests with Vitest and browser checks with Playwright. They were not executed for this portfolio update.',
+        'Before coding he had research agents read the sources and look for existing tools; the only aggregator, Swim Guide, had no public feed. The research also showed that only 35 beaches are tested and the season was over, which made a labelled replay of past days necessary.',
     },
     {
-      id: 'event',
-      label: 'Which Volta project?',
-      question: 'Which Volta project is Is the Beach Open?',
-      keywords: ['event', 'volta'],
+      id: 'decisions',
+      label: 'What was left out?',
+      question: 'What did Eduard decide not to build for Is the Beach Open?',
+      keywords: ['decid', 'left out'],
       reply:
-        'Eduard built Is the Beach Open with @Harshil-varia at the Volta hackathon, September 12-14, 2026. Second Brain was a separate 2024 project. The competition outcome for Is the Beach Open is not recorded.',
+        'Unmonitored beaches, accounts, a native app, and crowd reports that could change a pin’s colour were ruled out. After the hackathon he also replaced the satellite map with a flat paper-style map.',
+    },
+    {
+      id: 'production',
+      label: 'From hackathon to production',
+      question: 'How did Is the Beach Open get to production?',
+      keywords: ['production', 'launch'],
+      reply:
+        'After the hackathon Eduard spent two days on the phone experience, a replay of every day of 2026, Playwright across five browser and device setups, and the production database. It is live at nsbeaches.ca with an hourly refresh.',
     },
   ],
   exosky: [
     {
-      id: 'viewpoint',
-      label: 'What changes in the sky?',
-      question: 'What does Sky Painters show?',
-      keywords: ['viewpoint', 'show'],
+      id: 'problem',
+      label: 'What was the challenge?',
+      question: 'What problem was Sky Painters solving?',
+      keywords: ['challenge', 'problem'],
       reply:
-        'Sky Painters explores the sky from an exoplanet viewpoint and lets visitors draw constellations.',
+        'It was the team’s entry for the Exosky challenge at NASA Space Apps Challenge 2024: show students the night sky as seen from an exoplanet. Sky Painters shows the sky from Earth and five exoplanets and lets visitors draw constellations on it.',
     },
     {
-      id: 'data',
-      label: 'Astronomy data',
-      question: 'What data does Sky Painters use?',
-      keywords: ['data', 'source'],
+      id: 'pipeline',
+      label: 'How was the sky computed?',
+      question: 'How does Sky Painters work out the sky from another planet?',
+      keywords: ['data', 'pipeline'],
       reply:
-        'The repository describes Gaia and NASA Exoplanet Archive data, coordinate transformations and brightness adjustments.',
+        'Eduard built a Python pipeline that loaded Gaia DR3 stars into a local PostgreSQL database as x, y, z coordinates. A script moves the origin to each planet, recalculates brightness for the new distance and renders a sky image that the Three.js viewer wraps around the user.',
     },
     {
       id: 'credit',
-      label: 'Hackathon context',
-      question: 'Who built Sky Painters?',
+      label: 'Who built what?',
+      question: 'What was Eduard’s part in Sky Painters?',
       keywords: ['credit', 'built'],
       reply:
-        'Eduard worked on constellation drawing, the interface and Docker setup with Huy Huynh, Hao Tang and @quangphucthan at NASA Space Apps Challenge 2024. Sky Painters is an unmaintained hackathon prototype; its competition outcome is not recorded.',
+        'Eduard built the Gaia data pipeline and the per-planet rendering; Hao Tang wrote the coordinate transformations, Huy Huynh built most of the front end, and teammates including @quangphucthan built the drawing tool. After the event Eduard fixed the Docker image and deployed it to Fly.io.',
     },
   ],
   keystone: [
@@ -395,20 +408,28 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
   ],
   keeper: [
     {
-      id: 'privacy',
-      label: 'Where does data live?',
-      question: 'Where does Keeper store meetings?',
-      keywords: ['privacy', 'store'],
+      id: 'problem',
+      label: 'Why build it?',
+      question: 'Why did Eduard build Keeper?',
+      keywords: ['problem', 'why'],
       reply:
-        'Keeper stores its archive in SQLite and recordings in a directory the operator controls. Summaries use the configured model endpoint.',
+        'To replace the team’s Fireflies notetaker with a meeting archive on hardware the company owns, searchable from a browser and from Claude or ChatGPT over MCP. The same Mac app also handles local dictation.',
     },
     {
-      id: 'access',
-      label: 'How is access scoped?',
-      question: 'How does Keeper scope access?',
-      keywords: ['access', 'token'],
+      id: 'build',
+      label: 'Who wrote the code?',
+      question: 'Who wrote Keeper’s code?',
+      keywords: ['code', 'wrote'],
       reply:
-        'Keeper applies the caller’s ownership and sharing rules to search, web pages and MCP tools. An external assistant can send retrieved content to its own provider.',
+        'A local model in Eduard’s dgx-autonomy loop wrote the first server and Mac app against a frozen brief and acceptance checks, with Eduard reviewing and making the first Mac build compile. Since October 13, 2026 he has developed it with Claude Code.',
+    },
+    {
+      id: 'decisions',
+      label: 'What did he rule out?',
+      question: 'What did Eduard decide Keeper would not do?',
+      keywords: ['decid', 'rule'],
+      reply:
+        'No task tracking, reminders, calendar changes or voiceprints pooled across people; action items stay as evidence from the meeting. Dictated text never leaves the Mac, and the admin token can never be used to connect an AI assistant.',
     },
     {
       id: 'search',
@@ -416,33 +437,7 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       question: 'What broke in Keeper search?',
       keywords: ['search', 'broke'],
       reply:
-        'An earlier build interpreted SQLite BM25 cost as relevance, reversing the result order. Paging tests alone did not catch the ranking error.',
-    },
-  ],
-  voxcoach: [
-    {
-      id: 'practice',
-      label: 'Sales-call practice',
-      question: 'What is VoxCoach for?',
-      keywords: ['practice'],
-      reply:
-        'VoxCoach simulates a buyer for sales-call practice and reviews the conversation afterwards.',
-    },
-    {
-      id: 'voice',
-      label: 'Local voice stack',
-      question: 'Where does VoxCoach run?',
-      keywords: ['voice', 'local'],
-      reply:
-        'VoxCoach runs voice and language models locally on Apple Silicon, with overlapped generation and speech synthesis.',
-    },
-    {
-      id: 'build',
-      label: 'Earlier harness build',
-      question: 'How was VoxCoach built?',
-      keywords: ['build', 'built'],
-      reply:
-        'VoxCoach was built using Claude Code through the earlier Claude Autonomous harness, across more than twelve nightly runs.',
+        'Results ranked worst-first because SQLite’s BM25 score is a cost and the code read it as relevance, while paging tests still passed. Separately, web search paging reached only 200 of 757 matches until the cursor was fixed.',
     },
   ],
   'dgx-autonomy': [
@@ -462,19 +457,35 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       section: 'dgx-verification',
       keywords: ['check', 'test', 'verif'],
       reply:
-        'The builder and evaluator run in separate containers. The controller freezes the acceptance tests and evaluates a fixed code snapshot, so the agent cannot change its own tests.',
+        'When the builder says it is done, the controller pins a snapshot, runs each frozen check in its own container against the live demo and rejects the result if the code changed mid-test. Every set of checks is dry-run first: each must fail with no app and pass against a reference app.',
     },
     {
       id: 'models',
-      label: 'Which model?',
+      label: 'Why switch to SGLang?',
       question: 'Show me which model dgx-autonomy uses',
       section: 'dgx-inference',
-      keywords: ['model', 'inference'],
+      keywords: ['model', 'inference', 'sglang'],
       reply:
-        'The recorded app builds use Qwen3.8-Flash-Next through SGLang with NVFP4 weights. A smaller Qwen3.6 model is also supported as a fallback.',
+        'Logs from a real run showed llama.cpp falling from 24.9 to 8.0 tokens a second as the context filled. SGLang held 21–25 tokens a second up to 180K, so recent builds use Qwen3.8-Flash-Next through SGLang with a smaller Qwen3.6 fallback.',
+    },
+    {
+      id: 'lessons',
+      label: 'What did runs teach him?',
+      question: 'What did running dgx-autonomy teach Eduard?',
+      keywords: ['lesson', 'learn'],
+      reply:
+        'Local models claim success early, so finishing became a claim that frozen tests must confirm. When one builder ignored a handoff request for 43 minutes, a reminder after every three unrelated actions got a handoff within a minute.',
     },
   ],
   hugo: [
+    {
+      id: 'slow-reply',
+      label: 'Why was it slow?',
+      question: 'Why did HUGO take 40 seconds to answer?',
+      keywords: ['slow', 'latency'],
+      reply:
+        'Nemotron had reasoning on and vLLM had no reasoning parser, so HUGO generated its private reasoning, about 800 to 1,000 tokens at roughly 16 tokens a second, and then spoke it. With reasoning separated and off, a test got the first sentence back in 1.44 seconds.',
+    },
     {
       id: 'voice',
       label: 'Trace the voice pipeline',
@@ -482,45 +493,52 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       section: 'hugo-voice',
       keywords: ['voice', 'pipeline', 'stack'],
       reply:
-        'Audio from the Reachy Mini goes to Parakeet for transcription, then Nemotron through vLLM. Qwen3-TTS turns the response into speech. The models run on the DGX Spark.',
+        'openWakeWord and Silero listen, Parakeet transcribes, Nemotron answers through vLLM and Qwen3-TTS speaks the reply through the robot. Each model runs in its own process, and everything unloads when HUGO sleeps so teammates get the shared DGX back.',
     },
     {
       id: 'conversation',
-      label: 'Follow-up questions',
+      label: 'Why only the wake word?',
       question: 'Show me how HUGO handles conversation',
       section: 'hugo-conversation',
       keywords: ['conversation', 'follow-up', 'interrupt'],
       reply:
-        'HUGO can answer follow-up questions without hearing the wake word again. It starts speaking before the full response is complete and tracks interruptions in the conversation state.',
+        'Eduard first let any speech interrupt HUGO, but without echo cancellation it heard its own voice and kept cutting itself off. For now only the wake word interrupts it, and the microphone stays open for a follow-up after each reply.',
     },
     {
       id: 'tests',
-      label: 'How is it tested?',
+      label: 'What broke live?',
       question: 'Show me HUGO’s tests',
       section: 'hugo-testing',
       keywords: ['test', 'check', 'verif'],
       reply:
-        'Simulated hardware components let Eduard test conversation state and interruptions. Integration checks on the DGX cover speech recognition, model responses, and speech synthesis together.',
+        'Unit tests fake the robot and models; integration tests on the DGX check that reasoning never reaches the speaker. Live sessions found what tests could not: a hardware volume at -23 dB, a pause rule that cut people off and a clipping microphone.',
     },
   ],
   shoreline: [
     {
+      id: 'origin',
+      label: 'How did it start?',
+      question: 'How did Shoreline start?',
+      keywords: ['start', 'origin'],
+      reply:
+        'It began as a weather app the local model built and polished over two runs. Eduard then asked for tides, sea and fishing conditions, and a third run turned it into Shoreline.',
+    },
+    {
       id: 'build',
-      label: 'How was it built?',
+      label: 'Who did what?',
       question: 'Show me how Shoreline was built',
       section: 'shoreline-build',
       keywords: ['built', 'build', 'agent'],
       reply:
-        'A local Qwen model built Shoreline over three runs, September 24–28, 2026. The operator and a supervising Claude session supplied briefs and product reviews.',
+        'The local Qwen model wrote all 42 commits of the app over three runs, September 24–28, 2026. A supervising Claude session wrote the Shoreline brief and checks and reviewed it as product lead, and Eduard set the direction and accepted it.',
     },
     {
-      id: 'weather',
-      label: 'Where’s the data from?',
-      question: 'Where does Shoreline get its weather data?',
-      section: 'shoreline-results',
-      keywords: ['weather', 'data', 'tide'],
+      id: 'tides',
+      label: 'What did review catch?',
+      question: 'What did reviewing Shoreline on live data find?',
+      keywords: ['review', 'tide'],
       reply:
-        'Shoreline calls Open-Meteo for weather and marine data, including tides and sea conditions. Inland locations get a weather view.',
+        'The brief’s own tide rule missed flat highs and lows that are common in real data, so Sydney’s afternoon low was missing from the list. The rule was amended to count a flat run as one turn.',
     },
     {
       id: 'results',
@@ -529,17 +547,17 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       section: 'shoreline-results',
       keywords: ['test', 'check', 'result'],
       reply:
-        'The final recorded run passed 19 of 19 frozen acceptance checks. The repository includes each run’s brief, checks, and operator messages.',
+        'The final recorded run passed 19 of 19 frozen acceptance checks (78 Playwright tests), and both human-judgment criteria passed on review. The repository includes each run’s brief, checks and operator messages.',
     },
   ],
   yahtzee: [
     {
-      id: 'offline',
-      label: 'Playing offline',
-      question: 'How does Camp Yahtzee work offline?',
-      keywords: ['offline', 'play'],
+      id: 'realdice',
+      label: 'What changed mid-build?',
+      question: 'What changed during the Camp Yahtzee build?',
+      keywords: ['change', 'real dice'],
       reply:
-        'Camp Yahtzee supports offline play after installation. Players share one phone and can use physical or on-screen dice, with a session tally for multiple games.',
+        'About five hours in, Eduard clarified that at camp they roll real dice and the phone only keeps score. The builder then added a real-dice mode with a keypad for the five faces, which became the main path.',
     },
     {
       id: 'rules',
@@ -548,7 +566,15 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       section: 'yahtzee-tests',
       keywords: ['rule', 'test', 'check'],
       reply:
-        'The original release passed 24 acceptance tests. Its rules audit compared all 7,776 possible rolls with an independent oracle.',
+        'Both completion claims passed all 24 frozen acceptance tests, and the builder checked all 7,776 possible rolls against a second scorer it wrote differently on purpose. A scripted review of two full real-dice games, 143 turns, found no scoring errors.',
+    },
+    {
+      id: 'keypad',
+      label: 'What did tests miss?',
+      question: 'What bug did the Camp Yahtzee tests miss?',
+      keywords: ['bug', 'miss'],
+      reply:
+        'A count badge sat on a pip of each keypad key, so the 4, 5 and 6 keys read as 3, 4 and 5. Review caught it and the second round of feedback fixed it.',
     },
     {
       id: 'authorship',
@@ -557,110 +583,109 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       section: 'yahtzee-build',
       keywords: ['built', 'agent', 'original'],
       reply:
-        'The local agent built the original release across four conversations and two product reviews. Undo, reset, and game-management controls were added later through CodeLayer.',
-    },
-  ],
-  'claude-autonomous': [
-    {
-      id: 'isolation',
-      label: 'Container isolation',
-      question: 'How is Claude Autonomous isolated?',
-      keywords: ['container', 'isolat'],
-      reply:
-        'Claude Code runs in an isolated Docker container. The harness manages scheduling, budgets, and task state outside the agent’s conversation.',
-    },
-    {
-      id: 'state',
-      label: 'What carries over?',
-      question: 'What does Claude Autonomous save between runs?',
-      keywords: ['state', 'save', 'schedule'],
-      reply:
-        'The harness keeps persistent task state so scheduled runs can continue earlier work. It also applies budget controls to those runs.',
-    },
-    {
-      id: 'compare',
-      label: 'How does DGX differ?',
-      question: 'How does Claude Autonomous differ from dgx-autonomy?',
-      keywords: ['differ', 'compare'],
-      reply:
-        'Claude Autonomous runs Claude Code in a container. The later dgx-autonomy system runs an open-weights model locally on a DGX Spark and adds independent evaluation of generated apps.',
+        'The local agent built the original release, including a single-step Undo, across four conversations and two rounds of feedback. Multi-step undo, restart turn, reset game and change players were added later through CodeLayer.',
     },
   ],
   'dev-template': [
     {
+      id: 'why',
+      label: 'Why build it?',
+      question: 'Why did Eduard make Dev Template?',
+      keywords: ['why', 'problem'],
+      reply:
+        'In January 2026 he was starting several internal projects with coding agents that sometimes made bad commits and pushed them on their own. He put commit hooks, local CI and narrowly scoped agent commands into one template so every new project started with them.',
+    },
+    {
       id: 'agents',
-      label: 'Specialized agents',
-      question: 'What agents are in Dev Template?',
+      label: 'Where are the agents from?',
+      question: 'Who wrote the agents and commands in Dev Template?',
       keywords: ['agent'],
       reply:
-        'Dev Template includes specialized agents and commands for AI-assisted development. They help divide tasks such as finding code, analyzing it, and researching changes.',
+        'Most of the research agents and planning commands come from HumanLayer’s open-source Claude Code setup. Eduard added a command that turns a feature request into a GitHub issue and one that implements an issue end to end.',
     },
     {
       id: 'hooks',
-      label: 'Git hooks',
-      question: 'What are Dev Template’s git hooks for?',
+      label: 'What stops a bad commit?',
+      question: 'What happens when an agent makes a bad commit?',
       keywords: ['hook', 'git'],
       reply:
-        'Before a commit, Gitleaks scans for secrets and lint-staged runs ESLint and Prettier. Another hook checks commit messages; before a push, act can run GitHub Actions checks locally in Docker.',
+        'Gitleaks and lint-staged run before every commit and commitlint rejects badly formatted messages, so the agent has to fix the problem first. Before a push, act runs the GitHub Actions checks locally in Docker.',
     },
     {
-      id: 'setup',
-      label: 'What’s included?',
-      question: 'What does Dev Template include?',
-      keywords: ['setup', 'include'],
+      id: 'adoption',
+      label: 'Who used it?',
+      question: 'Did anyone else use Dev Template?',
+      keywords: ['adoption', 'who used'],
       reply:
-        'It is a development starter with specialized agents, reusable commands, and git hooks. The repository contains the setup instructions and configuration.',
+        'Between January and June 2026, seven company repositories were created from it and two more copied its hooks and commands. Teammates started several of those projects.',
     },
   ],
   healthbyte: [
     {
-      id: 'simulation',
-      label: 'What does it simulate?',
-      question: 'What does HealthByte simulate?',
-      keywords: ['simulat', 'reaction'],
+      id: 'challenge',
+      label: 'The challenge',
+      question: 'What was the HealthByte hackathon challenge?',
+      keywords: ['challenge', 'hackathon'],
       reply:
-        'HealthByte uses agents to simulate public reactions to healthcare content. It was built as a hackathon collaboration.',
+        'The AI in Healthcare Challenge at the Atlantic AI Summit 2025 asked student teams to use LLM agents to model how different people respond to real and fabricated health articles. Eduard’s team used COVID-19 vaccine news and took first place.',
     },
     {
-      id: 'agents',
-      label: 'The two-agent loop',
-      question: 'How does HealthByte use two agents?',
-      keywords: ['agent', 'loop'],
+      id: 'editor',
+      label: 'What could the editor change?',
+      question: 'What was HealthByte’s editor agent allowed to change?',
+      keywords: ['editor', 'agent'],
       reply:
-        'The project uses a two-agent reinforcement learning loop to model responses to healthcare content. The repository describes the implementation.',
+        'It was told to keep the facts and reframe the article around one persona’s concerns and trusted sources. The loop stopped when the persona’s rating reached 3.4 out of 4 or after ten rounds.',
     },
     {
-      id: 'result',
-      label: 'Hackathon result',
-      question: 'What was HealthByte’s hackathon result?',
-      keywords: ['result', 'hackathon', 'place'],
-      reply: 'HealthByte took first place at the Atlantic AI Summit 2025.',
+      id: 'persona',
+      label: 'How did a persona react?',
+      question: 'How did HealthByte’s persona agent respond to an article?',
+      keywords: ['persona', 'react'],
+      reply:
+        'It read the article as one fictional person, with a profile covering background, trust in institutions, worries and a starting vaccine stance. It answered with a 1–4 acceptance rating, a positive or negative reaction and its reasoning.',
+    },
+    {
+      id: 'team',
+      label: 'Who built what',
+      question: 'Who built what on HealthByte?',
+      keywords: ['team', 'built'],
+      reply:
+        'Eduard wrote the two-agent loop, the logging and the data generator. Huy Huynh built most of the front end, Hao Tang wrote the personas and article data, and Tobi Onibudo built the persona pages.',
     },
   ],
   cargrep: [
     {
+      id: 'problem',
+      label: 'Why CarGrep?',
+      question: 'What problem was CarGrep trying to solve?',
+      keywords: ['problem', 'why'],
+      reply:
+        'Used-car shoppers switch between many sites, miss deals that go fast and often do not know what to compare. CarGrep let people describe their needs in plain words and returned a short list of matching cars.',
+    },
+    {
       id: 'search',
-      label: 'How does search work?',
-      question: 'How does CarGrep help people find a car?',
+      label: 'How did search work?',
+      question: 'How did CarGrep turn a chat into car results?',
       keywords: ['search', 'recommend'],
       reply:
-        'CarGrep turns a conversation about budget, driving needs and preferred features into search preferences, then returns matching cars from Canadian marketplaces.',
+        'An n8n workflow had GPT-4o-mini turn the message into a query capped at five cars, then GPT-4o summarised each one with price, mileage, transmission and Carfax status. If nothing matched, it said so instead of guessing.',
     },
     {
-      id: 'deals',
-      label: 'Deal monitoring',
-      question: 'What does CarGrep monitor?',
-      keywords: ['deal', 'monitor'],
+      id: 'costs',
+      label: 'Keeping costs bounded',
+      question: 'How did CarGrep keep model costs under control?',
+      keywords: ['cost', 'token'],
       reply:
-        'CarGrep includes search and deal monitoring for people choosing a car in Canadian marketplaces.',
+        'Each account had a balance of message tokens, and every chat message spent one; at zero the chat refused. The query step was also limited to five results.',
     },
     {
-      id: 'background',
-      label: 'Project background',
-      question: 'What is the background of CarGrep?',
-      keywords: ['background', 'support'],
+      id: 'hard',
+      label: 'What was hard?',
+      question: 'What was hard about building CarGrep?',
+      keywords: ['hard', 'difficult'],
       reply:
-        'Eduard co-founded and built CarGrep with backing from ShiftKey Labs at Dalhousie. The app uses Next.js, Azure OpenAI and Supabase.',
+        'Getting listing data. A later prototype that crawled dealership sites directly hit a site that loaded its inventory with JavaScript, and its two model calls per search were slow.',
     },
   ],
   'second-brain': [
@@ -670,15 +695,23 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       question: 'How does Second Brain use Google Drive?',
       keywords: ['drive', 'document'],
       reply:
-        'Second Brain connects a student’s Google Drive documents to a knowledge-retrieval assistant, so the documents can inform its answers and planning.',
+        'Students drop course files into a Drive folder; a workflow picks up new files, splits them into chunks and stores embeddings in Pinecone. The assistant searches them when there is no file attached to the chat.',
     },
     {
-      id: 'calendar',
-      label: 'Calendar planning',
-      question: 'What does Second Brain do with calendars?',
-      keywords: ['calendar', 'plan'],
+      id: 'syllabus',
+      label: 'Syllabus to calendar',
+      question: 'How does Second Brain turn a syllabus into calendar events?',
+      keywords: ['calendar', 'syllabus'],
       reply:
-        'The assistant combines knowledge retrieval with scheduling to help students plan study time and events.',
+        'The agent reads the syllabus for exam, test and quiz dates, checks each time slot in the calendar and creates one event per date. Checking first is an instruction in its prompt, not a hard rule in code.',
+    },
+    {
+      id: 'tools',
+      label: 'Why separate workflows?',
+      question: 'Why did Second Brain split its tools into separate workflows?',
+      keywords: ['tool', 'workflow'],
+      reply:
+        'Each action was its own n8n workflow with a written description of its inputs and outputs, so the agent could pick the right tool more reliably. The tools read the calendar, create events and summarise the day’s email.',
     },
     {
       id: 'result',
@@ -686,33 +719,41 @@ export const projectCommands: Record<Work['slug'], readonly ProjectCommand[]> = 
       question: 'What was Second Brain’s hackathon result?',
       keywords: ['hackathon', 'result', 'place'],
       reply:
-        'Second Brain took second place at the Volta Hackathon. It was built as a student productivity assistant.',
+        'Second place at the Volta Agentic AI Hackathon in Halifax, November 2024. Eduard built it with Huy Huynh and Hao Tang.',
     },
   ],
   'network-sim': [
     {
-      id: 'routing',
-      label: 'Which routing methods?',
-      question: 'Which routing methods does the simulator compare?',
-      keywords: ['routing', 'method', 'compar'],
-      reply:
-        'The simulator compares reinforcement-learning routing with Dijkstra and OSPF across different network topologies and traffic patterns.',
-    },
-    {
-      id: 'simulation',
-      label: 'Simulation setup',
-      question: 'What is the network simulator built with?',
-      keywords: ['setup', 'built', 'stack'],
-      reply:
-        'The research simulator uses Python, SimPy, and NetworkX to model networks and traffic.',
-    },
-    {
       id: 'research',
       label: 'Research question',
-      question: 'What does the network simulator investigate?',
+      question: 'What did the network simulator investigate?',
       keywords: ['research', 'investigat'],
       reply:
-        'The project studies how reinforcement-learning routing compares with traditional routing as network topology and traffic patterns vary.',
+        'Whether Q-routing, where each node learns its next hop from its neighbours’ buffer levels, can match routers that compute shortest paths over the whole network. It was a CSCI 4179 group project at Dalhousie in early 2025 with Ethan Rozee and Jack Whitmer.',
+    },
+    {
+      id: 'results',
+      label: 'Did learning win?',
+      question: 'Did Q-routing beat Dijkstra and OSPF?',
+      keywords: ['result', 'win'],
+      reply:
+        'An early run put it close to Dijkstra, for example 0.0838 s average delay against 0.0625 s on a 12-node network, with no packet loss. After the OSPF router’s link costs were reworked, OSPF was the best router in every test they ran.',
+    },
+    {
+      id: 'pivot',
+      label: 'Change of plan',
+      question: 'How did the project change from the proposal?',
+      keywords: ['change', 'proposal'],
+      reply:
+        'The proposal planned Q-learning load balancing across three wireless access points in GNS3 with Gymnasium. The team built its own SimPy and NetworkX simulator instead and studied hop-by-hop routing.',
+    },
+    {
+      id: 'fairness',
+      label: 'Keeping it fair',
+      question: 'How did they make the comparison fair?',
+      keywords: ['fair', 'setup'],
+      reply:
+        'A shared random number generator gave every router the same traffic, and the simulation was reworked so a router is blocked only while deciding. Q-learning settings were tuned with a grid search and Optuna.',
     },
   ],
 }

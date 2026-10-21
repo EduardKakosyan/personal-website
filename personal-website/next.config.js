@@ -5,6 +5,15 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
+  // Retired project pages point back to the work index.
+  async redirects() {
+    return ['voxcoach', 'claude-autonomous'].map((slug) => ({
+      source: `/projects/${slug}`,
+      destination: '/projects',
+      permanent: true,
+    }))
+  },
+
   // Comprehensive Security Headers
   async headers() {
     return [

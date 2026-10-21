@@ -22,7 +22,7 @@ The documented rules command is `node --test tests/rules.test.js tests/rules-ora
 
 ## How it works
 
-Rules, UI and offline storage support play on one device. The original local-agent build used dgx-autonomy with human product review; later undo, reset and game-management controls were added separately through CodeLayer.
+Rules, UI and offline storage support play on one device. The original local-agent build used dgx-autonomy with human product review; multi-step undo, restart turn, reset game and change players were added separately through CodeLayer.
 
 ## Status
 

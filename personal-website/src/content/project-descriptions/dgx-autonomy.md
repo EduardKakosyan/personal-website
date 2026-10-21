@@ -1,6 +1,6 @@
 # dgx-autonomy
 
-I built dgx-autonomy to run a coding agent on my DGX Spark and let it keep working across conversations. It saves progress, recovers from interrupted runs, and submits code to tests the agent can’t change.
+I built dgx-autonomy to run a coding agent on AI-First's DGX Spark and let it keep working across conversations. It saves progress, recovers from interrupted runs, and submits code to tests the agent can’t change.
 
 ## What I built around the agent
 

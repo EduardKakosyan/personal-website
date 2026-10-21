@@ -97,7 +97,7 @@ export function Narrator({ persona, chapter }: { persona: Persona; chapter: Chap
     <div className="story-narrator">
       <div className="story-narrator-label">
         <strong>EK&mdash;01</strong>
-        {live && <span className="story-live">live from my DGX Spark</span>}
+        {live && <span className="story-live">live from the DGX Spark</span>}
       </div>
       <div className="story-narration" aria-live="polite" aria-atomic="true">
         {answer ? (

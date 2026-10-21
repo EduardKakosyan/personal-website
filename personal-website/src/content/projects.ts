@@ -1,3 +1,16 @@
+// What the guide can say about how a project was worked out, one short note per topic.
+export type CaseTopic =
+  | 'problem'
+  | 'discovery'
+  | 'evidence'
+  | 'findings'
+  | 'decisions'
+  | 'testing'
+  | 'architecture'
+  | 'team'
+  | 'hard'
+  | 'status'
+
 export interface Project {
   slug: string
   title: string
@@ -8,6 +21,7 @@ export interface Project {
   detail: string
   aliases: string[]
   outcome?: string
+  casebook?: Partial<Record<CaseTopic, string>>
   facts: {
     role: string
     when: string
@@ -66,16 +80,36 @@ export const projects: Project[] = [
     beat: 'systems',
     visibility: 'described-only',
     description:
-      'An internal platform that connects SharePoint, Linear and QuickBooks. Staff and AI agents use the same operations.',
+      'Internal operations software built after interviewing the team about what they needed. Staff and Claude share one registry of operations.',
     detail:
-      'Eduard leads Keystone’s architecture and development with a team of five developers. A UX research contractor worked with him to understand what the team needed. The system connects SharePoint, Linear and QuickBooks and exposes operations through MCP. The old metrics were inaccurate and rarely used. Keystone is rolling out; adoption has not been measured yet.',
+      'Eduard leads a team of five developers and designed Keystone’s architecture. The team had stopped using the old scorecard, so Eduard and a UX researcher interviewed leadership, measured actual usage and settled metric definitions before rebuilding. Staff and Claude use the same registry of operations, through the app and through MCP.',
     aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
     outcome: 'I lead the architecture and development. We’re rolling it out now.',
+    casebook: {
+      problem:
+        'Eduard built most of AI-First’s first internal dashboard, and by mid-2026 the team skipped its scorecard in the weekly meeting. Each of its four stages, attract, convert, deliver and collect, squeezed a lot of work into one percentage nobody could act on. His audit also found wrong numbers: the weekly snapshot job had stopped in January, two stages were calculated two different ways, and a finance sync had failed while still logging "completed".',
+      discovery:
+        'Eduard brought in a UX researcher. She reviewed the old dashboard and comparable firms, then wrote an interview guide for each leadership seat that tested specific options instead of asking for wishes. She wrote the questions and Eduard ran the interviews: a 77-minute one-on-one with the CEO on a 16-question guide, and a 30-question set for the operations and finance lead. Eduard answered his own set on custom development, adoption and reusable IP. The delivery lead’s set was never completed.',
+      findings:
+        'Every number already had a home: plans in Linear, time in Outlook, money in QuickBooks and signed statements of work in SharePoint. Nobody had written down what makes a lead qualified, what counts as a productized offer or what reusable IP is, and the CEO and the operations lead disagreed on who the company view is for; the decision register logged 13 conflicts like these. There were no recorded project plans to measure against. Time data had to stay system-level, never ranking individuals. The CEO wanted to ask Claude for data rather than browse prebuilt views.',
+      evidence:
+        'Because people describe a tidier version of how they work, Eduard checked the interviews against behaviour. Eight AI agents measured feature usage read-only in the production database, and he read months of Monday-meeting transcripts to see how project risk was discussed.',
+      decisions:
+        'The team chose not to build file storage or task lists (SharePoint and Linear keep those), a new time-tracking routine, a copy of the cash forecast (QuickBooks stays the source, read-only), red-amber-green colours without an approved threshold, any view without a meeting that uses it, or an off-the-shelf CRM. Each remaining metric got a contract: an owner, the question it answers, its source, its cadence, and whether it is live or waiting for data. Missing data reads "Data missing", never zero.',
+      testing:
+        'The researcher turned the findings into a prototype with 25 measures across eight views: leadership, strategy, capacity, delivery, finance, people, tech adoption and reusable IP. She built it in Figma, then in HTML with sample data. After Eduard’s review they widened the definition of reusable IP, gave plans an optimistic, expected and pessimistic range, and tied capacity targets to job roles. Usability sessions with staff on the live build have not happened yet.',
+      architecture:
+        'Keystone owns no data; it holds SharePoint, Linear, QuickBooks and Outlook together, hence the name. The old dashboard’s MCP tools were hand-written, untested and drifting from the app. In Keystone, each operation is declared once in a capability registry with its input schema and permission, and the Claude tools are generated from it. Claude signs in as the person, so it reaches only what they can, and a parity test checks that the same action from the app and from Claude writes the same record.',
+      team: 'Eduard designed the architecture and built the first phase himself: sign-in, the capability registry and the generated Claude tools. Developers on his team built most of what followed, and he reviews and merges their work. The UX researcher owned the research, interview guides, metric register and prototype.',
+      hard: 'Definitions are owed by people, not code: several metrics wait for someone to agree a definition or accept ownership, and a metric is cut if its proposed owner declines. Consistent naming of files and projects was a constant fight, and only about half of the old opportunities migrated cleanly. Eduard said in the first brainstorm that change management mattered more than the software.',
+      status:
+        'Keystone is rolling out in phases. The first scorecard is due at the end of October 2026. The QuickBooks, Linear and SharePoint connectors come in later phases, and the old dashboard runs until cutover, so there are no adoption numbers yet. The code is private.',
+    },
     facts: {
       role: 'Engineering lead and architect',
       when: '2026 / rolling out',
-      team: 'Team of five developers led by Eduard, with a UX research contractor',
-      stack: ['Capability registry', 'MCP', 'SharePoint', 'Linear', 'QuickBooks'],
+      team: 'Eduard with developers from his team, and a UX researcher',
+      stack: ['Capability registry', 'MCP', 'Supabase', 'SharePoint', 'Linear', 'QuickBooks'],
       links: [],
     },
   },

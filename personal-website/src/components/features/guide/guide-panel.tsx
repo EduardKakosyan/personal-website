@@ -24,7 +24,9 @@ import {
   guideActionSchema,
   guideCopyRule,
   guideDestination,
+  guideNotes,
   guideOutputSchemaForQuery,
+  notesAnswer,
   parseGuideResponse,
   portfolioContext,
   portfolioWorks,
@@ -190,7 +192,9 @@ function GuideBody() {
         return
       }
       const text = sanitizeUserInput(validation.data.content)
-      const guardrail = validateUserInput(text)
+      const guardrail = validateUserInput(text, {
+        page: currentProject?.title ?? 'the portfolio homepage',
+      })
       const token = ++request.current
       setInput('')
       setNotice('')
@@ -209,17 +213,27 @@ function GuideBody() {
         ])
         return
       }
-      const sources = retrieveWork(currentProject ? `${text} ${currentProject.title}` : text)
+      const retrieved = retrieveWork(currentProject ? `${text} ${currentProject.title}` : text)
+      // On a project page, that project leads unless the question names a different one.
+      const namesOther = portfolioWorks.some(
+        (work) => work !== currentProject && text.toLowerCase().includes(work.title.toLowerCase()),
+      )
+      const sources =
+        currentProject && !namesOther
+          ? [currentProject, ...retrieved.filter((work) => work !== currentProject)]
+          : retrieved
       if (!sources.length && /\b(this|site|website|portfolio)\b/i.test(text)) {
         sources.push(...portfolioWorks.slice(0, 3))
       }
       const notesReply = sources.length
-        ? sources
-            .slice(0, 2)
-            .map((work) => `${work.title}: ${work.summary}`)
-            .join('\n\n')
+        ? [
+            notesAnswer(sources[0], text),
+            ...(currentProject
+              ? []
+              : sources.slice(1, 2).map((work) => `${work.title}: ${work.summary}`)),
+          ].join('\n\n')
         : /\b(eduard|background|skills|contact|experience|education)\b/i.test(text)
-          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and writes code alongside them. On Keystone, he leads architecture and development of a platform connecting SharePoint, Linear and QuickBooks. His email is ${identity.email}.`
+          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and writes code alongside them. On Keystone, he designed the architecture and leads development of internal operations software where staff and Claude share one registry of operations. His email is ${identity.email}.`
           : 'I couldn’t find that in the project notes. Try asking about dgx-autonomy, HUGO, or Shoreline.'
       const direct = directGuideAction(text, currentProject?.slug)
       if (direct) {
@@ -251,7 +265,7 @@ function GuideBody() {
           [
             {
               role: 'system',
-              content: `${portfolioContext}\n${guideCopyRule}\nThe visitor is viewing ${currentProject?.title ?? 'the portfolio homepage'}. Resolve questions like 'this project' in that context.\n${allowsGuideNavigation(text) ? `Return JSON with action, target and reply. Allowed project IDs: ${portfolioWorks.map((work) => work.slug).join(', ')}. Allowed section IDs: ${Object.keys(guideSections).join(', ')}. For an answer use target="".` : 'Answer the question about the current page. Return JSON with action="answer", target="", and your explanation in reply. Keep it to two or three sentences.'} Retrieve evidence only from these notes:\n${sources.map((work) => `${work.title} [${work.slug}]: ${work.summary} ${work.detail}`).join('\n') || 'No matching project found.'}`,
+              content: `${portfolioContext}\n${guideCopyRule}\nThe visitor is viewing ${currentProject?.title ?? 'the portfolio homepage'}. Resolve questions like 'this project' in that context.\n${allowsGuideNavigation(text) ? `Return JSON with action, target and reply. Allowed project IDs: ${portfolioWorks.map((work) => work.slug).join(', ')}. Allowed section IDs: ${Object.keys(guideSections).join(', ')}. For an answer use target="".` : 'Answer the question about the current page. Return JSON with action="answer", target="", and your explanation in reply. Keep it to two or three sentences.'} Retrieve evidence only from these notes:\n${sources.map((work) => guideNotes(work, text)).join('\n') || 'No matching project found.'}`,
             },
             ...messages
               .slice(-4)

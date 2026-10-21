@@ -7,6 +7,7 @@ import {
   guideOutputSchemaForQuery,
   guideSections,
   portfolioContext,
+  guideNotes,
   portfolioWorks,
   retrieveWork,
 } from '../../content/portfolio'
@@ -32,7 +33,7 @@ const audience: Record<Persona, string> = {
 
 // Plain-voice rules shared by every request (the site's copy guide, in short).
 const voice =
-  'Write about Eduard as "Eduard" or "he"; never write "I", "my", "we" or "our". Use plain, specific sentences with natural variety in length. Add useful project context rather than another pitch. Avoid aphorisms, slogans, rhetorical questions, manufactured contrasts and repeated lists of development stages. State facts from the notes; do not claim benefits, guarantees or outcomes the notes do not state, and avoid words like ensures, enables, seamless, robust or leverage. Preserve qualifications about project status, privacy, test results and human supervision. Never name clients. Keep the client curriculum delivered through AI-First separate from the ShiftKey Labs course at Dalhousie. Use past tense for roles that have ended. Do not comment on the visitor, the page or this conversation, and never mention "the notes"; if something is not covered, say this site does not say.'
+  'Write about Eduard as "Eduard" or "he"; never write "I", "my", "we" or "our". Use plain, specific sentences with natural variety in length. Add useful project context rather than another pitch. Avoid aphorisms, slogans, rhetorical questions, manufactured contrasts and repeated lists of development stages. State facts from the notes; do not claim benefits, guarantees or outcomes the notes do not state, and avoid words like ensures, enables, seamless, robust or leverage. Mention project status only when the question asks about status, launch or results. Preserve qualifications about privacy, test results and human supervision. Never name clients. Keep the client curriculum delivered through AI-First separate from the ShiftKey Labs course at Dalhousie. Use past tense for roles that have ended. Do not comment on the visitor, the page or this conversation, and never mention "the notes"; if something is not covered, say this site does not say.'
 
 // The facts the model may use: the chapter, the line already shown, his roles and the
 // relevant project notes. Nothing else from the site is sent.
@@ -49,7 +50,9 @@ function notesFor(input: NarrateInput): string {
       (role) =>
         `Role: ${role.title}, ${role.org} (${role.start} to ${role.end ?? 'now'}; ${role.end ? 'ended' : 'current role'}). ${role.summary}`,
     ),
-    ...works.map((work) => `Project ${work.title} [${work.slug}]: ${work.summary} ${work.detail}`),
+    ...works.map(
+      (work) => `Project ${guideNotes(work, input.kind === 'question' ? input.text : '')}`,
+    ),
     ...clientWork.map(
       (work) =>
         `Separate client project, not part of the projects above: ${work.title} (Eduard was ${work.role === 'managed' ? 'project lead' : 'a team contributor'}).`,

@@ -17,6 +17,9 @@ const {
   guideSections,
   projectCommands,
   projectCommandAction,
+  guideNotes,
+  notesAnswer,
+  portfolioContext,
 } = fixtureModule.exports
 
 test('the local-AI shortcut opens the autonomy case study without inference', () => {
@@ -226,4 +229,56 @@ test('invalid, truncated, and unrequested model actions return the notes fallbac
     ).target,
     'hugo',
   )
+})
+
+const keystone = portfolioWorks.find((work) => work.slug === 'keystone')
+
+test('Keystone discovery questions get the discovery notes, not the rollout status', () => {
+  for (const question of [
+    'How did Eduard do discovery?',
+    'Who did he interview?',
+    'How did he figure out what the team needed?',
+  ]) {
+    assert.match(guideNotes(keystone, question), /interview/i, question)
+    assert.doesNotMatch(guideNotes(keystone, question), /rolling/i, question)
+    assert.match(notesAnswer(keystone, question), /interview/i, question)
+    assert.doesNotMatch(notesAnswer(keystone, question), /rolling/i, question)
+  }
+})
+
+test('Keystone answers explain the problem and the architecture on request', () => {
+  assert.match(notesAnswer(keystone, 'What problem was it solving?'), /dashboard/i)
+  assert.match(notesAnswer(keystone, 'Why a capability registry?'), /MCP/)
+  assert.doesNotMatch(guideNotes(keystone, 'what is this about?'), /rolling/i)
+})
+
+test('rollout status appears only when the visitor asks about it', () => {
+  assert.match(notesAnswer(keystone, 'Has Keystone shipped?'), /rolling/i)
+  assert.match(guideNotes(keystone, 'What results has it delivered?'), /rolling/i)
+  assert.doesNotMatch(keystone.detail, /rolling/i)
+  assert.doesNotMatch(portfolioContext, /preserve qualifications about rollout/i)
+})
+
+test('Keystone suggestions ask about discovery and problem solving', () => {
+  const commands = projectCommands.keystone
+  assert.ok(commands.some((command) => /discovery|interview/i.test(command.label)))
+  assert.ok(commands.some((command) => /problem/i.test(command.label)))
+  for (const command of commands) assert.doesNotMatch(command.reply, /rolling/i, command.id)
+})
+
+test('forward-deployed questions about Keystone land on the matching notes', () => {
+  const cases = [
+    ['Who did he interview?', /CEO/],
+    ['What did they find?', /already had a home/],
+    ['Did they watch people work?', /production database/],
+    ['What did they decide not to build?', /off-the-shelf CRM/],
+    ['How did they test it with people?', /prototype/],
+    ['What was hard?', /owed by people/],
+    ['Why a capability registry?', /generated/],
+  ]
+  for (const [question, expected] of cases) {
+    const answer = notesAnswer(keystone, question)
+    assert.match(answer, expected, question)
+    assert.doesNotMatch(answer, /rolling/i, question)
+  }
 })

@@ -7,7 +7,7 @@ import { beatLabels } from './case-study-card'
 export function CaseStudy({ project, body }: { project: Project; body: string }) {
   const sections =
     project.slug === 'keystone'
-      ? ['Discovery', 'Definitions', 'Architecture', 'Build', 'What broke']
+      ? ['Problem', 'Discovery', 'Findings', 'Decisions', 'Architecture', 'What was hard']
       : ['Problem', 'System', 'Decisions', 'Result', 'What broke']
   const next =
     caseStudies[

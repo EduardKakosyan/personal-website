@@ -109,7 +109,7 @@ test('new case studies are short, retain section anchors and use only synthetic 
     assert.deepEqual(
       headings,
       slug === 'keystone'
-        ? ['Discovery', 'Definitions', 'Architecture', 'Build', 'What broke']
+        ? ['Problem', 'Discovery', 'Findings', 'Decisions', 'Architecture', 'What was hard']
         : ['Problem', 'System', 'Decisions', 'Result', 'What broke'],
     )
     if (slug === 'keystone') {

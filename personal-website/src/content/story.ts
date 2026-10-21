@@ -19,8 +19,8 @@ export const chapters: Chapter[] = [
   {
     id: 'systems',
     kicker: 'At AI-First',
-    headline: 'Keystone connects the tools our team uses.',
-    line: 'Our old dashboard had inaccurate numbers and saw little use. I worked with a UX researcher to understand what the team needed, then designed Keystone. It connects SharePoint, Linear and QuickBooks. I lead development, and we’re rolling it out now.',
+    headline: 'Keystone started with interviews.',
+    line: 'Our old dashboard had inaccurate numbers and saw little use. A UX researcher and I interviewed leadership and checked what people used, then I designed Keystone so staff and Claude share one set of operations. I lead development, and we’re rolling it out now.',
     proof: ['keystone', 'hvac-rfq-triage', 'consulting-rfp-triage'],
     learnMore: '/projects/keystone',
     learnMoreLabel: 'Read the Keystone case study',

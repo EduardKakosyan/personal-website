@@ -17,6 +17,9 @@ const {
   guideSections,
   projectCommands,
   projectCommandAction,
+  guideNotes,
+  notesAnswer,
+  portfolioContext,
 } = fixtureModule.exports
 
 test('the local-AI shortcut opens the autonomy case study without inference', () => {
@@ -226,4 +229,126 @@ test('invalid, truncated, and unrequested model actions return the notes fallbac
     ).target,
     'hugo',
   )
+})
+
+const keystone = portfolioWorks.find((work) => work.slug === 'keystone')
+
+test('Keystone discovery questions get the discovery notes, not the rollout status', () => {
+  for (const question of [
+    'How did Eduard do discovery?',
+    'Who did he interview?',
+    'How did he figure out what the team needed?',
+  ]) {
+    assert.match(guideNotes(keystone, question), /interview/i, question)
+    assert.doesNotMatch(guideNotes(keystone, question), /rolling/i, question)
+    assert.match(notesAnswer(keystone, question), /interview/i, question)
+    assert.doesNotMatch(notesAnswer(keystone, question), /rolling/i, question)
+  }
+})
+
+test('Keystone answers explain the problem and the architecture on request', () => {
+  assert.match(notesAnswer(keystone, 'What problem was it solving?'), /dashboard/i)
+  assert.match(notesAnswer(keystone, 'Why a capability registry?'), /MCP/)
+  assert.doesNotMatch(guideNotes(keystone, 'what is this about?'), /rolling/i)
+})
+
+test('rollout status appears only when the visitor asks about it', () => {
+  assert.match(notesAnswer(keystone, 'Has Keystone shipped?'), /rolling/i)
+  assert.match(guideNotes(keystone, 'What results has it delivered?'), /rolling/i)
+  assert.doesNotMatch(keystone.detail, /rolling/i)
+  assert.doesNotMatch(portfolioContext, /preserve qualifications about rollout/i)
+})
+
+test('Keystone suggestions ask about discovery and problem solving', () => {
+  const commands = projectCommands.keystone
+  assert.ok(commands.some((command) => /discovery|interview/i.test(command.label)))
+  assert.ok(commands.some((command) => /problem/i.test(command.label)))
+  for (const command of commands) assert.doesNotMatch(command.reply, /rolling/i, command.id)
+})
+
+test('forward-deployed questions about Keystone land on the matching notes', () => {
+  const cases = [
+    ['Who did he interview?', /CEO/],
+    ['What did they find?', /already had a home/],
+    ['Did they watch people work?', /production database/],
+    ['What did they decide not to build?', /off-the-shelf CRM/],
+    ['How did they test it with people?', /prototype/],
+    ['What was hard?', /owed by people/],
+    ['Why a capability registry?', /generated/],
+  ]
+  for (const [question, expected] of cases) {
+    const answer = notesAnswer(keystone, question)
+    assert.match(answer, expected, question)
+    assert.doesNotMatch(answer, /rolling/i, question)
+  }
+})
+
+test('every project has topic notes, and questions land on the matching note', () => {
+  for (const work of portfolioWorks) {
+    const topics = Object.keys(work.casebook)
+    assert.ok(topics.includes('problem'), `${work.slug} has no problem note`)
+    assert.ok(topics.includes('status'), `${work.slug} has no status note`)
+    assert.ok(topics.length >= 5, `${work.slug} has only ${topics.length} notes`)
+    assert.equal(notesAnswer(work, 'What problem was it solving?'), work.casebook.problem)
+    if (work.casebook.hard)
+      assert.match(
+        notesAnswer(work, 'What was hard?'),
+        new RegExp(escape(work.casebook.hard.slice(0, 30))),
+      )
+    assert.doesNotMatch(
+      notesAnswer(work, 'What was the problem?'),
+      new RegExp(escape(work.casebook.status.slice(0, 30))),
+    )
+    assert.ok(guideNotes(work, '').includes(work.detail), `${work.slug} notes drop the detail line`)
+  }
+})
+
+function escape(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+const { profileAnswer, namedWork } = fixtureModule.exports
+
+test('recruiter questions about Eduard are answered from his profile', () => {
+  const cases = [
+    ['Has he worked directly with clients?', /31 organizations/],
+    ['What is his biggest project?', /Keystone/],
+    ['Is he a forward deployed engineer?', /interview/i],
+    ['What is his tech stack?', /Python/],
+    ['Why should I hire him?', /five developers/],
+    ['How can I contact him?', /linkedin/i],
+    ['Where did he study?', /Dalhousie/],
+  ]
+  for (const [question, expected] of cases) {
+    const answer = profileAnswer(question)
+    assert.ok(answer, question)
+    assert.match(answer, expected, question)
+    assert.doesNotMatch(answer, /Sky Painters/, question)
+  }
+  assert.equal(profileAnswer('What was the outcome?', { onProject: true }), null)
+  assert.equal(profileAnswer('What is the tech stack?', { onProject: true }), null)
+  assert.match(profileAnswer('How can I contact him?', { onProject: true }), /linkedin/i)
+})
+
+test('a project counts as named only by its title, slug or alias', () => {
+  assert.equal(namedWork('Is he a forward deployed engineer?'), undefined)
+  assert.equal(namedWork('Tell me about keystone').slug, 'keystone')
+})
+
+test('outcome, usage, motivation and speed questions reach the right project notes', () => {
+  const work = (slug) => portfolioWorks.find((item) => item.slug === slug)
+  assert.equal(notesAnswer(work('volta-sep26'), 'What was the outcome?'), work('volta-sep26').casebook.status)
+  assert.match(notesAnswer(work('keeper'), 'Is anyone using it?'), /testing/)
+  assert.match(notesAnswer(work('keeper'), 'Why did he build this?'), /Fireflies/)
+  assert.match(notesAnswer(work('hugo'), 'How fast does it respond?'), /seconds/)
+  assert.match(notesAnswer(work('volta-sep26'), 'How did he validate the idea?'), /Swim Guide/)
+})
+
+test('profile questions never navigate, and generic words do not name a project', () => {
+  assert.equal(directGuideAction('Where is he based?'), null)
+  assert.equal(namedWork('What did he do after the hackathon?'), undefined)
+  assert.equal(directGuideAction('Show me Eduard’s local AI work').target, 'dgx-autonomy')
+  const agents = profileAnswer('What has he built with AI agents?')
+  assert.match(agents, /Keystone/)
+  assert.doesNotMatch(agents, /Husky/)
 })

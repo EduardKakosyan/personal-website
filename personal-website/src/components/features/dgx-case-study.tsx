@@ -28,8 +28,9 @@ export function DgxCaseStudy() {
           <span>coding agent.</span>
         </h1>
         <p>
-          I built dgx-autonomy to run a coding agent on my DGX Spark. It saves progress between
-          conversations, recovers from interrupted runs, and tests the code in a separate container.
+          I built dgx-autonomy to run a coding agent on AI-First's DGX Spark. It saves progress
+          between conversations, recovers from interrupted runs, and tests the code in a separate
+          container.
         </p>
         <FactsBox project={work} />
       </header>
@@ -155,7 +156,7 @@ export function DgxCaseStudy() {
             <h3>Camp Yahtzee</h3>
             <p>
               An offline game for the camp table. Its original release crossed four conversations
-              and two product reviews.
+              and two rounds of product feedback.
             </p>
             <strong>
               24 / 24 <small>original-release acceptance tests passed</small>
@@ -181,17 +182,21 @@ export function DgxCaseStudy() {
           </div>
         </div>
         <p className="site-lead site-muted">
-          These results come from the public build records. I supplied briefs and reviewed the apps
-          with help from a supervising Claude session. Later Yahtzee game-management controls were
-          added separately through CodeLayer.
+          These results come from the public build records. I set the direction and accepted the
+          results; a supervising Claude session wrote the briefs and checks and reviewed each build
+          as product lead. Later Yahtzee game controls were added separately through CodeLayer.
         </p>
       </section>
       <section className="site-section">
         <span className="site-kicker">MY CONTRIBUTION</span>
         <h2>What I built around the agent</h2>
         <p>
-          The model wrote the app code. My work was the controller: saving progress, recovering from
-          failures, isolating the tests, and deciding when a run should stop for review.
+          The model wrote the app code. My work was the controller, which I designed and built with
+          Claude Code: saving progress, recovering from failures, isolating the tests, and deciding
+          when a run should stop for review. Before any code I wrote research, a PRD and a technical
+          design, and I moved inference from llama.cpp to SGLang only after measuring both on the
+          box: llama.cpp fell from 24.9 to 8.0 tokens a second as the context filled, while SGLang
+          held 21 to 25 up to 180K.
         </p>
         <Link href="/projects/keystone" className="work-link">
           Next case study: Keystone

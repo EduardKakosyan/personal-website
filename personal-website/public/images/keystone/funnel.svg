@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-labelledby="title desc">
-<title id="title">Synthetic funnel schematic</title><desc id="desc">Attract leads to convert, deliver and collect. No real company data.</desc>
+<title id="title">The old scorecard's four stages</title><desc id="desc">Attract leads to convert, deliver and collect: the stages of the scorecard Keystone replaces. No real company data.</desc>
 <rect width="800" height="240" rx="12" fill="#122b29"/>
 <g fill="none" stroke="#c5c9bf" stroke-width="2"><rect x="30" y="90" width="155" height="70" rx="6"/><rect x="225" y="90" width="155" height="70" rx="6"/><rect x="420" y="90" width="155" height="70" rx="6"/><rect x="615" y="90" width="155" height="70" rx="6"/><path d="M185 125h40m-10-8 10 8-10 8M380 125h40m-10-8 10 8-10 8M575 125h40m-10-8 10 8-10 8"/></g>
 <g fill="#f5eee2" font-family="sans-serif" font-size="22" text-anchor="middle"><text x="107" y="133">Attract</text><text x="302" y="133">Convert</text><text x="497" y="133">Deliver</text><text x="692" y="133">Collect</text></g>
-<text x="30" y="43" fill="#f5eee2" font-family="monospace" font-size="16">SYNTHETIC / BUSINESS STAGES, NOT LIVE METRICS</text>
+<text x="30" y="43" fill="#f5eee2" font-family="monospace" font-size="16">SYNTHETIC / THE OLD SCORECARD, REPLACED BY KEYSTONE</text>
 </svg>

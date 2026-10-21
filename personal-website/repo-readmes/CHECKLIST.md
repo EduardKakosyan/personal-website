@@ -34,8 +34,6 @@ Recheck source, attribution, licensing, unknown setup instructions and demo avai
 - [ ] Approve and publish yahtzee.md.
 - [ ] Approve and publish atlantic-ai-conference-hackathon.md after verifying setup.
 - [ ] Approve and publish volta_hackathon.md after verifying imports and permissions.
-- [ ] Approve and publish voxcoach.md after verifying setup/tests.
-- [ ] Approve and publish claude-autonomous.md after reviewing host changes and spending controls.
 - [ ] Approve and publish q-learning-network-sim.md after checking its environment.
 - [ ] Approve and publish exosky_nasa.md after verifying backend setup and attribution.
 
@@ -50,8 +48,6 @@ Recheck source, attribution, licensing, unknown setup instructions and demo avai
 - [ ] Review/set yahtzee: offline camp dice game; offline, game.
 - [ ] Review/set the HealthByte repo: simulated article reactions; agents, hackathon.
 - [ ] Review/set the older Volta repo: study assistant workflows; n8n, hackathon.
-- [ ] Review/set voxcoach: local sales-call practice; go, voice.
-- [ ] Review/set claude-autonomous: scheduled coding harness; docker, automation.
 - [ ] Review/set q-learning-network-sim: routing simulation; reinforcement-learning, simulation.
 - [ ] Review/set exosky_nasa: exoplanet sky explorer; astronomy, hackathon.
 

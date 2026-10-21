@@ -24,8 +24,6 @@ test('one pure registry owns unique slugs and preserves all previous routes', as
     'shoreline',
     'yahtzee',
     'hugo',
-    'claude-autonomous',
-    'voxcoach',
     'dev-template',
     'healthbyte',
     'second-brain',
@@ -78,13 +76,18 @@ test('described-only work never offers repository links; CarGrep website is not 
   assert.equal(getProjectBySlug('keeper').visibility, 'described-only')
 })
 
-test('VoxCoach is navigable archive work, not a featured case study', () => {
-  assert.equal(getProjectBySlug('voxcoach').tier, 'archive')
-  assert.equal(
-    featuredWorks.some((p) => p.slug === 'voxcoach'),
-    false,
+test('retired projects are gone from the registry and guide, and their pages redirect', async () => {
+  for (const slug of ['voxcoach', 'claude-autonomous']) {
+    assert.equal(getProjectBySlug(slug), undefined)
+    assert.equal(existsSync(new URL(`${slug}.md`, bodies)), false)
+  }
+  assert.equal(directGuideAction('Open VoxCoach'), null)
+  const { default: config } = await import('../next.config.js')
+  const redirects = await config.redirects()
+  assert.deepEqual(
+    redirects.map((rule) => rule.source),
+    ['/projects/voxcoach', '/projects/claude-autonomous'],
   )
-  assert.equal(directGuideAction('Open VoxCoach').target, 'voxcoach')
   for (const slug of ['keystone', 'keeper'])
     assert.equal(directGuideAction(`Open ${slug}`).target, slug)
 })
@@ -109,7 +112,7 @@ test('new case studies are short, retain section anchors and use only synthetic 
     assert.deepEqual(
       headings,
       slug === 'keystone'
-        ? ['Discovery', 'Definitions', 'Architecture', 'Build', 'What broke']
+        ? ['Problem', 'Discovery', 'Findings', 'Decisions', 'Architecture', 'What was hard']
         : ['Problem', 'System', 'Decisions', 'Result', 'What broke'],
     )
     if (slug === 'keystone') {

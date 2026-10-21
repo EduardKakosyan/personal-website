@@ -24,7 +24,11 @@ import {
   guideActionSchema,
   guideCopyRule,
   guideDestination,
+  guideNotes,
   guideOutputSchemaForQuery,
+  namedWork,
+  notesAnswer,
+  profileAnswer,
   parseGuideResponse,
   portfolioContext,
   portfolioWorks,
@@ -190,7 +194,9 @@ function GuideBody() {
         return
       }
       const text = sanitizeUserInput(validation.data.content)
-      const guardrail = validateUserInput(text)
+      const guardrail = validateUserInput(text, {
+        page: currentProject?.title ?? 'the portfolio homepage',
+      })
       const token = ++request.current
       setInput('')
       setNotice('')
@@ -209,19 +215,34 @@ function GuideBody() {
         ])
         return
       }
-      const sources = retrieveWork(currentProject ? `${text} ${currentProject.title}` : text)
-      if (!sources.length && /\b(this|site|website|portfolio)\b/i.test(text)) {
+      // Questions about Eduard himself are answered from his profile, unless a project is named.
+      const named = namedWork(text)
+      const about = named ? null : profileAnswer(text, { onProject: Boolean(currentProject) })
+      const retrieved = retrieveWork(currentProject ? `${text} ${currentProject.title}` : text)
+      // On a project page, that project is the only source unless the question names another.
+      const sources = about
+        ? []
+        : currentProject && (!named || named === currentProject)
+          ? [currentProject]
+          : named
+            ? [named]
+            : retrieved
+      if (!about && !sources.length && /\b(this|site|website|portfolio)\b/i.test(text)) {
         sources.push(...portfolioWorks.slice(0, 3))
       }
-      const notesReply = sources.length
-        ? sources
-            .slice(0, 2)
-            .map((work) => `${work.title}: ${work.summary}`)
-            .join('\n\n')
-        : /\b(eduard|background|skills|contact|experience|education)\b/i.test(text)
-          ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and writes code alongside them. On Keystone, he leads architecture and development of a platform connecting SharePoint, Linear and QuickBooks. His email is ${identity.email}.`
-          : 'I couldn’t find that in the project notes. Try asking about dgx-autonomy, HUGO, or Shoreline.'
-      const direct = directGuideAction(text, currentProject?.slug)
+      const notesReply =
+        about ??
+        (sources.length
+          ? [
+              notesAnswer(sources[0], text),
+              ...(currentProject
+                ? []
+                : sources.slice(1, 2).map((work) => `${work.title}: ${work.summary}`)),
+            ].join('\n\n')
+          : /\b(eduard|he|his|him)\b/i.test(text)
+            ? `Eduard is ${identity.title} at ${identity.company} in Halifax. He leads a team of five developers and writes code alongside them. On Keystone, he designed the architecture and leads development of internal operations software where staff and Claude share one registry of operations. His email is ${identity.email}.`
+            : 'This site doesn’t cover that. Try asking about his client work, how he ran discovery on Keystone, or how to contact him.')
+      const direct = about ? null : directGuideAction(text, currentProject?.slug)
       if (direct) {
         setMessages((previous) => [
           ...previous,
@@ -251,7 +272,7 @@ function GuideBody() {
           [
             {
               role: 'system',
-              content: `${portfolioContext}\n${guideCopyRule}\nThe visitor is viewing ${currentProject?.title ?? 'the portfolio homepage'}. Resolve questions like 'this project' in that context.\n${allowsGuideNavigation(text) ? `Return JSON with action, target and reply. Allowed project IDs: ${portfolioWorks.map((work) => work.slug).join(', ')}. Allowed section IDs: ${Object.keys(guideSections).join(', ')}. For an answer use target="".` : 'Answer the question about the current page. Return JSON with action="answer", target="", and your explanation in reply. Keep it to two or three sentences.'} Retrieve evidence only from these notes:\n${sources.map((work) => `${work.title} [${work.slug}]: ${work.summary} ${work.detail}`).join('\n') || 'No matching project found.'}`,
+              content: `${portfolioContext}\n${guideCopyRule}\nThe visitor is viewing ${currentProject?.title ?? 'the portfolio homepage'}. Resolve questions like 'this project' in that context.\n${allowsGuideNavigation(text) ? `Return JSON with action, target and reply. Allowed project IDs: ${portfolioWorks.map((work) => work.slug).join(', ')}. Allowed section IDs: ${Object.keys(guideSections).join(', ')}. For an answer use target="".` : 'Answer the question about the current page. Return JSON with action="answer", target="", and your explanation in reply. Keep it to two or three sentences.'} Retrieve evidence only from these notes:\n${about ? `About Eduard: ${about}\n` : ''}${sources.map((work) => guideNotes(work, text)).join('\n') || 'No matching project found.'}`,
             },
             ...messages
               .slice(-4)
@@ -453,21 +474,16 @@ function GuideBody() {
           ))
         ) : (
           <>
-            <button disabled={isGenerating} onClick={() => void send('Show me HUGO')}>
-              Meet HUGO <ArrowUpRight size={12} />
-            </button>
-            <button
-              disabled={isGenerating}
-              onClick={() => void send('Show me Eduard’s local AI work')}
-            >
-              Local AI work <ArrowUpRight size={12} />
-            </button>
-            <button
-              disabled={isGenerating}
-              onClick={() => void send('Show me the verification checks')}
-            >
-              How it verifies <ArrowUpRight size={12} />
-            </button>
+            {[
+              ['Client work', 'Has he worked directly with clients?'],
+              ['How he works', 'How does he approach a client problem?'],
+              ['Keystone case study', 'Show me Keystone'],
+              ['Contact', 'How can I contact him?'],
+            ].map(([label, question]) => (
+              <button key={label} disabled={isGenerating} onClick={() => void send(question)}>
+                {label} <ArrowUpRight size={12} />
+              </button>
+            ))}
           </>
         )}
       </div>

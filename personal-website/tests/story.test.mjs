@@ -105,7 +105,7 @@ test('homepage copy keeps teaching attribution, build supervision and project st
   const local = chapters.find((chapter) => chapter.id === 'private-local')
   const teaching = chapters.find((chapter) => chapter.id === 'adoption')
   assert.match(systems.line, /rolling it out now/)
-  assert.match(local.line, /briefs and review the results with help from Claude/)
+  assert.match(local.line, /supervising Claude session writes the briefs and reviews the results/)
   assert.match(teaching.line, /Through AI-First.*client’s data science and ML curriculum/)
   assert.match(teaching.line, /separate role at ShiftKey Labs/)
   assert.match(narratorLines.recruiter['private-local'], /original Camp Yahtzee release/)

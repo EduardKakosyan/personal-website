@@ -62,7 +62,8 @@ export async function narrate(
 ): Promise<NarrateResult> {
   const input = parseNarrateInput(raw)
   if (!input) return null
-  if (input.kind === 'question' && !validateUserInput(input.text).allowed) return null
+  if (input.kind === 'question' && !validateUserInput(input.text, { page: input.chapter }).allowed)
+    return null
   const prompt = buildPrompt(input)
   let output: string
   try {

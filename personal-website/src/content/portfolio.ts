@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { identity, profile } from './profile'
+import { identity, metricsFor, profile } from './profile'
 import { projects, type CaseTopic } from './projects'
 
 // Identity facts live in profile.ts; re-exported so existing callers keep one import.
@@ -178,10 +178,13 @@ export function retrieveWork(query: string): Work[] {
 // Which casebook notes answer a question. Status is left out unless the visitor asks for it,
 // so it doesn't take over every answer.
 const caseTopics: [CaseTopic, RegExp][] = [
-  ['problem', /\b(problem|pain|wrong|old|before|issue|start|broken)/i],
+  [
+    'problem',
+    /\b(problem|pain|wrong|old|before|issue|start|broken|why (did|was|is|does|would)|motivat|purpose|reason)/i,
+  ],
   [
     'discovery',
-    /\b(discover|interview|research|talk|ask|stakeholder|client|understand|figure|find out|process|approach|questions?|researcher|forward deployed|fde)/i,
+    /\b(discover|interview|research|talk|ask|stakeholder|client|understand|figure|find out|process|approach|questions?|researcher|forward deployed|fde|idea)/i,
   ],
   ['evidence', /\b(observ|shadow|watch|usage|behaviou?r|evidence|transcript|audit|check)/i],
   [
@@ -192,7 +195,10 @@ const caseTopics: [CaseTopic, RegExp][] = [
     'decisions',
     /\b(decid|decision|not build|n't build|scope|cut|trade-?off|chose|choice|avoid|left out)/i,
   ],
-  ['testing', /\b(test|prototype|feedback|iterat|figma|wireframe|views?\b|scorecard|validat)/i],
+  [
+    'testing',
+    /\b(test|prototype|feedback|iterat|figma|wireframe|views?\b|scorecard|validat|fast|speed|latency|respon|quick|slow|perform)/i,
+  ],
   [
     'architecture',
     /\b(architect|design|registry|capabilit|mcp|agent|claude|sharepoint|linear|quickbooks|connect|integrat|stack|built|build|tech|how does it)/i,
@@ -204,7 +210,7 @@ const caseTopics: [CaseTopic, RegExp][] = [
   ['hard', /\b(hard|difficult|challeng|struggle|obstacle|lesson|messy|went wrong|broke)/i],
   [
     'status',
-    /\b(status|ship|launch|roll|adoption|live|release|done|finish|result|deliver|impact|when)/i,
+    /\b(status|ship|launch|roll|adoption|adopt|live|release|done|finish|result|deliver|impact|when|outcome|using|anyone|in use|after the|afterwards)/i,
   ],
 ]
 
@@ -234,6 +240,109 @@ export function notesAnswer(work: Work, query: string): string {
   return asked
     ? notes.slice(0, 2).join('\n\n')
     : `${work.summary}\n\n${notes.slice(0, 2).join('\n\n')}`
+}
+
+const mentions = (text: string, term: string) =>
+  new RegExp(`\\b${term.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text)
+
+// A project counts as named only by its title or slug. Aliases such as "hackathon" or
+// "beach" are too generic to override the page the visitor is on.
+export function namedWork(query: string): Work | undefined {
+  const text = query.toLowerCase()
+  return portfolioWorks.find((work) => [work.title, work.slug].some((term) => mentions(text, term)))
+}
+
+// For an explicit "show me" request, an alias such as "local AI" is enough.
+function requestedWork(query: string): Work | undefined {
+  const text = query.toLowerCase()
+  return (
+    namedWork(query) ??
+    portfolioWorks.find((work) => work.aliases.some((term) => mentions(text, term)))
+  )
+}
+
+const siteMetrics = metricsFor('site')
+const clientProjects = siteMetrics.find((metric) => metric.id === 'projects')
+const learners = siteMetrics.find((metric) => metric.id === 'learners')
+const managedClients = profile.clientWork.filter((work) => work.role === 'managed')
+const teamClients = profile.clientWork.filter((work) => work.role === 'team')
+const school = profile.education[0]
+const monthYear = (value: string) =>
+  new Date(`${value}-01T12:00:00Z`).toLocaleDateString('en-CA', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+function roleDates(id: string) {
+  const role = profile.roles.find((item) => item.id === id)!
+  return role.end ? `${monthYear(role.start)} – ${monthYear(role.end)}` : monthYear(role.start)
+}
+// 'HVAC engineering and contracting firm: RFQ triage' → 'RFQ triage (HVAC engineering and contracting firm)'
+const engagement = (title: string) => {
+  const [who, what] = title.split(': ')
+  const sector = /^[A-Z][a-z]/.test(who) ? who.charAt(0).toLowerCase() + who.slice(1) : who
+  return what ? `${what} (${sector})` : title
+}
+
+// Notes about Eduard himself, built from the same profile facts as the résumé and about page.
+// `global` topics also apply on a project page ("how can I contact him?").
+const profileTopics: { pattern: RegExp; global?: boolean; note: string }[] = [
+  {
+    pattern: /\b(contact|reach|email|linkedin|get in touch|résumé|resume|cv)\b/i,
+    global: true,
+    note: `Email ${identity.email}, LinkedIn ${identity.linkedin}, GitHub ${identity.github}. The one-page résumé is on this site.`,
+  },
+  {
+    pattern:
+      /\b(hire|hiring|why (should|would)|fit|strengths?|stand out|good at|bring|qualif|candidate)\b/i,
+    global: true,
+    note: `Eduard is ${identity.title} at ${identity.company} and sits on its leadership team. He leads a team of five developers and writes code alongside them. He has worked on ${clientProjects?.value} client projects ${clientProjects?.detail}, from discovery through integration and rollout. On Keystone he ran leadership interviews with a UX researcher and audited how the old tools were used before designing the architecture. He also builds private and local AI systems such as Keeper and dgx-autonomy, and co-taught an agentic AI course at Dalhousie.`,
+  },
+  {
+    pattern:
+      /\b(forward[- ]deployed|fde|how does he work|how he works|approach|work with (people|users|teams))\b/i,
+    note: `Eduard works with the people who have the problem, checks what they say against how the work runs, then builds and verifies. On Keystone he and a UX researcher interviewed leadership, measured how the old tools were used, and agreed metric definitions before he designed the system. For clients at ${identity.company} he has built document-review agents, chat tools grounded in client content, and an assistant on a client's own GPU.`,
+  },
+  {
+    pattern: /\b(clients?|customers?|consult\w*|engagements?|organi[sz]ations)\b/i,
+    note: `At ${identity.company}, Eduard has worked on ${clientProjects?.value} client projects ${clientProjects?.detail}. He managed ${managedClients.map((work) => engagement(work.title)).join('; ')}. He worked on ${teamClients.map((work) => engagement(work.title)).join('; ')}. The curriculum reached ${learners?.value} learners with ${learners?.detail}. Client names stay private; the published case studies are at ai-first.ca/work.`,
+  },
+  {
+    pattern:
+      /\b(biggest|main|flagship|most important|proudest|best|largest|significant|major) (project|work|build|thing)/i,
+    note: `Keystone is the largest: internal operations software at ${identity.company} where staff and Claude share one registry of operations. Eduard designed the architecture after discovery interviews and leads its development. His other case studies are Keeper, a private meeting archive, and dgx-autonomy, a coding agent that runs on a DGX Spark against tests it cannot edit.`,
+  },
+  {
+    pattern:
+      /\b(agents?|agentic|what (has|did) (he|eduard) (built|build|made|make)|projects|portfolio)\b/i,
+    note: `For clients at ${identity.company}, Eduard has built document-review agents for RFQ, RFP and legal triage and chat tools grounded in client content. At AI-First he designed Keystone, where staff and Claude share one registry of operations over MCP, and Keeper, a private meeting archive that AI assistants can search over MCP. On a DGX Spark, dgx-autonomy runs a coding agent against tests it cannot edit; it built Shoreline and Camp Yahtzee. HealthByte, a two-agent simulation, took first place at the Atlantic AI Summit 2025 hackathon.`,
+  },
+  {
+    pattern: /\b(tech|stack|skills?|technolog\w*|languages?|tools|frameworks?)\b/i,
+    note: profile.skills.map((group) => `${group.label}: ${group.items.join(', ')}.`).join(' '),
+  },
+  {
+    pattern: /\b(stud(y|ied)|education|degree|school|university|graduat\w*|gpa)\b/i,
+    global: true,
+    note: `${school.degree} from ${school.school}, ${school.end.slice(0, 4)}, GPA ${school.gpa}. Awards: ${school.awards.join(', ')}.`,
+  },
+  {
+    pattern: /\b(where is he|based|located|location|relocat\w*|citizen\w*|work permit|visa)\b/i,
+    global: true,
+    note: `Eduard is based in ${identity.location}, ${identity.country}, and is a ${identity.citizenship.replace('Citizen', 'citizen')}.`,
+  },
+  {
+    pattern: /\b(experience|background|career|previous|history|what does (he|eduard) do|who is)\b/i,
+    note: `${identity.title} at ${identity.company} since ${roleDates('ai-first')}, on the leadership team: he leads five developers and writes code with them, and his client work includes document-review agents, chat tools built around client content, an assistant on a client's own GPU, and a data science and ML curriculum for a workforce program. AI Instructor at ShiftKey Labs, Dalhousie (${roleDates('teaching')}), co-teaching agentic AI to non-CS students. Co-founder of CarGrep (${roleDates('cargrep')}). ${school.degree}, ${school.school}, ${school.end.slice(0, 4)}.`,
+  },
+]
+
+// The reply for questions about Eduard rather than one project, or null.
+export function profileAnswer(query: string, { onProject = false } = {}): string | null {
+  const notes = profileTopics
+    .filter((topic) => (!onProject || topic.global) && topic.pattern.test(query))
+    .map((topic) => topic.note)
+  return notes.length ? notes.slice(0, 2).join('\n\n') : null
 }
 
 export function directGuideAction(
@@ -281,7 +390,7 @@ export function directGuideAction(
       target: 'dgx-results',
       reply: 'Here are the apps produced by the loop, with build records and live demos.',
     }
-  const work = retrieveWork(query)[0]
+  const work = requestedWork(query)
   return work
     ? { action: 'open_project', target: work.slug, reply: `Here’s ${work.title}. ${work.summary}` }
     : null

@@ -306,3 +306,49 @@ test('every project has topic notes, and questions land on the matching note', (
 function escape(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
+
+const { profileAnswer, namedWork } = fixtureModule.exports
+
+test('recruiter questions about Eduard are answered from his profile', () => {
+  const cases = [
+    ['Has he worked directly with clients?', /31 organizations/],
+    ['What is his biggest project?', /Keystone/],
+    ['Is he a forward deployed engineer?', /interview/i],
+    ['What is his tech stack?', /Python/],
+    ['Why should I hire him?', /five developers/],
+    ['How can I contact him?', /linkedin/i],
+    ['Where did he study?', /Dalhousie/],
+  ]
+  for (const [question, expected] of cases) {
+    const answer = profileAnswer(question)
+    assert.ok(answer, question)
+    assert.match(answer, expected, question)
+    assert.doesNotMatch(answer, /Sky Painters/, question)
+  }
+  assert.equal(profileAnswer('What was the outcome?', { onProject: true }), null)
+  assert.equal(profileAnswer('What is the tech stack?', { onProject: true }), null)
+  assert.match(profileAnswer('How can I contact him?', { onProject: true }), /linkedin/i)
+})
+
+test('a project counts as named only by its title, slug or alias', () => {
+  assert.equal(namedWork('Is he a forward deployed engineer?'), undefined)
+  assert.equal(namedWork('Tell me about keystone').slug, 'keystone')
+})
+
+test('outcome, usage, motivation and speed questions reach the right project notes', () => {
+  const work = (slug) => portfolioWorks.find((item) => item.slug === slug)
+  assert.equal(notesAnswer(work('volta-sep26'), 'What was the outcome?'), work('volta-sep26').casebook.status)
+  assert.match(notesAnswer(work('keeper'), 'Is anyone using it?'), /testing/)
+  assert.match(notesAnswer(work('keeper'), 'Why did he build this?'), /Fireflies/)
+  assert.match(notesAnswer(work('hugo'), 'How fast does it respond?'), /seconds/)
+  assert.match(notesAnswer(work('volta-sep26'), 'How did he validate the idea?'), /Swim Guide/)
+})
+
+test('profile questions never navigate, and generic words do not name a project', () => {
+  assert.equal(directGuideAction('Where is he based?'), null)
+  assert.equal(namedWork('What did he do after the hackathon?'), undefined)
+  assert.equal(directGuideAction('Show me Eduard’s local AI work').target, 'dgx-autonomy')
+  const agents = profileAnswer('What has he built with AI agents?')
+  assert.match(agents, /Keystone/)
+  assert.doesNotMatch(agents, /Husky/)
+})

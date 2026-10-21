@@ -9,6 +9,7 @@ import {
   portfolioContext,
   guideNotes,
   portfolioWorks,
+  profileAnswer,
   retrieveWork,
 } from '../../content/portfolio'
 import type { NarrateInput } from './input-schema'
@@ -43,7 +44,9 @@ function notesFor(input: NarrateInput): string {
   if (input.kind === 'question') for (const work of retrieveWork(input.text)) slugs.add(work.slug)
   const works = portfolioWorks.filter((work) => slugs.has(work.slug)).slice(0, 5)
   const clientWork = profile.clientWork.filter((work) => slugs.has(work.slug))
+  const about = input.kind === 'question' ? profileAnswer(input.text) : null
   return [
+    ...(about ? [`About Eduard: ${about}`] : []),
     `Chapter on screen: "${chapter.headline}" ${storyCopy(chapter.line)}`,
     `Line EK-01 already said: ${narratorLines[input.persona][input.chapter]}`,
     ...profile.roles.map(

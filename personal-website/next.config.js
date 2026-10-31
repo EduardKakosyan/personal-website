@@ -44,7 +44,9 @@ const nextConfig = {
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
-              'upgrade-insecure-requests',
+              // Production only: in dev it would break testing from a phone over
+              // the local network (http://<lan-ip>:3000), which has no https.
+              ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
             ].join('; '),
           },
           // Prevent clickjacking

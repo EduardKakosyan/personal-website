@@ -9,6 +9,8 @@ export type Vec2 = { x: number; z: number }
 
 export const MODELS = {
   set: '/models/cabin/set.glb',
+  /** The roof, south wall, string lights and door: faded or moved by the scene. */
+  cabinParts: '/models/cabin/cabin-parts.glb',
   eduard: '/models/cabin/eduard.glb',
   hiker: '/models/cabin/hiker.glb',
   rusty: '/models/cabin/rusty.glb',
@@ -45,9 +47,55 @@ export const GUEST_START: Vec2 = { x: 0.7, z: 23 }
 export const GUEST_SKIP: Vec2 = { x: 0.2, z: 9.4 }
 export const GUEST_AUTO_TARGET: Vec2 = { x: 0.3, z: 9 }
 export const RUSTY_START: Vec2 = { x: 2.6, z: 2.9 }
-// The deck is on the cabin's east side (Eduard's second sketch). Eduard kneels on
-// the finished north half, facing the open south end (and the arriving guest).
-export const EDUARD_SPOT = { x: 2.7, y: 0.17, z: 0.55, facing: 0 }
+// The deck is on the cabin's east side (Eduard's second sketch). Eduard kneels at
+// the edge of the finished boards, facing the open south end (and the arriving
+// guest), clear of the path from the deck to the door.
+export const EDUARD_SPOT = { x: 3.15, y: 0.17, z: 1.3, facing: 0 }
+
+// ------------------------------------------------------------------ the cabin
+/** Inside the cabin walls (the floor the guest can walk on). */
+const CABIN_INSIDE = { x0: -1.7, x1: 1.7, z0: -2.35, z1: 2.35 }
+export const CABIN_FLOOR_Y = 0.25
+const DECK = { x0: 1.8, x1: 3.65, z0: -0.45, z1: 2.35, y: 0.3 }
+/** The east door: where to stand outside, in the doorway, and just inside. */
+export const DOOR = {
+  outside: { x: 2.45, z: 1.02 } as Vec2,
+  inside: { x: 1.05, z: 1.02 } as Vec2,
+  /** Hinge side of the door, for the prompt. */
+  prompt: { x: 1.85, y: 1.3, z: 1.02 },
+}
+/** Things to read inside (the prompt sits over them). */
+export const READABLES = {
+  resume: { x: -0.18, y: 1.05, z: -1.68, label: 'Read' },
+  todo: { x: 0.85, y: 1.95, z: -2.3, label: 'Read' },
+} as const
+export type ReadableId = keyof typeof READABLES
+
+export function insideCabin(p: Vec2) {
+  return (
+    p.x > CABIN_INSIDE.x0 && p.x < CABIN_INSIDE.x1 && p.z > CABIN_INSIDE.z0 && p.z < CABIN_INSIDE.z1
+  )
+}
+
+/**
+ * The nearest spot inside the cabin, a step in from the walls. Taps while
+ * inside stay inside (clicking a wall shouldn't walk the guest out); leaving
+ * is through "Go out".
+ */
+export function clampInsideCabin(p: Vec2): Vec2 {
+  const m = 0.3
+  return {
+    x: Math.min(CABIN_INSIDE.x1 - m, Math.max(CABIN_INSIDE.x0 + m, p.x)),
+    z: Math.min(CABIN_INSIDE.z1 - m, Math.max(CABIN_INSIDE.z0 + m, p.z)),
+  }
+}
+
+/** How high the ground is: the cabin floor and the deck sit above the yard. */
+export function groundHeight(p: Vec2) {
+  if (insideCabin(p)) return CABIN_FLOOR_Y
+  if (p.x > DECK.x0 && p.x < DECK.x1 && p.z > DECK.z0 && p.z < DECK.z1) return DECK.y
+  return 0
+}
 
 /** The guest triggers the welcome when they get this close to the deck. */
 export const WELCOME_DISTANCE = 7.5
@@ -61,14 +109,26 @@ type Circle = { x: number; z: number; r: number }
 
 /** Things the guest walks around (padded at runtime). */
 const BOXES: Box[] = [
-  { x0: -1.95, x1: 1.95, z0: -2.6, z1: 2.6 }, // cabin (long side faces east)
-  { x0: 1.8, x1: 3.65, z0: -0.45, z1: 2.35 }, // deck (Eduard is working on it)
+  // cabin walls (the long side faces east; the door is a gap in the east wall)
+  { x0: -1.85, x1: -1.7, z0: -2.5, z1: 2.5 }, // west
+  { x0: -1.85, x1: 1.85, z0: -2.5, z1: -2.35 }, // north
+  { x0: -1.85, x1: 1.85, z0: 2.35, z1: 2.5 }, // south (barn doors)
+  { x0: 1.7, x1: 1.85, z0: -2.5, z1: 0.6 }, // east, north of the door
+  { x0: 1.7, x1: 1.85, z0: 1.45, z1: 2.5 }, // east, south of the door
+  // inside
+  { x0: -0.95, x1: 0.55, z0: -2.1, z1: -1.4 }, // bistro table and chairs
+  { x0: -1.7, x1: -1.2, z0: -2.1, z1: -1.4 }, // folding table
+  { x0: -1.7, x1: -1.25, z0: -0.05, z1: 0.6 }, // tote
+  { x0: -1.7, x1: -1.25, z0: 1.3, z1: 2.3 }, // chainsaw
+  { x0: 1.2, x1: 1.7, z0: -1.75, z1: -0.35 }, // counter under the window
   { x0: 4.2, x1: 4.85, z0: -2.9, z1: -0.9 }, // lumber pile
   { x0: 1.95, x1: 2.55, z0: -1.5, z1: -0.8 }, // sink
   { x0: 3.0, x1: 4.6, z0: 3.9, z1: 5.7 }, // picnic table
   { x0: 2.1, x1: 3.7, z0: -4.8, z1: -3.2 }, // outdoor shower
 ]
 const CIRCLES: Circle[] = [
+  { x: 3.15, z: 1.3, r: 0.4 }, // Eduard, kneeling on the deck
+  { x: -1.5, z: 0.85, r: 0.18 }, // propane tank
   { x: 4.15, z: -3.27, r: 0.5 }, // shower door
   { x: 2.45, z: -2.05, r: 0.35 }, // grill
   { x: 4.4, z: -3.5, r: 0.6 }, // sawhorse

@@ -25,6 +25,7 @@ bash art/cabin/scripts/optimize_models.sh
 Or inside a running Blender (this is how the MCP runs it; it clears the scene without resetting Blender, so the MCP add-on stays on):
 
 ```python
+import sys; sys.modules.pop("lib", None)  # pick up changes to lib.py (Blender keeps the old one loaded)
 p = "/full/path/to/art/cabin/scripts/build_arrival.py"
 exec(compile(open(p).read(), p, "exec"), {"__file__": p, "__name__": "__main__"})
 ```
@@ -44,5 +45,6 @@ Blender's viewport shows the models with smooth shading on round shapes (`SMOOTH
 - `Eduard_Beard` and `Eduard_Mustache` are the two face options. Both are exported; the website shows the beard unless the URL has `?face=mustache`.
 - `Rusty_Mouth` is an empty that marks where the plush cow sits.
 - Object names `Ground`, `Brook` and `StringLights` are special on the website (painted ground, no shadows).
+- The cabin is in parts so the guest can go inside. `Cabin` (floor and the walls that stay) and `Cabin_Interior` go in `set.glb`. The parts the website moves or fades are in the `CabinParts` collection and exported to `cabin-parts.glb` without merging: `Cabin_Roof`, `Cabin_SouthWall` and `StringLights` dissolve when the guest is inside, and `Cabin_Door` swings open on its hinge. The walls, floor heights, door route and where the résumé and to-do list are live in `src/components/features/cabin/world.ts`.
 - Colours come from the palette in `scripts/lib.py`: the "bit brighter" row sampled from Eduard's photos, plus a few neutrals.
 - Obstacles and spots on the website (`src/components/features/cabin/world.ts`) are copied from the script by hand. If you move something in the script, move it there too.

@@ -21,6 +21,17 @@ PALETTE = {
     "spruce_light": "#4c8a50",
     "spruce_sun": "#638563",
     "blue_spruce": "#4f7f8a",
+    # inside the cabin (photo 08, finished as A19 asks)
+    "pine": "#e3c08d",
+    "pine_dark": "#b98d5c",
+    "floor_red": "#8e4a36",
+    "floor_dark": "#6e3626",
+    "rug_cream": "#efe2c4",
+    "rug_red": "#cf8a78",
+    "rug_green": "#a3b483",
+    "bistro_red": "#b8352f",
+    "paper": "#fbf6ea",
+    "ink": "#3b2a1e",
     "blue_spruce_light": "#7aa3aa",
     "moss": "#a9a933",
     "lupine": "#6b46a8",
@@ -93,6 +104,13 @@ PALETTE = {
     "white_sink": "#ecebe6",
     "tote_green": "#3f6b4a",
     "kettle": "#1f2124",
+    # the mushroom basket in the cabin (A70)
+    "wicker": "#c4975a",
+    "wicker_dark": "#8f6537",
+    "chanterelle": "#f0a530",
+    "chanterelle_light": "#f7c24e",
+    "bolete_cap": "#8a5530",
+    "bolete_stem": "#eadfc4",
 }
 
 # Faces meeting at less than this angle are shaded smoothly (spheres, 7-sided cones).
@@ -199,8 +217,8 @@ def box(mat_name, size, center=(0, 0, 0), rot=(0, 0, 0)):
     return Part("box", mat_name, center, rot, size=size)
 
 
-def cyl(mat_name, r, depth, center=(0, 0, 0), rot=(0, 0, 0), r2=None, seg=8, caps=None):
-    return Part("cyl", mat_name, center, rot, r=r, r2=r if r2 is None else r2, depth=depth, seg=seg, caps=caps)
+def cyl(mat_name, r, depth, center=(0, 0, 0), rot=(0, 0, 0), r2=None, seg=8, caps=None, scale=(1, 1, 1)):
+    return Part("cyl", mat_name, center, rot, r=r, r2=r if r2 is None else r2, depth=depth, seg=seg, caps=caps, scale=scale)
 
 
 def sphere(mat_name, r, center=(0, 0, 0), rot=(0, 0, 0), scale=(1, 1, 1), seg=8, rings=6):
@@ -233,7 +251,7 @@ def compound(name, parts, location=(0, 0, 0), parent=None, rot=(0, 0, 0), bevel=
             m = _matrix(p.center, p.rot, p.kw["size"])
             bmesh.ops.create_cube(bm, size=1.0, matrix=m)
         elif p.kind == "cyl":
-            m = _matrix(p.center, p.rot, (1, 1, 1))
+            m = _matrix(p.center, p.rot, p.kw.get("scale", (1, 1, 1)))
             bmesh.ops.create_cone(
                 bm,
                 cap_ends=True,

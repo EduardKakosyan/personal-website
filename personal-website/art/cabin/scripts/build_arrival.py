@@ -311,72 +311,127 @@ def gravel_stones():
 
 # ---------------------------------------------------------------- cabin and deck
 def cabin():
-    p = []
+    """The cabin in parts, so the website can cut it away when the guest steps
+    inside (roof, ceiling and the south wall fade; the other walls stay).
+    Modelled in local coordinates with the front (door + window) facing -Y,
+    then turned by CABIN_ROT so the front faces east. Local -X becomes the
+    south end (barn doors), +X the north end.
+    """
     hw, hd = CABIN_W / 2, CABIN_D / 2
-    p.append(box("stone", (CABIN_W + 0.1, CABIN_D + 0.1, WALL_BASE), (0, 0, WALL_BASE / 2)))
-    p.append(box("cabin", (CABIN_W, CABIN_D, WALL_H), (0, 0, WALL_BASE + WALL_H / 2)))
-    # gable ends face east and west; the ridge runs along the long wall
-    for sx in (-1, 1):
-        p.append(wedge("cabin", CABIN_D, 0.02, RIDGE, (sx * (hw - 0.01), 0, WALL_TOP), deg(0, 0, 90)))
-    p.append(wedge("cabin", CABIN_D, CABIN_W - 0.04, RIDGE, (0, 0, WALL_TOP), deg(0, 0, 90)))
+    T = 0.1  # wall thickness
+    rot = deg(0, 0, CABIN_ROT)
+    dh = 1.72  # door height
+    wcx, ww, wz, wh = (WINDOW_X[0] + WINDOW_X[1]) / 2, WINDOW_X[1] - WINDOW_X[0], WALL_BASE + 1.3, 0.72
 
-    # board-and-batten: dark battens every 0.32 m, broken by the door and window
+    def wall_x(p, x0, x1, z0, z1, y_out, inward):
+        """A front/back wall piece along X: outer boards and the pine lining inside."""
+        cx, w, h = (x0 + x1) / 2, x1 - x0, z1 - z0
+        p.append(box("cabin", (w, T - 0.02, h), (cx, y_out + inward * (T - 0.02) / 2, z0 + h / 2)))
+        p.append(box("pine", (w, 0.02, h), (cx, y_out + inward * (T - 0.01), z0 + h / 2)))
+
+    def wall_y(p, x_out, inward):
+        """An end wall along Y (full width), with its gable triangle."""
+        p.append(box("cabin", (T - 0.02, CABIN_D, WALL_H), (x_out + inward * (T - 0.02) / 2, 0, WALL_BASE + WALL_H / 2)))
+        p.append(box("pine", (0.02, CABIN_D - 2 * T, WALL_H), (x_out + inward * (T - 0.01), 0, WALL_BASE + WALL_H / 2)))
+        p.append(wedge("cabin", CABIN_D, T, RIDGE, (x_out + inward * T / 2, 0, WALL_TOP), deg(0, 0, 90)))
+
+    def battens_y(p, x_face):
+        y = -hd + 0.16
+        while y < hd - 0.1:
+            g = RIDGE * (1 - abs(y) / hd)
+            p.append(box("cabin_dark", (0.04, 0.05, WALL_H + g * 0.9), (x_face, y, WALL_BASE + (WALL_H + g * 0.9) / 2)))
+            y += 0.32
+
+    # ---- the shell that stays: floor, front (east), back (west) and north walls
+    p = [box("stone", (CABIN_W + 0.1, CABIN_D + 0.1, WALL_BASE), (0, 0, WALL_BASE / 2))]
+    p.append(box("floor_red", (CABIN_W - 2 * T, CABIN_D - 2 * T, 0.05), (0, 0, WALL_BASE + 0.025)))
+    yy = -hd + T + 0.17
+    while yy < hd - T:
+        p.append(box("floor_dark", (CABIN_W - 2 * T, 0.015, 0.004), (0, yy, WALL_BASE + 0.051)))
+        yy += 0.17
+    d0, d1 = DOOR_X
+    for x0, x1, z0, z1 in (
+        (-hw, d0, WALL_BASE, WALL_TOP),
+        (d0, d1, WALL_BASE + dh, WALL_TOP),
+        (d1, WINDOW_X[0], WALL_BASE, WALL_TOP),
+        (WINDOW_X[0], WINDOW_X[1], WALL_BASE, wz - wh / 2),
+        (WINDOW_X[0], WINDOW_X[1], wz + wh / 2, WALL_TOP),
+        (WINDOW_X[1], hw, WALL_BASE, WALL_TOP),
+    ):
+        wall_x(p, x0, x1, z0, z1, FRONT_Y, 1)
+    wall_x(p, -hw, hw, WALL_BASE, WALL_TOP, hd, -1)
+    wall_y(p, hw, -1)
+    # board-and-batten outside: front (around the door and window), back and north end
     x = -hw + 0.16
     while x < hw - 0.1:
         for face_y, front in ((FRONT_Y - 0.02, True), (hd + 0.02, False)):
-            if front and DOOR_X[0] - 0.06 < x < DOOR_X[1] + 0.06:
-                p.append(box("cabin_dark", (0.05, 0.04, WALL_TOP - (WALL_BASE + 1.72)), (x, face_y, (WALL_TOP + WALL_BASE + 1.72) / 2)))
+            if front and d0 - 0.06 < x < d1 + 0.06:
+                p.append(box("cabin_dark", (0.05, 0.04, WALL_TOP - (WALL_BASE + dh)), (x, face_y, (WALL_TOP + WALL_BASE + dh) / 2)))
             elif front and WINDOW_X[0] - 0.06 < x < WINDOW_X[1] + 0.06:
                 p.append(box("cabin_dark", (0.05, 0.04, 0.9), (x, face_y, WALL_BASE + 0.45)))
             else:
                 p.append(box("cabin_dark", (0.05, 0.04, WALL_H), (x, face_y, WALL_BASE + WALL_H / 2)))
         x += 0.32
-    y = -hd + 0.16
-    while y < hd - 0.1:
-        g = RIDGE * (1 - abs(y) / hd)
-        for sx in (-1, 1):
-            p.append(box("cabin_dark", (0.04, 0.05, WALL_H + g * 0.9), (sx * (hw + 0.02), y, WALL_BASE + (WALL_H + g * 0.9) / 2)))
-        y += 0.32
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            p.append(box("trim", (0.12, 0.12, WALL_H + 0.02), (sx * (hw + 0.01), sy * (hd + 0.01), WALL_BASE + WALL_H / 2)))
-
-    # front door: dark, with a glass panel and white trim (photos 02 and 05)
-    dcx, dw, dh = (DOOR_X[0] + DOOR_X[1]) / 2, DOOR_X[1] - DOOR_X[0], 1.72
-    p.append(box("door", (dw, 0.06, dh), (dcx, FRONT_Y - 0.03, WALL_BASE + dh / 2)))
-    p.append(box("glass", (dw - 0.3, 0.07, 0.75), (dcx, FRONT_Y - 0.035, WALL_BASE + 1.15)))
-    for xx in DOOR_X:
-        p.append(box("trim", (0.09, 0.08, dh + 0.06), (xx, FRONT_Y - 0.045, WALL_BASE + dh / 2)))
-    p.append(box("trim", (dw + 0.18, 0.08, 0.1), (dcx, FRONT_Y - 0.045, WALL_BASE + dh + 0.05)))
-    # front window
-    wcx, ww, wz, wh = (WINDOW_X[0] + WINDOW_X[1]) / 2, WINDOW_X[1] - WINDOW_X[0], WALL_BASE + 1.3, 0.72
-    p.append(box("glass", (ww, 0.05, wh), (wcx, FRONT_Y - 0.02, wz)))
-    for dz in (-wh / 2, wh / 2):
-        p.append(box("trim", (ww + 0.14, 0.08, 0.09), (wcx, FRONT_Y - 0.045, wz + dz)))
-    for dx in (-ww / 2, 0, ww / 2):
-        p.append(box("trim", (0.08 if dx else 0.05, 0.08, wh), (wcx + dx, FRONT_Y - 0.045, wz)))
-    # barn doors on the west gable end (photo 02)
+    battens_y(p, hw + 0.02)
     for sy in (-1, 1):
+        p.append(box("trim", (0.12, 0.12, WALL_H + 0.02), (hw + 0.01, sy * (hd + 0.01), WALL_BASE + WALL_H / 2)))
+    # door frame and window (photos 02 and 05)
+    dcx, dw = (d0 + d1) / 2, d1 - d0
+    for xx in DOOR_X:
+        p.append(box("trim", (0.09, T + 0.06, dh + 0.06), (xx, FRONT_Y + T / 2 - 0.03, WALL_BASE + dh / 2)))
+    p.append(box("trim", (dw + 0.18, T + 0.06, 0.1), (dcx, FRONT_Y + T / 2 - 0.03, WALL_BASE + dh + 0.05)))
+    p.append(box("glass", (ww, 0.03, wh), (wcx, FRONT_Y + T / 2, wz)))
+    for dz in (-wh / 2, wh / 2):
+        p.append(box("trim", (ww + 0.14, T + 0.06, 0.09), (wcx, FRONT_Y + T / 2 - 0.03, wz + dz)))
+    for dx in (-ww / 2, 0, ww / 2):
+        p.append(box("trim", (0.08 if dx else 0.05, T + 0.06, wh), (wcx + dx, FRONT_Y + T / 2 - 0.03, wz)))
+    compound("Cabin", p, rot=rot)
+
+    # The parts the website moves or fades go in their own collection and file
+    # (cabin-parts.glb), so the optimizer doesn't merge them into the set.
+    collection("CabinParts")
+
+    # ---- the south end (barn doors): fades away when the guest is inside
+    p = []
+    wall_y(p, -hw, 1)
+    battens_y(p, -hw - 0.02)
+    for sy in (-1, 1):
+        p.append(box("trim", (0.12, 0.12, WALL_H + 0.02), (-hw - 0.01, sy * (hd + 0.01), WALL_BASE + WALL_H / 2)))
         p.append(box("cabin_dark", (0.05, 0.85, 1.75), (-hw - 0.04, sy * 0.44, WALL_BASE + 0.9)))
         p.append(box("cabin", (0.06, 0.08, 1.9), (-hw - 0.06, sy * 0.44, WALL_BASE + 0.9), deg(sy * 26, 0, 0)))
-    # shallow metal roof: two slabs meeting at a ridge that runs east-west
+    compound("Cabin_SouthWall", p, rot=rot)
+
+    # ---- roof and ceiling: fade away too
+    p = []
     run = math.hypot(hd, RIDGE)
     ang = math.atan2(RIDGE, hd)
     length = run + 0.3
     for sy in (-1, 1):
         cy = sy * math.cos(ang) * length / 2
         cz = WALL_TOP + RIDGE - math.sin(ang) * length / 2 + 0.05
-        rot = (-sy * ang, 0, 0)
-        p.append(box("roof", (CABIN_W + 0.5, length, 0.06), (0, cy, cz), rot))
+        r = (-sy * ang, 0, 0)
+        p.append(box("roof", (CABIN_W + 0.5, length, 0.06), (0, cy, cz), r))
         xx = -CABIN_W / 2 - 0.15
         while xx < CABIN_W / 2 + 0.25:
-            p.append(box("roof_dark", (0.03, length, 0.03), (xx, cy, cz + 0.04), rot))
+            p.append(box("roof_dark", (0.03, length, 0.03), (xx, cy, cz + 0.04), r))
             xx += 0.4
-        p.append(box("trim", (CABIN_W + 0.52, 0.07, 0.12), (0, sy * (hd + 0.3), WALL_TOP - 0.0)))
+        p.append(box("trim", (CABIN_W + 0.52, 0.07, 0.12), (0, sy * (hd + 0.3), WALL_TOP)))
+        # pine ceiling under each slope
+        clen = run - 0.05
+        p.append(box("pine", (CABIN_W - 2 * T, clen, 0.03), (0, sy * math.cos(ang) * clen / 2, WALL_TOP + RIDGE - math.sin(ang) * clen / 2 - 0.04), r))
     p.append(box("roof_dark", (CABIN_W + 0.52, 0.2, 0.07), (0, 0, WALL_TOP + RIDGE + 0.09)))
-    compound("Cabin", p, rot=deg(0, 0, CABIN_ROT))
+    compound("Cabin_Roof", p, rot=rot)
 
-    # string lights along the front eave (glowing softly in the afternoon)
+    # ---- the front door, hinged at its south edge so the website can swing it open
+    hinge = (-FRONT_Y, d0)  # local (d0, FRONT_Y) turned to face east
+    door = [
+        box("door", (dw - 0.04, 0.06, dh - 0.02), (dw / 2, -0.03, WALL_BASE + dh / 2)),
+        box("glass", (dw - 0.3, 0.07, 0.75), (dw / 2, -0.035, WALL_BASE + 1.15)),
+        box("steel", (0.04, 0.12, 0.1), (dw - 0.14, -0.03, WALL_BASE + 1.0)),
+    ]
+    compound("Cabin_Door", door, location=(hinge[0], hinge[1], 0.0), rot=rot)
+
+    # string lights along the front eave; they go with the roof when it fades
     lights = [box("wire", (CABIN_W + 0.3, 0.015, 0.015), (0, FRONT_Y - 0.28, WALL_TOP - 0.1))]
     n = 17
     for i in range(n):
@@ -384,7 +439,169 @@ def cabin():
         x = -hw - 0.1 + t * (CABIN_W + 0.2)
         sag = 0.07 * math.sin(math.pi * ((t * 4) % 1))
         lights.append(ico("string_light@1.4", 0.05, (x, FRONT_Y - 0.28, WALL_TOP - 0.16 - sag)))
-    compound("StringLights", lights, rot=deg(0, 0, CABIN_ROT))
+    compound("StringLights", lights, rot=rot)
+
+    collection("Set")
+    cabin_interior()
+
+
+FLOOR_Z = WALL_BASE + 0.05  # top of the cabin floor
+
+
+def braided_rug(center, rx, ry):
+    """An oval braided rug (photo 08): flat rings side by side in one mesh, so
+    nothing overlaps or flickers."""
+    import bmesh
+
+    bands = [
+        ("rug_cream", 0.0, 0.3), ("rug_red", 0.3, 0.34), ("rug_cream", 0.34, 0.48), ("rug_green", 0.48, 0.52),
+        ("rug_cream", 0.52, 0.64), ("rug_red", 0.64, 0.68), ("rug_cream", 0.68, 0.79), ("rug_green", 0.79, 0.83),
+        ("rug_cream", 0.83, 0.91), ("rug_red", 0.91, 0.95), ("rug_cream", 0.95, 1.0),
+    ]
+    names = []
+    me = bpy.data.meshes.new("Rug")
+    bm = bmesh.new()
+    seg = 40
+    cx, cy, cz = center
+
+    # a very slight dome: a perfectly flat mesh has zero height, which the
+    # model compressor can't scale (the rug vanished on the website)
+    def ring(t):
+        z = cz + 0.004 * (1 - t)
+        return [bm.verts.new((cx + math.cos(a) * rx * t, cy + math.sin(a) * ry * t, z)) for a in (i / seg * math.tau for i in range(seg))]
+
+    for tone, t0, t1 in bands:
+        if tone not in names:
+            names.append(tone)
+        mi = names.index(tone)
+        outer = ring(t1)
+        if t0 == 0:
+            mid = bm.verts.new((cx, cy, cz + 0.004))
+            faces = [bm.faces.new((mid, outer[i], outer[(i + 1) % seg])) for i in range(seg)]
+        else:
+            inner = ring(t0)
+            faces = [bm.faces.new((inner[i], outer[i], outer[(i + 1) % seg], inner[(i + 1) % seg])) for i in range(seg)]
+        for fc in faces:
+            fc.material_index = mi
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    for fc in bm.faces:
+        if fc.normal.z < 0:
+            fc.normal_flip()
+    bm.to_mesh(me)
+    bm.free()
+    for n in names:
+        me.materials.append(lib.mat(n))
+    ob = bpy.data.objects.new("Rug", me)
+    bpy.data.collections["Set"].objects.link(ob)
+
+
+def cabin_interior():
+    """Inside, finished (A19), laid out like photo 08: rug in the middle, the red
+    bistro table on the north wall, shelves and the folding table on the west
+    wall, the counter under the east window. Plus the axe and chainsaw (A50),
+    the to-do list on the wall and the résumé on the table (A47, A50)."""
+    f = FLOOR_Z
+    p = []
+    braided_rug((-0.1, 0.0, f + 0.006), 0.62, 1.1)
+    # red bistro table and two folding chairs (north wall)
+    tx, ty = -0.2, 1.72
+    p.append(cyl("bistro_red", 0.34, 0.03, (tx, ty, f + 0.72), seg=16))
+    for a in (45, -45):
+        p.append(box("bistro_red", (0.03, 0.03, 0.8), (tx, ty, f + 0.36), deg(a * 0.4, 0, a)))
+    p.append(box("bistro_red", (0.5, 0.03, 0.03), (tx, ty, f + 0.25)))
+    for sx in (-1, 1):
+        cx = tx + sx * 0.55
+        p.append(box("bistro_red", (0.34, 0.34, 0.03), (cx, ty, f + 0.45)))
+        p.append(box("bistro_red", (0.03, 0.34, 0.42), (cx + sx * 0.17, ty, f + 0.66)))
+        for lx in (-1, 1):
+            for ly in (-1, 1):
+                p.append(box("bistro_red", (0.025, 0.025, 0.45), (cx + lx * 0.14, ty + ly * 0.14, f + 0.22)))
+    # a small landscape painting above the table
+    p.append(box("weathered", (0.52, 0.03, 0.38), (tx, CABIN_W / 2 - 0.13, 1.75)))
+    p.append(box("sky", (0.44, 0.035, 0.16), (tx, CABIN_W / 2 - 0.135, 1.81)))
+    p.append(box("grass_light", (0.44, 0.035, 0.14), (tx, CABIN_W / 2 - 0.135, 1.66)))
+    # west wall: two open shelves with jars and mugs, the folding table, a tote, propane
+    wx = -CABIN_D / 2 + 0.1
+    for z in (f + 1.0, f + 1.38):
+        p.append(box("pine_dark", (0.26, 1.1, 0.03), (wx + 0.13, 0.75, z)))
+        for k in range(6):
+            tone = ("lupine_pink", "water_jug", "yolk", "trim", "collar", "grass_light")[(k + int(z * 10)) % 6]
+            p.append(cyl(tone, 0.04 + 0.01 * (k % 2), 0.1 + 0.03 * (k % 3), (wx + 0.13, 0.3 + k * 0.17, z + 0.07), seg=8))
+    p.append(box("door", (0.5, 0.7, 0.03), (wx + 0.3, 1.75, f + 0.7)))
+    for lx in (-1, 1):
+        for ly in (-1, 1):
+            p.append(box("metal_dark", (0.025, 0.025, 0.7), (wx + 0.3 + lx * 0.2, 1.75 + ly * 0.3, f + 0.35)))
+    p.append(box("steel", (0.36, 0.42, 0.14), (wx + 0.3, 1.75, f + 0.79)))
+    p.append(box("char", (0.42, 0.6, 0.3), (wx + 0.25, -0.3, f + 0.15)))
+    p.append(box("yolk", (0.44, 0.62, 0.06), (wx + 0.25, -0.3, f + 0.32)))
+    p.append(cyl("white_sink", 0.15, 0.45, (wx + 0.2, -0.85, f + 0.225), seg=10))
+    # the chainsaw on the floor, by the west wall
+    p.append(box("collar", (0.22, 0.38, 0.22), (wx + 0.3, -1.55, f + 0.11)))
+    p.append(box("steel", (0.04, 0.55, 0.08), (wx + 0.3, -1.98, f + 0.08)))
+    p.append(box("char", (0.06, 0.1, 0.12), (wx + 0.3, -1.4, f + 0.28)))
+    # east wall: the counter under the window, with a kettle and a lantern
+    ex = CABIN_D / 2 - 0.1
+    p.append(box("pine_dark", (0.48, 1.4, 0.04), (ex - 0.24, 1.05, f + 0.9)))
+    for ly in (-1, 1):
+        p.append(box("pine_dark", (0.42, 0.04, 0.88), (ex - 0.24, 1.05 + ly * 0.66, f + 0.44)))
+    p.append(sphere("kettle", 0.1, (ex - 0.25, 0.7, f + 1.0), scale=(1, 1, 0.9), seg=10, rings=6))
+    p.append(box("metal_dark", (0.12, 0.12, 0.2), (ex - 0.22, 1.35, f + 1.02)))
+    p.append(box("string_light@1.2", (0.08, 0.08, 0.1), (ex - 0.22, 1.35, f + 1.03)))
+    # the axe, leaning by the door
+    p.append(box("weathered", (0.04, 0.04, 0.8), (ex - 0.12, -1.8, f + 0.4), deg(12, 0, 0)))
+    p.append(box("hammer_head", (0.05, 0.2, 0.1), (ex - 0.12, -1.72, f + 0.78), deg(12, 0, 0)))
+    compound("Cabin_Interior", p)
+    mushroom_basket((ex - 0.25, 1.03, f + 0.92))
+
+    # the résumé on the bistro table, and the to-do list pinned to the north wall
+    compound(
+        "Resume",
+        [
+            box("paper", (0.24, 0.32, 0.01), (0.0, 0.0, 0.0), deg(0, 0, 14)),
+            box("paper", (0.24, 0.32, 0.01), (0.03, -0.02, 0.011), deg(0, 0, 4)),
+            box("ink", (0.14, 0.02, 0.002), (0.02, 0.09, 0.017), deg(0, 0, 4)),
+            box("ink", (0.18, 0.012, 0.002), (0.03, 0.03, 0.017), deg(0, 0, 4)),
+            box("ink", (0.18, 0.012, 0.002), (0.03, -0.01, 0.017), deg(0, 0, 4)),
+            box("ink", (0.18, 0.012, 0.002), (0.035, -0.05, 0.017), deg(0, 0, 4)),
+        ],
+        location=(tx + 0.02, ty - 0.04, f + 0.74),
+    )
+    todo = [box("paper", (0.34, 0.015, 0.46), (0, 0, 0))]
+    for k in range(7):
+        todo.append(box("ink", (0.2 if k % 3 else 0.25, 0.004, 0.015), (0.02, -0.01, 0.17 - k * 0.055)))
+        todo.append(box("ink", (0.03, 0.004, 0.03), (-0.13, -0.01, 0.17 - k * 0.055)))
+    todo.append(sphere("collar", 0.02, (0, -0.015, 0.21), seg=6, rings=4))
+    compound("TodoList", todo, location=(0.85, CABIN_W / 2 - 0.12, 1.5))
+
+
+def mushroom_basket(at):
+    """A basket of mushrooms on the counter: Eduard forages for them (A70, A71)."""
+    x, y, z = at
+    p = [
+        # the basket, a little wider at the top, with darker woven bands and rim
+        cyl("wicker", 0.1, 0.13, (0, 0, 0.065), r2=0.135, seg=14),
+        cyl("wicker_dark", 0.112, 0.018, (0, 0, 0.045), r2=0.118, seg=14),
+        cyl("wicker_dark", 0.124, 0.018, (0, 0, 0.09), r2=0.13, seg=14),
+        cyl("wicker_dark", 0.142, 0.022, (0, 0, 0.132), seg=14),
+    ]
+    # the handle, an arch over the top along the counter
+    for k in range(9):
+        a = math.pi * k / 8
+        p.append(box("wicker_dark", (0.022, 0.045, 0.022), (0, -0.13 * math.cos(a), 0.135 + 0.15 * math.sin(a)), (-(a - math.pi / 2), 0, 0)))
+    # mushrooms heaped in it: Eduard's go-tos, golden chanterelles (funnel caps on
+    # short stems) and king boletes (brown domed caps on thick pale stems)
+    for k, (mx, my, tilt) in enumerate(((-0.06, 0.06, -20), (0.0, -0.09, 24), (0.08, -0.01, -14), (-0.08, -0.02, 18))):
+        tone = "chanterelle_light" if k % 2 else "chanterelle"
+        rot = (math.radians(tilt), math.radians(tilt * 0.6), 0)
+        h = 0.02 * (k % 2)
+        p.append(cyl(tone, 0.014, 0.06, (mx, my, 0.17 + h), rot, r2=0.04, seg=8))
+        p.append(sphere(tone, 0.045, (mx, my, 0.205 + h), rot, scale=(1, 1, 0.45), seg=10, rings=4))
+    for mx, my, tilt, h in ((0.03, 0.05, 10, 0.03), (-0.02, -0.02, -12, 0.0)):
+        rot = (math.radians(tilt), math.radians(-tilt * 0.5), 0)
+        p.append(sphere("bolete_stem", 0.034, (mx, my, 0.17 + h), rot, scale=(0.8, 0.8, 1.25), seg=8, rings=5))
+        p.append(sphere("bolete_cap", 0.056, (mx, my, 0.22 + h), rot, scale=(1, 1, 0.62), seg=12, rings=6))
+    compound("MushroomBasket", p, location=(x, y, z))
 
 
 def deck():
@@ -966,7 +1183,9 @@ def rusty():
             sphere("rusty_dark", 0.1, (0.155, -0.02, 0.05), scale=(0.35, 0.75, 1.15), rot=deg(0, -12, 0), seg=8, rings=6),
             sphere("rusty_dark", 0.1, (-0.155, -0.02, 0.05), scale=(0.35, 0.75, 1.15), rot=deg(0, 12, 0), seg=8, rings=6),
             cyl("collar", 0.135, 0.06, (0, 0.06, -0.08), rot=deg(-25, 0, 0), seg=12),
-            sphere("steel", 0.03, (0, -0.06, -0.15), seg=6, rings=4),
+            # his tags (photo 05): the round silver one and a red bone with his name (A68)
+            sphere("steel", 0.026, (-0.028, -0.06, -0.15), seg=6, rings=4),
+            sphere("tee_red", 0.03, (0.03, -0.075, -0.155), scale=(1.5, 0.45, 0.85), seg=8, rings=4),
         ],
         location=(0, -0.36, 0.58),
         parent=root,
@@ -1053,7 +1272,7 @@ def hugo():
 
 # ---------------------------------------------------------------- preview rig (not exported)
 # Eduard kneels on the finished north half of the deck, facing the open south end.
-EDUARD_SPOT = ((2.7, -0.55, DECK_TOP - 0.13), (0, 0, 0))
+EDUARD_SPOT = ((3.15, -1.3, DECK_TOP - 0.13), (0, 0, 0))
 SPOTS = {
     "Eduard": EDUARD_SPOT,
     "Hiker": ((0.4, -10.0, 0.0), (0, 0, math.pi)),
@@ -1129,8 +1348,8 @@ def main():
         root.rotation_euler = rot
     preview_rig()
     os.makedirs(MODEL_DIR, exist_ok=True)
-    for name in ("Set", "Eduard", "Hiker", "Rusty", "Cow", "Hugo"):
-        export(name, f"{name.lower()}.glb")
+    for name in ("Set", "CabinParts", "Eduard", "Hiker", "Rusty", "Cow", "Hugo"):
+        export(name, "cabin-parts.glb" if name == "CabinParts" else f"{name.lower()}.glb")
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
     print("BUILD_OK", BLEND_PATH)
 

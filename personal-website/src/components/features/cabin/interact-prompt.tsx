@@ -7,8 +7,8 @@ export type PromptInput = 'right-click' | 'tap'
 
 /**
  * A small prompt over something you can interact with ("show interactions",
- * Eduard). On a computer it shows which mouse button to use; on a touch screen
- * it is itself the button.
+ * Eduard). On a computer it shows which mouse button to use (right-click), and
+ * can be clicked as well; on a touch screen it is a button to tap.
  */
 export function InteractPrompt({
   label,
@@ -33,11 +33,26 @@ export function InteractPrompt({
       </button>
     )
   }
+  // On a computer it shows the mouse hint, and clicking it works too.
   return (
-    <div className={`${styles.prompt} ${styles.pixel}`} aria-label={`Right-click to ${label}`}>
+    <button
+      type="button"
+      className={`${styles.prompt} ${styles.promptClickable} ${styles.pixel}`}
+      aria-label={`${label} (right-click)`}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+        if (e.button === 0) onPress()
+      }}
+      onContextMenu={(e) => {
+        // right-clicking the prompt itself does the same thing
+        e.preventDefault()
+        e.stopPropagation()
+        onPress()
+      }}
+    >
       <MouseIcon />
       <span>{label}</span>
-    </div>
+    </button>
   )
 }
 

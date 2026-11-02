@@ -64,6 +64,42 @@ export function toToon(source: THREE.Material): THREE.Material {
   return toon
 }
 
+/**
+ * The cabin cutaway: 0 = solid, 1 = gone. Shared by the roof, the south wall
+ * and the string lights, which dissolve in a pixel dither pattern when the
+ * guest steps inside.
+ */
+export const cutaway = { value: 0 }
+const fadeCache = new Map<string, THREE.Material>()
+
+export function toFadeable(source: THREE.Material): THREE.Material {
+  const key = `${currentLook}:${source.uuid}`
+  const cached = fadeCache.get(key)
+  if (cached) return cached
+  const mat = (toToon(source) as THREE.MeshToonMaterial).clone()
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uCutaway = cutaway
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+uniform float uCutaway;
+float bayer4(vec2 p) {
+  ivec2 i = ivec2(mod(p, 4.0));
+  float m[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
+  return (m[i.x + i.y * 4] + 0.5) / 16.0;
+}`,
+      )
+      .replace(
+        'void main() {',
+        'void main() {\n  if (uCutaway > 0.001 && bayer4(gl_FragCoord.xy) < uCutaway) discard;',
+      )
+  }
+  mat.customProgramCacheKey = () => 'cabin-fade'
+  fadeCache.set(key, mat)
+  return mat
+}
+
 const FOLIAGE = /^(spruce|blue_spruce|birch_leaf|alder|grass|moss)/
 
 const NOISE_GLSL = /* glsl */ `

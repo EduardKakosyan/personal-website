@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CornerBar } from './corner-bar'
 import styles from './cabin.module.css'
 import type { Bubble, Face } from './arrival-scene'
-import { LOOK_ROWS, parseLook, type Look } from './world'
+import { HUGO_CABIN_LINE, TODO_DRAFT, type CabinResume } from './cabin-content'
+import { ResumePanel, TodoPanel } from './cabin-panels'
+import { LOOK_ROWS, parseLook, type Look, type ReadableId } from './world'
 
 // three.js loads only on this page, after hydration.
 const ArrivalScene = dynamic(() => import('./arrival-scene'), { ssr: false })
@@ -42,13 +44,15 @@ function useDpr(look: Look, lofi: boolean) {
   return dpr
 }
 
-export function ArrivalPreview() {
+export function ArrivalPreview({ resume }: { resume: CabinResume }) {
   const [lofi, setLofi] = useState(false)
   const [sound, setSound] = useState(false)
   const [ready, setReady] = useState(false)
   const [moved, setMoved] = useState(false)
   const [bubble, setBubble] = useState<Bubble>(null)
   const [greeting, setGreeting] = useState(false)
+  const [panel, setPanel] = useState<ReadableId | null>(null)
+  const closePanel = useCallback(() => setPanel(null), [])
   const [startNearCabin] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('skip'),
   )
@@ -117,6 +121,11 @@ export function ArrivalPreview() {
     later(8600, () => setBubble((b) => (b?.text === LINES.hugoReply ? null : b)))
   }, [later])
 
+  const onEnterCabin = useCallback(() => {
+    setBubble({ speaker: 'HUGO', text: HUGO_CABIN_LINE })
+    later(6500, () => setBubble((b) => (b?.text === HUGO_CABIN_LINE ? null : b)))
+  }, [later])
+
   return (
     <div className={styles.stage}>
       <ArrivalScene
@@ -131,7 +140,11 @@ export function ArrivalPreview() {
         onFirstMove={onFirstMove}
         onGuestNear={onGuestNear}
         onCowDropped={onCowDropped}
+        onEnterCabin={onEnterCabin}
+        onRead={setPanel}
       />
+      {panel === 'resume' && <ResumePanel resume={resume} onClose={closePanel} />}
+      {panel === 'todo' && <TodoPanel items={TODO_DRAFT} onClose={closePanel} />}
       <p className={`${styles.title} ${styles.pixel}`}>Eduard Kakosyan</p>
       <CornerBar
         sound={sound}

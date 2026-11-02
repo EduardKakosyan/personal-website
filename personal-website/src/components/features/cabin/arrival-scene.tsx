@@ -5,11 +5,33 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { SpeechBubble, type Speaker } from './speech-bubble'
-import { PixelPass, configureLook, makeGroundMaterial, toToon } from './pixel-look'
-import { InteractPrompt, type PromptInput } from './interact-prompt'
-import { canThrow, createRusty, startApproach, throwCow, updateRusty } from './rusty'
 import {
+  PixelPass,
+  configureLook,
+  cutaway,
+  makeGroundMaterial,
+  toFadeable,
+  toToon,
+} from './pixel-look'
+import { InteractPrompt, type PromptInput } from './interact-prompt'
+import { NameTag } from './name-tag'
+import {
+  PET_REACH,
+  canRubBelly,
+  canSeeTag,
+  canThrow,
+  createRusty,
+  holdsStill,
+  lookUp,
+  rubBelly,
+  startApproach,
+  throwCow,
+  updateRusty,
+} from './rusty'
+import {
+  DOOR,
   EDUARD_SPOT,
+  READABLES,
   GUEST_AUTO_TARGET,
   GUEST_SKIP,
   GUEST_START,
@@ -18,11 +40,16 @@ import {
   SKY,
   WELCOME_DISTANCE,
   WELCOME_POINT,
+  CABIN_FLOOR_Y,
+  clampInsideCabin,
   clampToWalkable,
   facing,
+  groundHeight,
+  insideCabin,
   step,
   turnTowards,
   type Look,
+  type ReadableId,
   type Vec2,
 } from './world'
 
@@ -43,7 +70,27 @@ export type ArrivalSceneProps = {
   onFirstMove: () => void
   onGuestNear: () => void
   onCowDropped: () => void
+  /** The first time the guest steps into the cabin. */
+  onEnterCabin: () => void
+  /** The guest picked up the résumé or looked at the to-do list. */
+  onRead: (id: ReadableId) => void
 }
+
+/** What the prompt over the nearest usable thing does. */
+type PromptId = 'throw' | 'rub' | 'tag' | 'door-in' | 'door-out' | ReadableId
+const PROMPT_LABELS: Record<PromptId, string> = {
+  throw: 'Throw',
+  rub: 'Rub belly',
+  tag: 'Name tag',
+  'door-in': 'Go in',
+  'door-out': 'Go out',
+  resume: 'Read',
+  todo: 'Read',
+}
+/** The roof, south wall and string lights fade when the guest is inside. */
+const CUTAWAY_PARTS = ['Cabin_Roof', 'Cabin_SouthWall', 'StringLights']
+/** How long Rusty's name tag stays up, in seconds. */
+const TAG_TIME = 6
 
 Object.values(MODELS).forEach((url) => useGLTF.preload(url))
 
@@ -52,7 +99,10 @@ const noRaycast = () => {}
 
 let groundMaterial: THREE.Material | null = null
 
-function useModel(url: string, opts: { shadows?: boolean; raycast?: boolean } = {}) {
+function useModel(
+  url: string,
+  opts: { shadows?: boolean; raycast?: boolean; fade?: boolean } = {},
+) {
   const gltf = useGLTF(url)
   return useMemo(() => {
     const scene = gltf.scene.clone(true)
@@ -66,11 +116,13 @@ function useModel(url: string, opts: { shadows?: boolean; raycast?: boolean } = 
       mesh.castShadow = opts.shadows !== false && !flat
       mesh.receiveShadow = true
       if (isGround) mesh.material = groundMaterial ??= makeGroundMaterial()
+      else if (opts.fade && !named('Cabin_Door'))
+        mesh.material = toFadeable(mesh.material as THREE.Material)
       else mesh.material = toToon(mesh.material as THREE.Material)
       if (!opts.raycast) mesh.raycast = noRaycast
     })
     return scene
-  }, [gltf, opts.shadows, opts.raycast])
+  }, [gltf, opts.shadows, opts.raycast, opts.fade])
 }
 
 function node(root: THREE.Object3D, name: string) {
@@ -137,6 +189,9 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const rusty = useModel(MODELS.rusty)
   const hugo = useModel(MODELS.hugo)
   const cow = useModel(MODELS.cow, { raycast: true })
+  const cabinParts = useModel(MODELS.cabinParts, { fade: true })
+  /** The door and the fading parts, found once the frame loop starts. */
+  const parts = useRef<{ door: Joint; cut: THREE.Object3D[] } | null>(null)
 
   const rig = useRef<Rig | null>(null)
 
@@ -144,6 +199,22 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const sim = useRef({
     guest: { ...(startNearCabin ? GUEST_SKIP : GUEST_START) } as Vec2,
     target: null as Vec2 | null,
+    /** Waypoints still to walk after the current target (e.g. through the door). */
+    route: [] as Vec2[],
+    guestY: 0,
+    inside: false,
+    enteredCabin: false,
+    doorOpen: 0,
+    cut: 0,
+    prompt: null as PromptId | null,
+    /** The guest clicked Rusty: offer his name tag once they're beside him. */
+    tagAsked: false,
+    /** Seconds left showing his name tag. */
+    tagShow: 0,
+    /** Walking over to rub his belly; starts when the guest gets there. */
+    pendingRub: false,
+    /** 0..1, how far the guest has crouched (rubbing Rusty's belly). */
+    crouch: 0,
     guestYaw: Math.PI,
     walkPhase: 0,
     moved: false,
@@ -153,7 +224,6 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     dog: createRusty(RUSTY_START, Math.PI * 0.85),
     /** Where the mouse points on the ground (for aiming a throw). */
     aim: null as Vec2 | null,
-    throwable: false,
     eduardYaw: EDUARD_SPOT.facing,
     hugo: new THREE.Vector3(GUEST_START.x + 0.9, 1.0, GUEST_START.z - 0.2),
     zoom: 1,
@@ -169,8 +239,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const hugoG = useRef<THREE.Group>(null)
   const marker = useRef<THREE.Mesh>(null)
   const aimRing = useRef<THREE.Mesh>(null)
-  const cowAnchor = useRef<THREE.Group>(null)
-  const [throwable, setThrowable] = useState(false)
+  const promptAnchor = useRef<THREE.Group>(null)
+  const [prompt, setPrompt] = useState<PromptId | null>(null)
+  const [tagOpen, setTagOpen] = useState(false)
+  const tagAnchor = useRef<THREE.Group>(null)
   // Computers get a right-click prompt; touch screens get a button to tap.
   const [input] = useState<PromptInput>(() =>
     window.matchMedia('(hover: none)').matches ? 'tap' : 'right-click',
@@ -202,35 +274,123 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     if (mustache) mustache.visible = face === 'mustache'
   }, [eduard, face])
 
-  const onGroundDown = (e: ThreeEvent<PointerEvent>) => {
-    // Only the main button (or a tap) walks; right-click is for throwing.
-    if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
-    e.stopPropagation()
+  /** Walk somewhere; going in or out of the cabin goes through the door. */
+  const walkTo = (to: Vec2) => {
     const s = sim.current
-    s.target = clampToWalkable({ x: e.point.x, z: e.point.z })
-    s.marker = { ...s.target, life: 1 }
+    const goal = clampToWalkable(to)
+    const from = insideCabin(s.guest)
+    const into = insideCabin(goal)
+    s.route =
+      from === into
+        ? [goal]
+        : into
+          ? [DOOR.outside, DOOR.inside, goal]
+          : [DOOR.inside, DOOR.outside, goal]
+    s.target = s.route.shift() ?? null
+    s.marker = { ...goal, life: 1 }
+    s.pendingRub = false
+    s.tagAsked = false
     if (!s.moved) {
       s.moved = true
       callbacks.current.onFirstMove()
     }
   }
 
+  const onGroundDown = (e: ThreeEvent<PointerEvent>) => {
+    // Only the main button (or a tap) walks; right-click uses the prompt.
+    if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
+    e.stopPropagation()
+    if (insideCabin(sim.current.guest)) {
+      // Inside, taps stay inside: aim at the floor (it sits above the yard)
+      // and keep the spot within the walls.
+      const k = (CABIN_FLOOR_Y - e.ray.origin.y) / e.ray.direction.y
+      const onFloor = k > 0 ? e.ray.at(k, tmp) : e.point
+      walkTo(clampInsideCabin({ x: onFloor.x, z: onFloor.z }))
+      return
+    }
+    walkTo({ x: e.point.x, z: e.point.z })
+  }
+
   const onGroundMove = (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse') sim.current.aim = { x: e.point.x, z: e.point.z }
   }
 
-  // Right-click throws the cow towards where you point.
-  const onGroundContextMenu = (e: ThreeEvent<MouseEvent>) => {
-    e.nativeEvent.preventDefault()
+  /** A spot beside Rusty, on the guest's side of him. */
+  const besideRusty = (gap: number): Vec2 => {
     const s = sim.current
-    throwCow(s.dog, s.guest, { x: e.point.x, z: e.point.z })
+    const d = s.dog
+    const dx = s.guest.x - d.pos.x
+    const dz = s.guest.z - d.pos.z
+    const len = Math.hypot(dx, dz) || 1
+    return { x: d.pos.x + (dx / len) * gap, z: d.pos.z + (dz / len) * gap }
   }
 
-  // Tapping the cow (or the Throw button on a touch screen) throws it away from you.
-  const throwFromButton = () => {
+  /** Do what the current prompt says. `aim` is where a right-click pointed. */
+  const runPrompt = (aim: Vec2 | null) => {
     const s = sim.current
-    throwCow(s.dog, s.guest, null)
+    switch (s.prompt) {
+      case 'throw':
+        throwCow(s.dog, s.guest, aim)
+        break
+      case 'rub': {
+        // kneel down at his side, then rub
+        const d = s.dog
+        const side = Math.sign(
+          (s.guest.x - d.pos.x) * Math.cos(d.yaw) - (s.guest.z - d.pos.z) * Math.sin(d.yaw),
+        )
+        walkTo({
+          x: d.pos.x + Math.cos(d.yaw) * 0.72 * (side || 1),
+          z: d.pos.z - Math.sin(d.yaw) * 0.72 * (side || 1),
+        })
+        s.marker.life = 0
+        s.pendingRub = true
+        break
+      }
+      case 'tag':
+        s.tagAsked = false
+        s.tagShow = TAG_TIME
+        lookUp(s.dog, TAG_TIME)
+        setTagOpen(true)
+        break
+      case 'door-in':
+        walkTo({ x: 0.2, z: 0.6 })
+        break
+      case 'door-out':
+        walkTo({ x: 2.7, z: 3.3 })
+        break
+      case 'resume':
+      case 'todo':
+        callbacks.current.onRead(s.prompt)
+        break
+    }
   }
+
+  // Right-click anywhere uses the prompt (a throw goes towards where you point).
+  const onGroundContextMenu = (e: ThreeEvent<MouseEvent>) => {
+    e.nativeEvent.preventDefault()
+    runPrompt({ x: e.point.x, z: e.point.z })
+  }
+
+  // Clicking Rusty offers his name tag (walking over to him first if needed).
+  const onRustyDown = (e: ThreeEvent<PointerEvent>) => {
+    if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
+    const s = sim.current
+    // from inside the cabin the tap is just a tap (it stays inside)
+    if (insideCabin(s.guest)) return
+    // the cow at his feet gets the tap when it can be thrown
+    const onCow = e.intersections.some((i) => {
+      let o: THREE.Object3D | null = i.object
+      while (o && o !== cowG.current) o = o.parent
+      return o !== null
+    })
+    if (onCow && canThrow(s.dog, s.guest)) return
+    e.stopPropagation()
+    if (Math.hypot(s.dog.pos.x - s.guest.x, s.dog.pos.z - s.guest.z) > PET_REACH - 0.3)
+      walkTo(besideRusty(1.1))
+    s.tagAsked = true
+  }
+
+  // Tapping the cow throws it away from you.
   const onCowDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
     const s = sim.current
@@ -270,8 +430,21 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       // Stop when there, or when an obstacle has blocked us for a moment.
       s.guestStuck = moved < 1e-4 ? s.guestStuck + dt : 0
       if (Math.hypot(s.target.x - s.guest.x, s.target.z - s.guest.z) < 0.08 || s.guestStuck > 0.3)
-        s.target = null
+        s.target = s.route.shift() ?? null
     }
+    // walked over to rub Rusty's belly: start once beside him
+    const dog = s.dog
+    const toDog = Math.hypot(dog.pos.x - s.guest.x, dog.pos.z - s.guest.z)
+    if (s.pendingRub && !s.target) {
+      s.pendingRub = false
+      if (toDog < 1.2) rubBelly(dog, s.guest)
+    }
+    const rubbing = dog.rubbing > 0 && toDog < 1.4 && !s.target
+    if (rubbing) s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, dog.pos), 8 * dt)
+    s.crouch += ((rubbing ? 1 : 0) - s.crouch) * damp(dt, 7)
+    const crouch = s.crouch
+    // step up onto the deck and the cabin floor
+    s.guestY += (groundHeight(s.guest) - s.guestY) * damp(dt, 14)
     s.walkPhase += walking ? dt * 11 : 0
     const swing = walking ? Math.sin(s.walkPhase) : 0
     const j = joints.hiker
@@ -279,15 +452,19 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const lerpRot = (jt: Joint, axis: 'x' | 'z', value: number) => {
       jt.obj.rotation[axis] += (jt.base[axis] + value - jt.obj.rotation[axis]) * relax
     }
-    lerpRot(j.legL, 'x', swing * 0.6)
-    lerpRot(j.legR, 'x', -swing * 0.6)
-    lerpRot(j.shinL, 'x', walking ? Math.max(0, -Math.cos(s.walkPhase)) * 0.6 : 0)
-    lerpRot(j.shinR, 'x', walking ? Math.max(0, Math.cos(s.walkPhase)) * 0.6 : 0)
-    lerpRot(j.armL, 'x', -swing * 0.5)
-    lerpRot(j.armR, 'x', swing * 0.5)
+    // crouching: thighs forward, shins back, one hand rubbing back and forth
+    const rubStroke = Math.sin(t * 9) * 0.22
+    lerpRot(j.legL, 'x', swing * 0.6 - crouch * 1.1)
+    lerpRot(j.legR, 'x', -swing * 0.6 - crouch * 1.1)
+    lerpRot(j.shinL, 'x', (walking ? Math.max(0, -Math.cos(s.walkPhase)) * 0.6 : 0) + crouch * 1.9)
+    lerpRot(j.shinR, 'x', (walking ? Math.max(0, Math.cos(s.walkPhase)) * 0.6 : 0) + crouch * 1.9)
+    lerpRot(j.armL, 'x', -swing * 0.5 - crouch * 0.5)
+    lerpRot(j.armR, 'x', swing * 0.5 - crouch * (1.15 + rubStroke))
     G.hiker.position.set(
       s.guest.x,
-      walking ? Math.abs(Math.sin(s.walkPhase)) * 0.05 : Math.sin(t * 2) * 0.006,
+      s.guestY +
+        (walking ? Math.abs(Math.sin(s.walkPhase)) * 0.05 : Math.sin(t * 2) * 0.006) -
+        crouch * 0.24,
       s.guest.z,
     )
     G.hiker.rotation.y = s.guestYaw
@@ -296,10 +473,37 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     if (marker.current) {
       s.marker.life = Math.max(0, s.marker.life - dt * 1.6)
       marker.current.visible = s.marker.life > 0
-      marker.current.position.set(s.marker.x, 0.05, s.marker.z)
+      marker.current.position.set(s.marker.x, groundHeight(s.marker) + 0.05, s.marker.z)
       const k = 0.6 + (1 - s.marker.life) * 0.6
       marker.current.scale.set(k, k, k)
       ;(marker.current.material as THREE.MeshBasicMaterial).opacity = s.marker.life
+    }
+
+    // ---------------------------------------------------------- the cabin: door and cutaway
+    const cab = (parts.current ??= {
+      door: node(cabinParts, 'Cabin_Door'),
+      cut: CUTAWAY_PARTS.map((n) => cabinParts.getObjectByName(n)).filter(
+        (o): o is THREE.Object3D => Boolean(o),
+      ),
+    })
+    const inside = insideCabin(s.guest)
+    if (inside && !s.enteredCabin) {
+      s.enteredCabin = true
+      callbacks.current.onEnterCabin()
+    }
+    s.inside = inside
+    // the door swings open when the guest comes up to it
+    const nearDoor =
+      Math.hypot(s.guest.x - 1.8, s.guest.z - DOOR.outside.z) < 1.6 ||
+      s.route.some((p) => p === DOOR.outside || p === DOOR.inside)
+    s.doorOpen += ((nearDoor ? 1 : 0) - s.doorOpen) * damp(dt, 5)
+    cab.door.obj.rotation.y = cab.door.base.y - s.doorOpen * 1.75
+    // roof, south wall and string lights dissolve while the guest is inside
+    s.cut += ((inside ? 1 : 0) - s.cut) * damp(dt, 5)
+    cutaway.value = s.cut < 0.01 ? 0 : s.cut
+    for (const o of cab.cut) {
+      o.visible = s.cut < 0.97
+      o.userData.noOutline = s.cut > 0.02
     }
 
     // ---------------------------------------------------------- the welcome trigger
@@ -313,7 +517,6 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
 
     // ---------------------------------------------------------- Rusty and the cow (rusty.ts)
-    const dog = s.dog
     const r = joints.rusty
     // where the cow sits when he carries it: just in front of his mouth
     G.rusty.updateMatrixWorld(true)
@@ -323,46 +526,109 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       y: mouthWorld.y - 0.2,
       z: mouthWorld.z + Math.cos(dog.yaw) * 0.08,
     }
-    const pose = updateRusty(dog, dt, s.guest, s.guestYaw, mouth, () =>
+    const pose = updateRusty(dog, dt, s.guest, s.guestYaw, inside, mouth, () =>
       callbacks.current.onCowDropped(),
     )
     const gait = Math.sin(dog.gait) * 0.75 * pose.stride
     const rx = (jt: Joint, v: number) => {
       jt.obj.rotation.x += (jt.base.x + v - jt.obj.rotation.x) * damp(dt, 14)
     }
-    // lying down: front legs stretched forward, back legs tucked under
+    // lying down: front legs stretched forward, back legs tucked under.
+    // On his back (belly rub) the paws fold up and paddle now and then.
     const lie = dog.lie
-    rx(r.fl, gait - 1.45 * lie)
-    rx(r.fr, -gait - 1.45 * lie)
-    rx(r.br, gait - 1.25 * lie)
-    rx(r.bl, -gait - 1.25 * lie)
+    const rollK = dog.roll * dog.roll * (3 - 2 * dog.roll)
+    const paddle = Math.max(0, Math.sin(t * 3.1)) * Math.sin(t * 17) * 0.35 * rollK
+    const frontLeg = -1.45 * lie * (1 - rollK) - 0.75 * rollK
+    const backLeg = -1.25 * lie * (1 - rollK) - 0.35 * rollK
+    rx(r.fl, gait + frontLeg + paddle)
+    rx(r.fr, -gait + frontLeg - paddle)
+    rx(r.br, gait + backLeg - paddle * 0.6)
+    rx(r.bl, -gait + backLeg + paddle * 0.6)
     const wag = 9 + dog.excitement * 9
     r.tail.obj.rotation.y = r.tail.base.y + Math.sin(t * wag) * 0.6 * dog.excitement
     r.head.obj.rotation.x =
       r.head.base.x +
       dog.headDown * 0.75 +
       (pose.moving ? Math.sin(dog.gait * 2) * 0.05 * pose.stride : Math.sin(t * 1.6) * 0.05 - 0.04)
+    // Rolling onto his back turns him about his body, not his feet: shift the
+    // model so the middle of his body stays put (it sits 0.42 up in the model).
+    const roll = dog.rollSide * 2.25 * rollK
+    const bodyY = 0.42 - 0.24 * lie + 0.05 * rollK
+    const sideways = 0.42 * Math.sin(roll)
     G.rusty.position.set(
-      dog.pos.x,
-      Math.abs(Math.sin(dog.gait)) * 0.06 * pose.stride - 0.24 * lie,
-      dog.pos.z,
+      dog.pos.x + Math.cos(dog.yaw) * sideways,
+      Math.abs(Math.sin(dog.gait)) * 0.06 * pose.stride + bodyY - 0.42 * Math.cos(roll),
+      dog.pos.z - Math.sin(dog.yaw) * sideways,
     )
     // lean into turns a little and dip the front when lowering the head
-    G.rusty.rotation.set(dog.headDown * 0.12, dog.yaw, 0)
+    G.rusty.rotation.set(dog.headDown * 0.12 * (1 - rollK), dog.yaw, roll, 'YZX')
 
     const c = dog.cow
     G.cow.position.set(c.pos.x, c.pos.y, c.pos.z)
     G.cow.rotation.set(c.rot.x, c.rot.y, 0)
 
-    // show the Throw prompt when the cow can be thrown
-    const throwable = canThrow(dog, s.guest)
-    if (throwable !== s.throwable) {
-      s.throwable = throwable
-      setThrowable(throwable)
+    // ---------------------------------------------------------- Rusty's name tag (A68)
+    const overRusty = { x: dog.pos.x, y: 1.05 - 0.3 * lie, z: dog.pos.z }
+    tagAnchor.current?.position.set(overRusty.x, overRusty.y + 0.1, overRusty.z)
+    if (s.tagShow > 0) {
+      s.tagShow -= dt
+      // put it away when time's up, he runs off, or the guest walks away
+      if (toDog > 3.2 || !holdsStill(dog)) s.tagShow = 0
+      if (s.tagShow <= 0) {
+        lookUp(dog, 0)
+        setTagOpen(false)
+      }
     }
-    cowAnchor.current?.position.set(c.pos.x, c.pos.y + 0.65, c.pos.z)
+
+    // ---------------------------------------------------------- the prompt (A63)
+    // One prompt at a time, over the nearest thing the guest can use.
+    let next: PromptId | null = null
+    let at: { x: number; y: number; z: number } | null = null
+    const dist = (p: { x: number; z: number }) => Math.hypot(p.x - s.guest.x, p.z - s.guest.z)
+    const busyWithRusty = s.tagShow > 0 || s.pendingRub || dog.rubbing > 0
+    if (busyWithRusty) {
+      // nothing else to do while rubbing his belly or reading his tag
+    } else if (inside) {
+      let best = 2.2
+      for (const id of Object.keys(READABLES) as ReadableId[]) {
+        const d = dist(READABLES[id])
+        if (d < best) {
+          best = d
+          next = id
+          at = READABLES[id]
+        }
+      }
+      if (!next && dist(DOOR.inside) < 1.4) {
+        next = 'door-out'
+        at = DOOR.prompt
+      }
+    } else if (s.tagAsked && canSeeTag(dog, s.guest)) {
+      next = 'tag'
+      at = overRusty
+    } else if (canThrow(dog, s.guest)) {
+      next = 'throw'
+      at = { x: c.pos.x, y: c.pos.y + 0.65, z: c.pos.z }
+    } else if (s.welcomed && dist(DOOR.outside) < 1.3) {
+      // at the door, going in wins over Rusty (his spot is right by the deck)
+      next = 'door-in'
+      at = DOOR.prompt
+    } else if (canRubBelly(dog, s.guest)) {
+      next = 'rub'
+      at = overRusty
+    } else if (canSeeTag(dog, s.guest)) {
+      next = 'tag'
+      at = overRusty
+    } else if (s.welcomed && dist(DOOR.outside) < 2.6) {
+      next = 'door-in'
+      at = DOOR.prompt
+    }
+    if (next !== s.prompt) {
+      s.prompt = next
+      setPrompt(next)
+    }
+    if (at) promptAnchor.current?.position.set(at.x, at.y, at.z)
     if (aimRing.current) {
-      const showAim = throwable && input === 'right-click' && s.aim !== null
+      const showAim = next === 'throw' && input === 'right-click' && s.aim !== null
       aimRing.current.visible = showAim
       if (showAim && s.aim) {
         const dx = s.aim.x - c.pos.x
@@ -398,11 +664,14 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     G.eduard.rotation.y = s.eduardYaw
 
     // ---------------------------------------------------------- HUGO
-    const side = {
-      x: Math.cos(s.guestYaw) * 0.85 - Math.sin(s.guestYaw) * 0.25,
-      z: -Math.sin(s.guestYaw) * 0.85 - Math.cos(s.guestYaw) * 0.25,
-    }
-    const hugoGoal = tmp.set(s.guest.x + side.x, 0.8 + Math.sin(t * 2.1) * 0.07, s.guest.z + side.z)
+    // HUGO keeps to the guest's left on screen, a little further from the
+    // camera, so he never hides the guest or the room.
+    const side = { x: -0.9, z: -0.35 }
+    const hugoGoal = tmp.set(
+      s.guest.x + side.x,
+      s.guestY + 0.8 + Math.sin(t * 2.1) * 0.07,
+      s.guest.z + side.z,
+    )
     s.hugo.lerp(hugoGoal, damp(dt, 2.6))
     G.hugo.position.copy(s.hugo)
     const talking = bubble?.speaker === 'HUGO'
@@ -432,8 +701,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // screens show less sideways, so pull back a little. During the welcome the
     // camera eases in so the faces are readable.
     const far = size.height > size.width ? 1.3 : 1
-    const welcoming = s.welcomed && bubble !== null
-    s.zoom += ((welcoming ? 0.8 : 1) - s.zoom) * damp(dt, 1.5)
+    const welcoming = s.welcomed && bubble !== null && !inside
+    s.zoom += ((inside ? 0.66 : welcoming ? 0.8 : 1) - s.zoom) * damp(dt, 1.5)
     // (window.__cabinZoom lets a test browser move the camera in; dev only)
     const devZoom =
       process.env.NODE_ENV !== 'production'
@@ -441,9 +710,12 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         : 1
     const k = far * s.zoom * devZoom
     // During the welcome, aim between the guest and Eduard so both are in view.
-    const aim = welcoming
-      ? { x: s.guest.x * 0.55 + EDUARD_SPOT.x * 0.45, z: s.guest.z * 0.55 + EDUARD_SPOT.z * 0.45 }
-      : { x: s.guest.x, z: s.guest.z - 5 * k }
+    // Inside, aim at the middle of the room so all of it is in view.
+    const aim = inside
+      ? { x: s.guest.x * 0.3, z: s.guest.z * 0.3 - 0.4 }
+      : welcoming
+        ? { x: s.guest.x * 0.55 + EDUARD_SPOT.x * 0.45, z: s.guest.z * 0.55 + EDUARD_SPOT.z * 0.45 }
+        : { x: s.guest.x, z: s.guest.z - 5 * k }
     // The camera sits a little west of the guest, so it looks past the stand of
     // trees by the woodshed towards the deck.
     const camGoal = tmp.set(s.guest.x + CAMERA_SIDE * k, 8.6 * k, s.guest.z + 12.5 * k)
@@ -482,6 +754,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       {look !== 'smooth' && <PixelPass outlines={!lofi} />}
 
       <primitive object={set} />
+      <primitive object={cabinParts} />
       <group ref={hikerG}>
         <primitive object={hiker} />
       </group>
@@ -490,6 +763,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       </group>
       <group ref={rustyG}>
         <primitive object={rusty} />
+        {/* a forgiving, invisible tap area: he's small on a phone */}
+        <mesh position={[0, 0.4, 0]} onPointerDown={onRustyDown} userData={{ noOutline: true }}>
+          <sphereGeometry args={[0.5, 8, 6]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+        </mesh>
       </group>
       <group ref={hugoG}>
         <primitive object={hugo} />
@@ -520,10 +798,24 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         <meshBasicMaterial color="#fec54f" transparent opacity={0.85} depthWrite={false} />
       </mesh>
 
-      <group ref={cowAnchor}>
-        {throwable && (
-          <Html zIndexRange={[30, 0]}>
-            <InteractPrompt label="Throw" input={input} onPress={throwFromButton} />
+      <group ref={promptAnchor}>
+        {prompt && (
+          // the wrapper ignores taps (it would cover Rusty); only the button takes them
+          <Html zIndexRange={[30, 0]} style={{ pointerEvents: 'none' }}>
+            <InteractPrompt
+              key={prompt}
+              label={PROMPT_LABELS[prompt]}
+              input={input}
+              onPress={() => runPrompt(null)}
+            />
+          </Html>
+        )}
+      </group>
+
+      <group ref={tagAnchor}>
+        {tagOpen && (
+          <Html zIndexRange={[25, 0]} style={{ pointerEvents: 'none' }}>
+            <NameTag />
           </Html>
         )}
       </group>

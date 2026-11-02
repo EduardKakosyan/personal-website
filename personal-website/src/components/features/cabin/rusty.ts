@@ -7,6 +7,10 @@
 // fetches it and brings it to them again. After the second throw, or if the
 // guest walks off after the first, he's had enough: he takes the cow back to
 // his spot by the deck and lies down with it (Eduard).
+//
+// Once he's lying down the guest can rub his belly: he rolls onto his back,
+// tail going, then rolls back. Any time he's standing still or lying down the
+// guest can look at his name tag; he looks up at them while they do (A68).
 
 import {
   RUSTY_START,
@@ -36,6 +40,10 @@ const COW_REST_Y = 0
 export const THROW_REACH = 3.6
 /** Throws before Rusty goes to lie down. */
 const THROWS_BEFORE_REST = 2
+/** How close the guest must be to Rusty to rub his belly or look at his tag. */
+export const PET_REACH = 1.8
+/** How long one belly rub lasts, in seconds. */
+const RUB_TIME = 3.2
 /** His spot: by the deck, facing the yard. */
 const BED = { ...RUSTY_START, yaw: 0 }
 
@@ -58,6 +66,14 @@ export function createRusty(start: Vec2, yaw: number) {
     tired: false,
     /** 0..1, how far he has lain down. */
     lie: 0,
+    /** Seconds of belly rub left. */
+    rubbing: 0,
+    /** 0..1, how far he has rolled onto his back. */
+    roll: 0,
+    /** Which way he rolls (+1 or -1), so his belly faces the guest. */
+    rollSide: 1,
+    /** Seconds left looking up at the guest (while they read his tag). */
+    attention: 0,
     cow: {
       state: 'carried' as CowState,
       pos: { x: 0, y: 0, z: 0 },
@@ -167,6 +183,38 @@ export function canThrow(r: Rusty, guest: Vec2) {
   )
 }
 
+const near = (r: Rusty, guest: Vec2) => Math.hypot(r.pos.x - guest.x, r.pos.z - guest.z) < PET_REACH
+
+/** Lying down, done playing, and the guest is beside him. */
+export function canRubBelly(r: Rusty, guest: Vec2) {
+  return r.state === 'lying' && r.lie > 0.9 && r.cow.state !== 'carried' && near(r, guest)
+}
+
+/** Roll over for a belly rub. `guest` decides which way, so his belly faces them. */
+export function rubBelly(r: Rusty, guest: Vec2) {
+  if (r.state !== 'lying' || r.lie < 0.9) return false
+  // the guest's side, in Rusty's own left/right (+x is his left when he faces +z)
+  const side = (guest.x - r.pos.x) * Math.cos(r.yaw) - (guest.z - r.pos.z) * Math.sin(r.yaw)
+  if (r.roll < 0.05) r.rollSide = side < 0 ? -1 : 1
+  r.rubbing = RUB_TIME
+  return true
+}
+
+/** Standing still or lying down (not mid-roll), so there's a moment to read his tag. */
+export function holdsStill(r: Rusty) {
+  const still = r.state === 'home' || r.state === 'waiting' || r.state === 'lying'
+  return still && r.rubbing <= 0
+}
+
+export function canSeeTag(r: Rusty, guest: Vec2) {
+  return holdsStill(r) && near(r, guest)
+}
+
+/** He looks up at the guest for a few seconds. */
+export function lookUp(r: Rusty, seconds: number) {
+  r.attention = seconds
+}
+
 export function startApproach(r: Rusty) {
   if (r.state === 'home') {
     r.excitement = 1
@@ -237,11 +285,17 @@ export function updateRusty(
   dt: number,
   guest: Vec2,
   guestYaw: number,
+  /** Rusty doesn't follow into the cabin: he takes the cow to his spot and lies down. */
+  guestInside: boolean,
   mouth: { x: number; y: number; z: number },
   onFirstDrop: () => void,
 ): RustyPose {
   r.timer += dt
   const c = r.cow
+  if (guestInside && !r.tired && r.state !== 'home') {
+    r.tired = true
+    if (r.state === 'approach' || r.state === 'return') enter(r, 'toBed')
+  }
   const front = guestFront(guest, guestYaw)
   let target: Vec2 | null = null
   let maxSpeed = 0
@@ -294,7 +348,8 @@ export function updateRusty(
       if (toGuest > 2.6) steer(r, front, 3, dt)
       else {
         steer(r, r.pos, 0, dt)
-        const look = Math.sin(r.timer * 0.9) > 0.2 && c.state === 'ground' ? c.pos : guest
+        const glance = r.attention <= 0 && Math.sin(r.timer * 0.9) > 0.2
+        const look = glance && c.state === 'ground' ? c.pos : guest
         r.yaw = turnTowards(r.yaw, facing(r.pos, look), 3 * dt)
       }
       r.excitement += (0.75 - r.excitement) * damp(dt, 1)
@@ -335,11 +390,19 @@ export function updateRusty(
         c.vel.z *= 0.6
       }
       headGoal = c.state === 'carried' ? 0.4 : 0.15 + Math.max(0, Math.sin(r.timer * 0.5)) * 0.1
-      r.excitement += (0.2 - r.excitement) * damp(dt, 0.8)
+      // belly rub: roll onto his back, tail going, then roll back
+      r.rubbing = Math.max(0, r.rubbing - dt)
+      r.roll += ((r.rubbing > 0 ? 1 : 0) - r.roll) * damp(dt, r.rubbing > 0 ? 5 : 3)
+      if (r.rubbing > 0) r.excitement += (1 - r.excitement) * damp(dt, 4)
+      else r.excitement += (0.2 - r.excitement) * damp(dt, 0.8)
+      if (r.attention > 0 && r.roll < 0.1) headGoal = -0.35
       break
     }
   }
 
+  r.attention = Math.max(0, r.attention - dt)
+  if (r.attention > 0 && r.state === 'home')
+    r.yaw = turnTowards(r.yaw, facing(r.pos, guest), 3 * dt)
   r.headDown += (headGoal - r.headDown) * damp(dt, 10)
   if (r.state !== 'waiting' && r.state !== 'home' && r.state !== 'toBed' && r.state !== 'lying')
     r.excitement += (1 - r.excitement) * damp(dt, 2)

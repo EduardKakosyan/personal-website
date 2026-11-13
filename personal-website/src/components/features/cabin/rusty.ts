@@ -43,7 +43,7 @@ const THROWS_BEFORE_REST = 2
 /** How close the guest must be to Rusty to rub his belly or look at his tag. */
 export const PET_REACH = 1.8
 /** How long one belly rub lasts, in seconds. */
-const RUB_TIME = 3.2
+const RUB_TIME = 4.5
 /** His spot: by the deck, facing the yard. */
 const BED = { ...RUSTY_START, yaw: 0 }
 
@@ -74,9 +74,16 @@ export function createRusty(start: Vec2, yaw: number) {
     rollSide: 1,
     /** Seconds left looking up at the guest (while they read his tag). */
     attention: 0,
+    /** 0..1, how far he has sat down (to show the guest his tag, or to be petted). */
+    sit: 0,
+    /** Seconds of petting left, and how many times he's been petted. */
+    petting: 0,
+    pets: 0,
+    /** Waiting where he is, sitting (the opening: on the driveway, until he's called). */
+    homeSit: false,
     cow: {
       state: 'carried' as CowState,
-      pos: { x: 0, y: 0, z: 0 },
+      pos: { x: start.x, y: 0.5, z: start.z },
       vel: { x: 0, y: 0, z: 0 },
       spin: { x: 0, y: 0 },
       rot: { x: 0, y: 0 },
@@ -210,6 +217,23 @@ export function canSeeTag(r: Rusty, guest: Vec2) {
   return holdsStill(r) && near(r, guest)
 }
 
+/** How long one pet lasts, in seconds. */
+const PET_TIME = 3
+
+/** Standing beside the guest with nothing else on: a good moment for a pet. */
+export function canPet(r: Rusty, guest: Vec2) {
+  return r.state === 'waiting' && r.petting <= 0 && r.attention <= 0 && near(r, guest)
+}
+
+/** He comes right up to the guest, sits, tips his head up into their hand, tail going. */
+export function petRusty(r: Rusty) {
+  if (r.state !== 'waiting') return false
+  r.petting = PET_TIME
+  r.attention = PET_TIME
+  r.pets += 1
+  return true
+}
+
 /** He looks up at the guest for a few seconds. */
 export function lookUp(r: Rusty, seconds: number) {
   r.attention = seconds
@@ -307,8 +331,13 @@ export function updateRusty(
       break
     case 'approach':
     case 'return': {
-      if (r.state === 'return' && Math.hypot(guest.x - r.pos.x, guest.z - r.pos.z) > 7) {
-        // the guest walked away from him while he was bringing it back
+      if (
+        r.state === 'return' &&
+        r.throws > 0 &&
+        Math.hypot(guest.x - r.pos.x, guest.z - r.pos.z) > 7
+      ) {
+        // The guest walked away from him while he was bringing it back after a
+        // throw. (Before any throw he keeps bringing it, wherever they go.)
         r.tired = true
         enter(r, 'toBed')
         break
@@ -338,14 +367,48 @@ export function updateRusty(
       // stay close; glance between the cow and the guest
       const toGuest = Math.hypot(guest.x - r.pos.x, guest.z - r.pos.z)
       const cowFromGuest = Math.hypot(c.pos.x - guest.x, c.pos.z - guest.z)
-      if (c.state === 'ground' && cowFromGuest > 4.5) {
+      // (Once the guest has gone inside, he takes the cow to his spot: A66.)
+      if (c.state === 'ground' && (cowFromGuest > 4.5 || (guestInside && r.tired))) {
         // The guest walked off. Before any throw he brings the cow again;
         // after a throw he takes it and goes to lie down.
         if (r.throws > 0) r.tired = true
         enter(r, 'chase')
         break
       }
-      if (toGuest > 2.6) steer(r, front, 3, dt)
+      if (r.petting > 0) {
+        if (c.state === 'ground') {
+          // he grabs the cow first: he likes to hold it while he's petted
+          const left = steer(r, c.pos, 3, dt)
+          headGoal = left < 0.7 ? 1 : 0
+          if (left < 0.45 && c.settled > 0.2) c.state = 'carried'
+        } else {
+          // Then he comes right up beside the guest and sits. Of the spots
+          // around them, take the one to their right on screen (the camera is
+          // south of the guest, a little west), so both are seen side-on.
+          let spot = guest
+          let best = -Infinity
+          for (let k = 0; k < 8; k++) {
+            const a = (k / 8) * Math.PI * 2
+            const p = { x: guest.x + Math.sin(a) * 0.95, z: guest.z + Math.cos(a) * 0.95 }
+            const score = Math.sin(a) + 0.25 * Math.cos(a) - (blocked(p, 0.2) ? 10 : 0)
+            if (score > best) {
+              best = score
+              spot = p
+            }
+          }
+          // (stop first, then turn to them: he walks the way he faces)
+          if (Math.hypot(spot.x - r.pos.x, spot.z - r.pos.z) > 0.2 && r.stuck < 0.6)
+            steer(r, spot, 3.2, dt)
+          else {
+            r.speed = Math.max(0, r.speed - 8 * dt)
+            r.yaw = turnTowards(r.yaw, facing(r.pos, guest), 7 * dt)
+          }
+        }
+      } else if (r.attention > 0) {
+        // sit and look at the guest while they read his tag
+        steer(r, r.pos, 0, dt)
+        r.yaw = turnTowards(r.yaw, facing(r.pos, guest), 4 * dt)
+      } else if (toGuest > 2.6) steer(r, front, 3, dt)
       else {
         steer(r, r.pos, 0, dt)
         const glance = r.attention <= 0 && Math.sin(r.timer * 0.9) > 0.2
@@ -403,6 +466,25 @@ export function updateRusty(
   r.attention = Math.max(0, r.attention - dt)
   if (r.attention > 0 && r.state === 'home')
     r.yaw = turnTowards(r.yaw, facing(r.pos, guest), 3 * dt)
+  if (r.petting > 0) {
+    // the pet starts once he's sat down beside the guest
+    r.attention = Math.max(r.attention, 0.2)
+    if (r.sit > 0.6 || r.state !== 'waiting') r.petting = Math.max(0, r.petting - dt)
+    // done: he gives the guest the cow again
+    if (r.petting <= 0 && r.state === 'waiting' && c.state === 'carried') {
+      r.attention = 0
+      enter(r, 'drop')
+    }
+    r.excitement += (1 - r.excitement) * damp(dt, 4)
+  }
+  const sitting =
+    (r.attention > 0 && r.speed < 0.3 && (r.state === 'waiting' || r.state === 'home')) ||
+    (r.state === 'home' && r.homeSit)
+  r.sit += ((sitting ? 1 : 0) - r.sit) * damp(dt, sitting ? 6 : 9)
+  // (holding the cow while he's petted, he keeps his head level so it doesn't hide his face)
+  if (sitting)
+    headGoal =
+      r.petting > 0 ? (c.state === 'carried' ? 0.08 : -0.3) + Math.sin(r.timer * 5) * 0.06 : -0.15
   r.headDown += (headGoal - r.headDown) * damp(dt, 10)
   if (r.state !== 'waiting' && r.state !== 'home' && r.state !== 'toBed' && r.state !== 'lying')
     r.excitement += (1 - r.excitement) * damp(dt, 2)

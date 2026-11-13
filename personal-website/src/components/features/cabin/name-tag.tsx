@@ -5,15 +5,15 @@ import styles from './cabin.module.css'
 import { useKeepOnScreen } from './use-keep-on-screen'
 
 /**
- * A close-up of Rusty's collar (A68), drawn as pixel art: the orange collar,
- * a red bone-shaped tag with his name, and the round silver tag beside it
- * (photo 05).
+ * Rusty's name tag (A68), hanging from his collar: a red bone with his name and
+ * the round silver tag behind it (photo 05), drawn as pixel art and shown big
+ * enough to read. It swings a little, like a tag does.
  */
 
-const W = 54
-const H = 30
+const W = 36
+const H = 22
 /** Screen pixels per art pixel. */
-const CELL = 4
+const CELL = 3
 const OUTLINE = '#3b2a1e'
 
 type Shape = {
@@ -29,27 +29,19 @@ const circle = (cx: number, cy: number, r: number) => (x: number, y: number) =>
 
 const SHAPES: Shape[] = [
   {
-    // the collar, running across the top
-    inside: (_x, y) => y >= 1 && y < 6,
-    fill: '#e0702a',
-    light: '#f29a55',
-    dark: '#a84a17',
-    outline: true,
-  },
-  {
-    // the ring the tags hang from
-    inside: (x, y) => {
-      const d = Math.hypot(x - 30, y - 7.5)
-      return d >= 1.4 && d <= 2.9
-    },
+    // the round silver tag, behind the bone and a little to the left
+    inside: circle(11, 7.5, 4.3),
     fill: '#b8c0c8',
     light: '#eef2f5',
     dark: '#7d8791',
-    outline: false,
+    outline: true,
   },
   {
-    // the round silver tag, behind the bone
-    inside: circle(47.5, 13.5, 5.2),
+    // the ring both tags hang from (at the top, where it meets the collar)
+    inside: (x, y) => {
+      const d = Math.hypot(x - 18, y - 3)
+      return d >= 1.2 && d <= 2.6
+    },
     fill: '#b8c0c8',
     light: '#eef2f5',
     dark: '#7d8791',
@@ -58,13 +50,13 @@ const SHAPES: Shape[] = [
   {
     // the red bone with his name
     inside: (x, y) =>
-      (x >= 10 && x <= 38 && y >= 14.5 && y <= 23.5) ||
+      (x >= 5.5 && x <= 30.5 && y >= 9 && y <= 17) ||
       [
-        [9.5, 14.5],
-        [9.5, 23.5],
-        [38.5, 14.5],
-        [38.5, 23.5],
-      ].some(([cx, cy]) => Math.hypot(x - cx, y - cy) <= 4.1),
+        [5.5, 9.4],
+        [5.5, 16.6],
+        [30.5, 9.4],
+        [30.5, 16.6],
+      ].some(([cx, cy]) => Math.hypot(x - cx, y - cy) <= 3.4),
     fill: '#c0392f',
     light: '#e2614f',
     dark: '#8a2620',
@@ -112,22 +104,24 @@ export function NameTag() {
   const ref = useRef<HTMLDivElement>(null)
   useKeepOnScreen(ref)
   return (
-    <div ref={ref} className={`${styles.tagCard} ${styles.pixel}`} role="status" aria-live="polite">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width={W * CELL}
-        height={H * CELL}
-        shapeRendering="crispEdges"
-        aria-hidden="true"
-      >
-        {RUNS.map((r) => (
-          <rect key={`${r.x}-${r.y}`} x={r.x} y={r.y} width={r.w} height={1} fill={r.color} />
-        ))}
-      </svg>
-      {/* engraved on the bone */}
-      <span className={styles.tagName} aria-hidden="true">
-        RUSTY
-      </span>
+    <div ref={ref} className={`${styles.tagHang} ${styles.pixel}`} role="status" aria-live="polite">
+      <div className={styles.tagSwing}>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width={W * CELL}
+          height={H * CELL}
+          shapeRendering="crispEdges"
+          aria-hidden="true"
+        >
+          {RUNS.map((r) => (
+            <rect key={`${r.x}-${r.y}`} x={r.x} y={r.y} width={r.w} height={1} fill={r.color} />
+          ))}
+        </svg>
+        {/* stamped on the bone */}
+        <span className={styles.tagName} aria-hidden="true">
+          RUSTY
+        </span>
+      </div>
       <span className="sr-only">Rusty&apos;s name tag says Rusty.</span>
     </div>
   )

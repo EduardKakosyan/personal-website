@@ -14,15 +14,18 @@ import {
   toToon,
 } from './pixel-look'
 import { InteractPrompt, type PromptInput } from './interact-prompt'
+import { createEduard, eduardPose, updateEduard } from './eduard'
 import { NameTag } from './name-tag'
 import {
   PET_REACH,
   canRubBelly,
   canSeeTag,
+  canPet,
   canThrow,
   createRusty,
   holdsStill,
   lookUp,
+  petRusty,
   rubBelly,
   startApproach,
   throwCow,
@@ -30,12 +33,13 @@ import {
 } from './rusty'
 import {
   DOOR,
+  EDUARD_BLOCK,
   EDUARD_SPOT,
   READABLES,
-  GUEST_AUTO_TARGET,
   GUEST_SKIP,
   GUEST_START,
   MODELS,
+  RUSTY_RUN_START,
   RUSTY_START,
   SKY,
   WELCOME_DISTANCE,
@@ -70,6 +74,10 @@ export type ArrivalSceneProps = {
   onFirstMove: () => void
   onGuestNear: () => void
   onCowDropped: () => void
+  /** HUGO has introduced Rusty: he runs down the driveway to the guest. */
+  rustyGo: boolean
+  /** Rusty has set off down the driveway (HUGO points him out). */
+  onRustyComing: () => void
   /** The first time the guest steps into the cabin. */
   onEnterCabin: () => void
   /** The guest picked up the résumé or looked at the to-do list. */
@@ -77,9 +85,10 @@ export type ArrivalSceneProps = {
 }
 
 /** What the prompt over the nearest usable thing does. */
-type PromptId = 'throw' | 'rub' | 'tag' | 'door-in' | 'door-out' | ReadableId
+type PromptId = 'throw' | 'pet' | 'rub' | 'tag' | 'door-in' | 'door-out' | ReadableId
 const PROMPT_LABELS: Record<PromptId, string> = {
   throw: 'Throw',
+  pet: 'Pet',
   rub: 'Rub belly',
   tag: 'Name tag',
   'door-in': 'Go in',
@@ -151,6 +160,11 @@ function buildRig(g: Groups) {
       armL: node(g.eduard, 'Eduard_ArmL'),
       head: node(g.eduard, 'Eduard_Head'),
       torso: node(g.eduard, 'Eduard_Torso'),
+      legL: node(g.eduard, 'Eduard_LegL'),
+      legR: node(g.eduard, 'Eduard_LegR'),
+      shinL: node(g.eduard, 'Eduard_ShinL'),
+      shinR: node(g.eduard, 'Eduard_ShinR'),
+      board: node(g.eduard, 'Eduard_Board'),
     },
     rusty: {
       fl: node(g.rusty, 'Rusty_LegFL'),
@@ -160,6 +174,7 @@ function buildRig(g: Groups) {
       head: node(g.rusty, 'Rusty_Head'),
       tail: node(g.rusty, 'Rusty_Tail'),
       mouth: node(g.rusty, 'Rusty_Mouth'),
+      tag: node(g.rusty, 'Rusty_Tag'),
     },
     hugo: {
       head: node(g.hugo, 'Hugo_Head'),
@@ -221,12 +236,21 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     guestStuck: 0,
     idleSince: 0,
     welcomed: false,
-    dog: createRusty(RUSTY_START, Math.PI * 0.85),
+    // Rusty first (A76): unless starting by the cabin, he's already running
+    // down the driveway with the cow when the site opens.
+    // (He waits there, sitting, until HUGO introduces him.)
+    dog: startNearCabin
+      ? createRusty(RUSTY_START, Math.PI * 0.85)
+      : { ...createRusty(RUSTY_RUN_START, 0), homeSit: true },
+    rustySent: false,
+    /** Eduard on the deck (eduard.ts). */
+    ed: createEduard(),
+    edLean: 0,
+    edY: EDUARD_SPOT.y,
     /** Where the mouse points on the ground (for aiming a throw). */
     aim: null as Vec2 | null,
-    eduardYaw: EDUARD_SPOT.facing,
     hugo: new THREE.Vector3(GUEST_START.x + 0.9, 1.0, GUEST_START.z - 0.2),
-    zoom: 1,
+    zoom: startNearCabin ? 1 : 0.72,
     hugoYaw: Math.PI,
     marker: { x: 0, z: 0, life: 0 },
     clock: 0,
@@ -339,13 +363,17 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           (s.guest.x - d.pos.x) * Math.cos(d.yaw) - (s.guest.z - d.pos.z) * Math.sin(d.yaw),
         )
         walkTo({
-          x: d.pos.x + Math.cos(d.yaw) * 0.72 * (side || 1),
-          z: d.pos.z - Math.sin(d.yaw) * 0.72 * (side || 1),
+          x: d.pos.x + Math.cos(d.yaw) * 0.52 * (side || 1),
+          z: d.pos.z - Math.sin(d.yaw) * 0.52 * (side || 1),
         })
         s.marker.life = 0
         s.pendingRub = true
         break
       }
+      case 'pet':
+        // the guest crouches where they are; Rusty comes right up for it
+        petRusty(s.dog)
+        break
       case 'tag':
         s.tagAsked = false
         s.tagShow = TAG_TIME
@@ -414,10 +442,6 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const t = s.clock
 
     // ---------------------------------------------------------- guest
-    if (!s.moved && s.clock > 7 && !s.target) {
-      // Nobody has tapped yet: follow HUGO up the driveway.
-      s.target = { ...GUEST_AUTO_TARGET }
-    }
     let walking = false
     if (s.target) {
       const next = step(s.guest, s.target, 3.1 * dt)
@@ -440,9 +464,12 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       if (toDog < 1.2) rubBelly(dog, s.guest)
     }
     const rubbing = dog.rubbing > 0 && toDog < 1.4 && !s.target
-    if (rubbing) s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, dog.pos), 8 * dt)
-    s.crouch += ((rubbing ? 1 : 0) - s.crouch) * damp(dt, 7)
+    const petting = dog.petting > 0 && toDog < 2 && !s.target
+    if (rubbing || petting) s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, dog.pos), 8 * dt)
+    s.crouch += ((rubbing ? 1 : petting ? 0.55 : 0) - s.crouch) * damp(dt, 7)
     const crouch = s.crouch
+    // patting his head: the right hand reaches out and pats
+    const pat = petting ? 1 : 0
     // step up onto the deck and the cabin floor
     s.guestY += (groundHeight(s.guest) - s.guestY) * damp(dt, 14)
     s.walkPhase += walking ? dt * 11 : 0
@@ -452,14 +479,21 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const lerpRot = (jt: Joint, axis: 'x' | 'z', value: number) => {
       jt.obj.rotation[axis] += (jt.base[axis] + value - jt.obj.rotation[axis]) * relax
     }
-    // crouching: thighs forward, shins back, one hand rubbing back and forth
-    const rubStroke = Math.sin(t * 9) * 0.22
+    // crouching: thighs forward, shins back, both hands on his belly rubbing in circles
+    const rubStroke = Math.sin(t * 7) * 0.18
     lerpRot(j.legL, 'x', swing * 0.6 - crouch * 1.1)
     lerpRot(j.legR, 'x', -swing * 0.6 - crouch * 1.1)
     lerpRot(j.shinL, 'x', (walking ? Math.max(0, -Math.cos(s.walkPhase)) * 0.6 : 0) + crouch * 1.9)
     lerpRot(j.shinR, 'x', (walking ? Math.max(0, Math.cos(s.walkPhase)) * 0.6 : 0) + crouch * 1.9)
-    lerpRot(j.armL, 'x', -swing * 0.5 - crouch * 0.5)
-    lerpRot(j.armR, 'x', swing * 0.5 - crouch * (1.15 + rubStroke))
+    const rub = rubbing ? crouch : 0
+    lerpRot(j.armL, 'x', -swing * 0.5 - rub * (0.8 - rubStroke))
+    lerpRot(
+      j.armR,
+      'x',
+      swing * 0.5 - rub * (0.8 + rubStroke) - pat * (1.25 + Math.max(0, Math.sin(t * 9)) * 0.3),
+    )
+    lerpRot(j.armL, 'z', rub * (0.12 - Math.cos(t * 7) * 0.15))
+    lerpRot(j.armR, 'z', rub * (-0.12 + Math.cos(t * 7) * 0.15))
     G.hiker.position.set(
       s.guest.x,
       s.guestY +
@@ -517,6 +551,14 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
 
     // ---------------------------------------------------------- Rusty and the cow (rusty.ts)
+    // The opening: once HUGO has introduced him (or the guest walks right up to
+    // him), Rusty runs down the driveway to them with the cow.
+    if (!startNearCabin && !s.rustySent && (callbacks.current.rustyGo || toDog < 4)) {
+      s.rustySent = true
+      dog.homeSit = false
+      startApproach(dog)
+      callbacks.current.onRustyComing()
+    }
     const r = joints.rusty
     // where the cow sits when he carries it: just in front of his mouth
     G.rusty.updateMatrixWorld(true)
@@ -533,35 +575,59 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const rx = (jt: Joint, v: number) => {
       jt.obj.rotation.x += (jt.base.x + v - jt.obj.rotation.x) * damp(dt, 14)
     }
-    // lying down: front legs stretched forward, back legs tucked under.
-    // On his back (belly rub) the paws fold up and paddle now and then.
+    const rz = (jt: Joint, v: number) => {
+      jt.obj.rotation.z += (jt.base.z + v - jt.obj.rotation.z) * damp(dt, 14)
+    }
+    // Lying down: front legs stretched forward, back legs tucked under.
+    // Sitting (showing his tag): rear down, front legs straight, back legs folded.
+    // On his back (belly rub): squirming side to side, paws up and splayed, and
+    // a back leg that kicks away when the spot's just right.
     const lie = dog.lie
+    const sit = dog.sit * dog.sit * (3 - 2 * dog.sit)
     const rollK = dog.roll * dog.roll * (3 - 2 * dog.roll)
-    const paddle = Math.max(0, Math.sin(t * 3.1)) * Math.sin(t * 17) * 0.35 * rollK
-    const frontLeg = -1.45 * lie * (1 - rollK) - 0.75 * rollK
-    const backLeg = -1.25 * lie * (1 - rollK) - 0.35 * rollK
+    const paddle = Math.max(0, Math.sin(t * 3.1)) * Math.sin(t * 15) * 0.25 * rollK
+    const kick = Math.max(0, Math.sin(t * 1.9) - 0.2) * Math.sin(t * 24) * 0.7 * rollK
+    const frontLeg = -1.45 * lie * (1 - rollK) - 1.0 * rollK + 0.5 * sit
+    const backLeg = -1.25 * lie * (1 - rollK) - 0.45 * rollK - 0.95 * sit
+    // the leg on the guest's side kicks (it's the one nearest the hand)
+    const kickL = dog.rollSide > 0 ? kick : 0
+    const kickR = dog.rollSide > 0 ? 0 : kick
     rx(r.fl, gait + frontLeg + paddle)
     rx(r.fr, -gait + frontLeg - paddle)
-    rx(r.br, gait + backLeg - paddle * 0.6)
-    rx(r.bl, -gait + backLeg + paddle * 0.6)
-    const wag = 9 + dog.excitement * 9
+    rx(r.bl, -gait + backLeg + kickL)
+    rx(r.br, gait + backLeg + kickR)
+    // splay the legs outwards on his back (+z swings a leg towards his left)
+    rz(r.fl, 0.35 * rollK)
+    rz(r.fr, -0.35 * rollK)
+    rz(r.bl, 0.55 * rollK)
+    rz(r.br, -0.55 * rollK)
+    const wag = 9 + dog.excitement * 9 + rollK * 6
     r.tail.obj.rotation.y = r.tail.base.y + Math.sin(t * wag) * 0.6 * dog.excitement
     r.head.obj.rotation.x =
       r.head.base.x +
       dog.headDown * 0.75 +
       (pose.moving ? Math.sin(dog.gait * 2) * 0.05 * pose.stride : Math.sin(t * 1.6) * 0.05 - 0.04)
+    // head lolls from side to side while he squirms
+    r.head.obj.rotation.z = r.head.base.z + Math.sin(t * 2.6 + 1) * 0.3 * rollK
     // Rolling onto his back turns him about his body, not his feet: shift the
     // model so the middle of his body stays put (it sits 0.42 up in the model).
-    const roll = dog.rollSide * 2.25 * rollK
-    const bodyY = 0.42 - 0.24 * lie + 0.05 * rollK
+    const squirm = Math.sin(t * 5.2) * 0.14 * rollK
+    const roll = dog.rollSide * 2.5 * rollK + squirm
+    const bodyY = 0.42 - 0.24 * lie + 0.1 * rollK - 0.06 * sit
     const sideways = 0.42 * Math.sin(roll)
     G.rusty.position.set(
       dog.pos.x + Math.cos(dog.yaw) * sideways,
       Math.abs(Math.sin(dog.gait)) * 0.06 * pose.stride + bodyY - 0.42 * Math.cos(roll),
       dog.pos.z - Math.sin(dog.yaw) * sideways,
     )
-    // lean into turns a little and dip the front when lowering the head
-    G.rusty.rotation.set(dog.headDown * 0.12 * (1 - rollK), dog.yaw, roll, 'YZX')
+    // lean into turns a little, dip the front when lowering the head, sit back
+    // on his haunches, and wriggle a little on his back
+    G.rusty.rotation.set(
+      dog.headDown * 0.12 * (1 - rollK) - 0.5 * sit,
+      dog.yaw + Math.sin(t * 2.6) * 0.12 * rollK,
+      roll,
+      'YZX',
+    )
 
     const c = dog.cow
     G.cow.position.set(c.pos.x, c.pos.y, c.pos.z)
@@ -569,7 +635,9 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
     // ---------------------------------------------------------- Rusty's name tag (A68)
     const overRusty = { x: dog.pos.x, y: 1.05 - 0.3 * lie, z: dog.pos.z }
-    tagAnchor.current?.position.set(overRusty.x, overRusty.y + 0.1, overRusty.z)
+    // the name tag hangs from his collar (where the model's tag is, under his chin)
+    G.rusty.updateMatrixWorld(true)
+    if (tagAnchor.current) r.tag.obj.getWorldPosition(tagAnchor.current.position)
     if (s.tagShow > 0) {
       s.tagShow -= dt
       // put it away when time's up, he runs off, or the guest walks away
@@ -585,7 +653,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     let next: PromptId | null = null
     let at: { x: number; y: number; z: number } | null = null
     const dist = (p: { x: number; z: number }) => Math.hypot(p.x - s.guest.x, p.z - s.guest.z)
-    const busyWithRusty = s.tagShow > 0 || s.pendingRub || dog.rubbing > 0
+    const busyWithRusty = s.tagShow > 0 || s.pendingRub || dog.rubbing > 0 || dog.petting > 0
     if (busyWithRusty) {
       // nothing else to do while rubbing his belly or reading his tag
     } else if (inside) {
@@ -605,15 +673,22 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     } else if (s.tagAsked && canSeeTag(dog, s.guest)) {
       next = 'tag'
       at = overRusty
+    } else if (s.welcomed && dist(DOOR.outside) < 1.3) {
+      // at the door, going in wins over Rusty and the cow (his spot is right by the deck)
+      next = 'door-in'
+      at = DOOR.prompt
+    } else if (dog.pets === 0 && canPet(dog, s.guest)) {
+      // HUGO asked for a pet: offer that first, then the cow
+      next = 'pet'
+      at = overRusty
     } else if (canThrow(dog, s.guest)) {
       next = 'throw'
       at = { x: c.pos.x, y: c.pos.y + 0.65, z: c.pos.z }
-    } else if (s.welcomed && dist(DOOR.outside) < 1.3) {
-      // at the door, going in wins over Rusty (his spot is right by the deck)
-      next = 'door-in'
-      at = DOOR.prompt
     } else if (canRubBelly(dog, s.guest)) {
       next = 'rub'
+      at = overRusty
+    } else if (canPet(dog, s.guest)) {
+      next = 'pet'
       at = overRusty
     } else if (canSeeTag(dog, s.guest)) {
       next = 'tag'
@@ -639,29 +714,37 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       }
     }
 
-    // ---------------------------------------------------------- Eduard
+    // ---------------------------------------------------------- Eduard (eduard.ts)
+    const ed = s.ed
+    updateEduard(ed, dt, { guest: s.guest, dog: dog.pos, greeting: eduardGreeting })
+    const ep = eduardPose(ed, t, eduardGreeting)
     const e = joints.eduard
-    const eduardPos = { x: EDUARD_SPOT.x, z: EDUARD_SPOT.z }
-    if (eduardGreeting) {
-      s.eduardYaw = turnTowards(s.eduardYaw, facing(eduardPos, s.guest), 4 * dt)
-      e.armR.obj.rotation.x += (e.armR.base.x + 0.9 - e.armR.obj.rotation.x) * relax
-      e.head.obj.rotation.x += (0.05 - e.head.obj.rotation.x) * relax
-      // wave with the free hand
-      e.armL.obj.rotation.x += (-2.6 - e.armL.obj.rotation.x) * relax
-      e.armL.obj.rotation.y = Math.sin(t * 9) * 0.35
-    } else {
-      s.eduardYaw = turnTowards(s.eduardYaw, EDUARD_SPOT.facing, 3 * dt)
-      // hammering: a slow lift and a quick strike
-      const cycle = (t * 1.25) % 1
-      const lift = cycle < 0.7 ? cycle / 0.7 : 1 - (cycle - 0.7) / 0.3
-      e.armR.obj.rotation.x = e.armR.base.x - lift * 0.9 + 0.35
-      e.head.obj.rotation.x += (e.head.base.x - e.head.obj.rotation.x) * relax
-      e.armL.obj.rotation.x += (e.armL.base.x - 0.5 - e.armL.obj.rotation.x) * relax
-      e.armL.obj.rotation.y *= 0.9
+    const follow = (jt: Joint, axis: 'x' | 'y' | 'z', v: number, rate: number) => {
+      jt.obj.rotation[axis] += (jt.base[axis] + v - jt.obj.rotation[axis]) * damp(dt, rate)
     }
+    follow(e.armR, 'x', ep.armR, ep.snap)
+    follow(e.armR, 'z', ep.armRz, 8)
+    follow(e.armL, 'x', ep.armL, 8)
+    follow(e.armL, 'z', ep.armLz, 8)
+    // the wave
+    e.armL.obj.rotation.y = eduardGreeting
+      ? Math.sin(t * 9) * 0.35
+      : e.armL.obj.rotation.y * (1 - damp(dt, 6))
+    follow(e.head, 'x', ep.head, 6)
+    follow(e.head, 'y', ep.headTurn, 8)
+    follow(e.legL, 'x', ep.thighL, 12)
+    follow(e.legR, 'x', ep.thighR, 12)
+    follow(e.shinL, 'x', ep.shinL, 12)
+    follow(e.shinR, 'x', ep.shinR, 12)
+    e.board.obj.visible = ed.carrying
     e.torso.obj.rotation.x = e.torso.base.x + Math.sin(t * 1.4) * 0.015
-    G.eduard.position.set(EDUARD_SPOT.x, EDUARD_SPOT.y, EDUARD_SPOT.z)
-    G.eduard.rotation.y = s.eduardYaw
+    s.edLean += (ep.lean - s.edLean) * damp(dt, 6)
+    s.edY += (ep.y - s.edY) * damp(dt, 10)
+    G.eduard.position.set(ed.pos.x, s.edY, ed.pos.z)
+    // lean in his own frame (turn first, then pitch)
+    G.eduard.rotation.set(s.edLean, ed.yaw, 0, 'YXZ')
+    EDUARD_BLOCK.x = ed.pos.x
+    EDUARD_BLOCK.z = ed.pos.z
 
     // ---------------------------------------------------------- HUGO
     // HUGO keeps to the guest's left on screen, a little further from the
@@ -694,7 +777,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
     // ---------------------------------------------------------- bubble anchors
     hugoAnchor.current?.position.set(s.hugo.x, s.hugo.y + 0.95, s.hugo.z)
-    eduardAnchor.current?.position.set(EDUARD_SPOT.x, 1.6, EDUARD_SPOT.z)
+    eduardAnchor.current?.position.set(ed.pos.x, 1.6 + 0.13 * ed.stand, ed.pos.z)
 
     // ---------------------------------------------------------- camera and sun follow the guest
     // Looking down from above and behind, like a little diorama. Tall phone
@@ -702,7 +785,24 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // camera eases in so the faces are readable.
     const far = size.height > size.width ? 1.3 : 1
     const welcoming = s.welcomed && bubble !== null && !inside
-    s.zoom += ((inside ? 0.66 : welcoming ? 0.8 : 1) - s.zoom) * damp(dt, 1.5)
+    // reading his tag, rubbing his belly or petting him: ease in on Rusty
+    const withRusty = !inside && (s.tagShow > 0 || dog.rubbing > 0 || dog.petting > 0)
+    // the opening: a little closer while Rusty runs down the driveway to the guest
+    const rustyRunning = !startNearCabin && !dog.firstDropDone
+    s.zoom +=
+      ((inside
+        ? 0.66
+        : withRusty
+          ? dog.petting > 0
+            ? 0.6
+            : 0.42
+          : rustyRunning
+            ? 0.72
+            : welcoming
+              ? 0.8
+              : 1) -
+        s.zoom) *
+      damp(dt, 1.5)
     // (window.__cabinZoom lets a test browser move the camera in; dev only)
     const devZoom =
       process.env.NODE_ENV !== 'production'
@@ -713,9 +813,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // Inside, aim at the middle of the room so all of it is in view.
     const aim = inside
       ? { x: s.guest.x * 0.3, z: s.guest.z * 0.3 - 0.4 }
-      : welcoming
-        ? { x: s.guest.x * 0.55 + EDUARD_SPOT.x * 0.45, z: s.guest.z * 0.55 + EDUARD_SPOT.z * 0.45 }
-        : { x: s.guest.x, z: s.guest.z - 5 * k }
+      : withRusty
+        ? { x: s.guest.x * 0.3 + dog.pos.x * 0.7, z: s.guest.z * 0.3 + dog.pos.z * 0.7 }
+        : welcoming
+          ? { x: s.guest.x * 0.55 + ed.pos.x * 0.45, z: s.guest.z * 0.55 + ed.pos.z * 0.45 }
+          : { x: s.guest.x, z: s.guest.z - 5 * k }
     // The camera sits a little west of the guest, so it looks past the stand of
     // trees by the woodshed towards the deck.
     const camGoal = tmp.set(s.guest.x + CAMERA_SIDE * k, 8.6 * k, s.guest.z + 12.5 * k)

@@ -401,43 +401,47 @@ button.todoItem:focus-visible .todoText {
   background: #fec54f;
 }
 
-/* Rusty's name tag (A68): a pixel close-up of his collar, over his head. */
-.tagCard {
-  position: relative;
-  padding: 8px;
-  background: #fff7e6;
-  border: 3px solid #3b2a1e;
-  box-shadow: 4px 4px 0 rgba(59, 42, 30, 0.35);
-  transform: translate(calc(-50% + var(--shift, 0px)), calc(-100% - 14px));
+/* Rusty's name tag (A68): hangs from his collar (the ring's top sits on the
+   anchor) and swings a little. */
+.tagHang {
+  transform: translate(calc(-50% + var(--shift, 0px)), -2px);
   pointer-events: none;
-  animation: tagIn 0.25s steps(4, end);
+  filter: drop-shadow(0 3px 0 rgba(59, 42, 30, 0.35));
+  animation: tagIn 0.2s steps(3, end);
 }
 
-.tagCard svg {
+.tagSwing {
+  position: relative;
+  transform-origin: 50% 0;
+  animation: tagSwing 2.4s ease-in-out 0.2s infinite;
+}
+
+.tagHang svg {
   display: block;
   image-rendering: pixelated;
 }
 
-.tagCard::after {
-  content: '';
-  position: absolute;
-  left: clamp(10px, calc(50% - 8px - var(--shift, 0px)), calc(100% - 26px));
-  bottom: -14px;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 11px solid #3b2a1e;
-}
-
-/* Centred on the bone: art pixel (24, 19) at 4 screen pixels each, plus the padding. */
+/* Centred on the bone: art pixel (18, 13) at 3 screen pixels each. */
 .tagName {
   position: absolute;
-  left: calc(8px + 24 * 4px);
-  top: calc(8px + 19 * 4px);
+  left: calc(18 * 3px);
+  top: calc(13 * 3px);
   transform: translate(-50%, -50%);
-  font-size: 1.05rem;
-  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
   color: #fff7e6;
-  text-shadow: 0 2px 0 #8a2620;
+  text-shadow: 0 1px 0 #8a2620;
+}
+
+@keyframes tagSwing {
+  0%,
+  100% {
+    rotate: -5deg;
+  }
+  50% {
+    rotate: 5deg;
+  }
 }
 
 @keyframes tagIn {
@@ -452,7 +456,8 @@ button.todoItem:focus-visible .todoText {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tagCard {
+  .tagHang,
+  .tagSwing {
     animation: none;
   }
 }

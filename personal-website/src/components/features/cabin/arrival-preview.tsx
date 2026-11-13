@@ -12,10 +12,11 @@ import { LOOK_ROWS, parseLook, type Look, type ReadableId } from './world'
 // three.js loads only on this page, after hydration.
 const ArrivalScene = dynamic(() => import('./arrival-scene'), { ssr: false })
 
-// Placeholder lines (the storyboard marks HUGO's wording as Eduard's to approve).
+// HUGO's opening lines are Eduard's wording (A77); the others are still placeholders.
 const LINES = {
   hugoHello:
-    "Oh, hi! You must be Eduard's guest. I'm HUGO. Tap where you want to go. The cabin's just up ahead.",
+    "Hi! You must be Eduard's guest. I'm HUGO, his personal assistant. Welcome to his happy place. Feel free to look around, and when you're ready, he's waiting for us by the cabin.",
+  hugoRusty: "Oh, and there's Rusty! Give him a pet, he deserves it.",
   eduardWelcome: "Hey! HUGO, show them around, I'll finish up here.",
   hugoReply: "You heard him! Let's start with the cabin.",
 }
@@ -95,31 +96,57 @@ export function ArrivalPreview({ resume }: { resume: CabinResume }) {
     }
   }, [])
 
+  // Rusty first (A76): the site opens with Rusty running down the driveway
+  // with the cow and Eduard waving from the deck; HUGO says hello once Rusty's
+  // there. (?skip=1 starts by the cabin, where Rusty waits at his spot.)
+  // The opening (A77): HUGO introduces himself; once the guest has had time to
+  // read it, Rusty comes running down the driveway with the cow and HUGO points
+  // him out. (?skip=1 starts by the cabin, where Rusty waits at his spot.)
+  const [rustyGo, setRustyGo] = useState(false)
   const onReady = useCallback(() => {
     setReady(true)
     later(700, () => {
       if (!welcomed.current) setBubble({ speaker: 'HUGO', text: LINES.hugoHello })
     })
+    // typing time (38 letters a second) plus a moment to finish reading
+    const readTime = (LINES.hugoHello.length / 38) * 1000 + 2500
+    if (!startNearCabin) later(700 + readTime, () => setRustyGo(true))
+  }, [later, startNearCabin])
+
+  const onRustyComing = useCallback(() => {
+    if (welcomed.current) return
+    setBubble({ speaker: 'HUGO', text: LINES.hugoRusty })
+    later(8000, () => setBubble((b) => (b?.text === LINES.hugoRusty ? null : b)))
   }, [later])
 
-  const onFirstMove = useCallback(() => {
-    setMoved(true)
-    setBubble((b) => (b?.text === LINES.hugoHello ? null : b))
-  }, [])
-
-  const onGuestNear = useCallback(() => {
-    welcomed.current = true
-    setIsWelcomed(true)
-    setBubble((b) => (b?.text === LINES.hugoHello ? null : b))
-  }, [])
-
-  const onCowDropped = useCallback(() => {
+  // Eduard welcomes the guest once they're near the deck and Rusty has given them the cow.
+  const welcomeState = useRef({ near: false, cow: false, done: false })
+  const welcome = useCallback(() => {
+    const w = welcomeState.current
+    if (w.done || !w.near || !w.cow) return
+    w.done = true
     setGreeting(true)
     setBubble({ speaker: 'Eduard', text: LINES.eduardWelcome })
     later(4300, () => setBubble({ speaker: 'HUGO', text: LINES.hugoReply }))
     later(5200, () => setGreeting(false))
     later(8600, () => setBubble((b) => (b?.text === LINES.hugoReply ? null : b)))
   }, [later])
+
+  // (Walking doesn't clear HUGO's line: the guest may still be reading it.)
+  const onFirstMove = useCallback(() => setMoved(true), [])
+
+  const onGuestNear = useCallback(() => {
+    welcomed.current = true
+    setIsWelcomed(true)
+    setBubble((b) => (b?.text === LINES.hugoHello ? null : b))
+    welcomeState.current.near = true
+    welcome()
+  }, [welcome])
+
+  const onCowDropped = useCallback(() => {
+    welcomeState.current.cow = true
+    welcome()
+  }, [welcome])
 
   const onEnterCabin = useCallback(() => {
     setBubble({ speaker: 'HUGO', text: HUGO_CABIN_LINE })
@@ -136,6 +163,8 @@ export function ArrivalPreview({ resume }: { resume: CabinResume }) {
         bubble={bubble}
         eduardGreeting={greeting}
         startNearCabin={startNearCabin}
+        rustyGo={rustyGo}
+        onRustyComing={onRustyComing}
         onReady={onReady}
         onFirstMove={onFirstMove}
         onGuestNear={onGuestNear}

@@ -42,8 +42,8 @@ Blender's viewport shows the models with smooth shading on round shapes (`SMOOTH
 
 - Characters face **-Y** in Blender, which becomes **+Z** in three.js. North (+Y in Blender) is **-Z** in three.js.
 - Animated parts are separate objects with their pivot at the joint, named like `Eduard_ArmR`, `Rusty_Tail` or `Hugo_AntennaL`. The website finds them by name (`src/components/features/cabin/arrival-scene.tsx`), so renaming a part breaks its animation.
-- `Eduard_Beard` and `Eduard_Mustache` are the two face options. Both are exported; the website shows the beard unless the URL has `?face=mustache`.
-- `Rusty_Mouth` is an empty that marks where the plush cow sits.
+- `Eduard_Beard` and `Eduard_Mustache` are the two face options. Both are exported; the website shows the beard unless the URL has `?face=mustache`. `Eduard_Board` is a deck board in his left hand, hidden in Blender; the website shows it while he carries one from the lumber pile.
+- `Rusty_Mouth` is an empty that marks where the plush cow sits; `Rusty_Tag` marks where his name tag hangs.
 - Object names `Ground`, `Brook` and `StringLights` are special on the website (painted ground, no shadows).
 - The cabin is in parts so the guest can go inside. `Cabin` (floor and the walls that stay) and `Cabin_Interior` go in `set.glb`. The parts the website moves or fades are in the `CabinParts` collection and exported to `cabin-parts.glb` without merging: `Cabin_Roof`, `Cabin_SouthWall` and `StringLights` dissolve when the guest is inside, and `Cabin_Door` swings open on its hinge. The walls, floor heights, door route and where the résumé and to-do list are live in `src/components/features/cabin/world.ts`.
 - Colours come from the palette in `scripts/lib.py`: the "bit brighter" row sampled from Eduard's photos, plus a few neutrals.

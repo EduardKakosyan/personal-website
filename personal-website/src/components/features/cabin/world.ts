@@ -45,8 +45,9 @@ export const LOOK_ROWS: Record<Exclude<Look, 'smooth'>, { normal: number; lofi: 
 export const GUEST_START: Vec2 = { x: 0.7, z: 23 }
 /** With ?skip=1 the guest starts close enough to trigger the welcome. */
 export const GUEST_SKIP: Vec2 = { x: 0.2, z: 9.4 }
-export const GUEST_AUTO_TARGET: Vec2 = { x: 0.3, z: 9 }
 export const RUSTY_START: Vec2 = { x: 2.6, z: 2.9 }
+/** Where Rusty is when the site opens: already running down the driveway with the cow (A76, option C). */
+export const RUSTY_RUN_START: Vec2 = { x: 0.6, z: 13.2 }
 // The deck is on the cabin's east side (Eduard's second sketch). Eduard kneels at
 // the edge of the finished boards, facing the open south end (and the arriving
 // guest), clear of the path from the deck to the door.
@@ -121,13 +122,13 @@ const BOXES: Box[] = [
   { x0: -1.7, x1: -1.25, z0: -0.05, z1: 0.6 }, // tote
   { x0: -1.7, x1: -1.25, z0: 1.3, z1: 2.3 }, // chainsaw
   { x0: 1.2, x1: 1.7, z0: -1.75, z1: -0.35 }, // counter under the window
+  { x0: 1.4, x1: 1.7, z0: -0.1, z1: 0.35 }, // tackle box, north of the door
   { x0: 4.2, x1: 4.85, z0: -2.9, z1: -0.9 }, // lumber pile
   { x0: 1.95, x1: 2.55, z0: -1.5, z1: -0.8 }, // sink
   { x0: 3.0, x1: 4.6, z0: 3.9, z1: 5.7 }, // picnic table
   { x0: 2.1, x1: 3.7, z0: -4.8, z1: -3.2 }, // outdoor shower
 ]
 const CIRCLES: Circle[] = [
-  { x: 3.15, z: 1.3, r: 0.4 }, // Eduard, kneeling on the deck
   { x: -1.5, z: 0.85, r: 0.18 }, // propane tank
   { x: 4.15, z: -3.27, r: 0.5 }, // shower door
   { x: 2.45, z: -2.05, r: 0.35 }, // grill
@@ -163,7 +164,11 @@ const CIRCLES: Circle[] = [
   { x: -6.8, z: 2.0, r: 0.6 },
 ]
 
+/** Eduard: he moves (fetching boards), so the scene keeps this up to date. */
+export const EDUARD_BLOCK = { x: 3.15, z: 1.3, r: 0.4 }
+
 export function blocked(p: Vec2, pad = 0.28) {
+  if (Math.hypot(p.x - EDUARD_BLOCK.x, p.z - EDUARD_BLOCK.z) < EDUARD_BLOCK.r + pad) return true
   return (
     BOXES.some(
       (o) => p.x > o.x0 - pad && p.x < o.x1 + pad && p.z > o.z0 - pad && p.z < o.z1 + pad,

@@ -553,6 +553,7 @@ def cabin_interior():
     p.append(box("hammer_head", (0.05, 0.2, 0.1), (ex - 0.12, -1.72, f + 0.78), deg(12, 0, 0)))
     compound("Cabin_Interior", p)
     mushroom_basket((ex - 0.25, 1.03, f + 0.92))
+    striper_rod(CABIN_D / 2 - 0.16)
 
     # the résumé on the bistro table, and the to-do list pinned to the north wall
     compound(
@@ -602,6 +603,40 @@ def mushroom_basket(at):
         p.append(sphere("bolete_stem", 0.034, (mx, my, 0.17 + h), rot, scale=(0.8, 0.8, 1.25), seg=8, rings=5))
         p.append(sphere("bolete_cap", 0.056, (mx, my, 0.22 + h), rot, scale=(1, 1, 0.62), seg=12, rings=6))
     compound("MushroomBasket", p, location=(x, y, z))
+
+
+def striper_rod(wx):
+    """Eduard's surf rod for stripers (A72), on two hooks along the east wall
+    above the door (a 9 ft rod doesn't stand up in here), and the tackle box on
+    the floor by the door."""
+    z = WALL_BASE + 1.9
+    along = deg(-90, 0, 0)  # cylinders run along +Y (north)
+    p = [
+        # the grip, the blank tapering to the tip, and a few guides
+        cyl("lumber", 0.022, 0.5, (wx, -1.95, z), along, seg=8),
+        cyl("metal_dark", 0.013, 2.2, (wx, -0.6, z), along, r2=0.005, seg=6),
+    ]
+    for gy in (-1.35, -0.85, -0.35, 0.15):
+        p.append(sphere("steel", 0.012, (wx - 0.012, gy, z - 0.016), seg=6, rings=4))
+    # a spinning reel hanging under the grip
+    p.append(box("metal_dark", (0.016, 0.03, 0.05), (wx, -1.65, z - 0.035)))
+    p.append(cyl("steel", 0.045, 0.045, (wx, -1.65, z - 0.08), deg(0, 90, 0), seg=10))
+    p.append(cyl("metal_dark", 0.03, 0.05, (wx, -1.65, z - 0.08), deg(0, 90, 0), seg=10))
+    # the two hooks it rests on
+    for hy in (-1.85, -0.4):
+        p.append(box("weathered", (0.09, 0.025, 0.025), (wx + 0.04, hy, z - 0.02)))
+        p.append(box("weathered", (0.02, 0.025, 0.05), (wx - 0.005, hy, z + 0.0)))
+    compound("StriperRod", p)
+
+    # the tackle box on the floor by the door, north of it
+    f = FLOOR_Z
+    t = [
+        box("tote_green", (0.24, 0.42, 0.16), (0, 0, 0.08)),
+        box("pine_dark", (0.25, 0.43, 0.05), (0, 0, 0.18)),
+        box("metal_dark", (0.03, 0.16, 0.025), (0, 0, 0.215)),
+        box("steel", (0.012, 0.05, 0.04), (-0.125, 0, 0.15)),
+    ]
+    compound("TackleBox", t, location=(wx - 0.09, -0.12, f), rot=deg(0, 0, 4))
 
 
 def deck():
@@ -1120,6 +1155,17 @@ def eduard():
     )
     bpy.data.objects["Eduard_Mustache"].hide_render = True
     bpy.data.objects["Eduard_Mustache"].hide_viewport = True
+    # a deck board he fetches from the lumber pile and carries in his left hand
+    # (the website shows it only while he carries it)
+    compound(
+        "Eduard_Board",
+        [box("lumber", (0.11, 1.3, 0.035), (0, 0, 0))],
+        location=(0.31, -0.12, SHOULDER - 0.33),
+        parent=root,
+        bevel=0.006,
+    )
+    bpy.data.objects["Eduard_Board"].hide_render = True
+    bpy.data.objects["Eduard_Board"].hide_viewport = True
     # kneeling on the deck: thighs upright, shins flat on the boards behind him
     for side in ("L", "R"):
         bpy.data.objects[f"Eduard_Shin{side}"].rotation_euler = deg(90, 0, 0)
@@ -1161,6 +1207,8 @@ def rusty():
             sphere("rusty", 0.19, (0, 0.02, 0.0), scale=(0.95, 1.75, 0.95), seg=14, rings=8),
             sphere("rusty", 0.19, (0, -0.2, 0.04), scale=(1.0, 1.0, 1.05), seg=12, rings=8),
             sphere("rusty_muzzle", 0.13, (0, -0.3, -0.05), scale=(0.9, 0.6, 1.0), seg=10, rings=6),
+            # his paler belly (a yellow lab's), which shows when he rolls over for a rub
+            sphere("rusty_muzzle", 0.17, (0, 0.0, -0.06), scale=(1.0, 1.76, 0.76), seg=14, rings=8),
         ],
         location=(0, 0, 0.42),
         parent=root,
@@ -1191,6 +1239,8 @@ def rusty():
         parent=root,
     )
     empty("Rusty_Mouth", location=(0, -0.3, -0.04), parent=head)
+    # where his tags hang (the website hangs the name-tag close-up here)
+    empty("Rusty_Tag", location=(0.03, -0.08, -0.17), parent=head)
     compound(
         "Rusty_Tail",
         [cyl("rusty", 0.045, 0.3, (0, 0, 0.14), r2=0.025, seg=6)],

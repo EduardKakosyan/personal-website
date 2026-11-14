@@ -111,6 +111,11 @@ PALETTE = {
     "chanterelle_light": "#f7c24e",
     "bolete_cap": "#8a5530",
     "bolete_stem": "#eadfc4",
+    # the woodshed (photo 07): fresh pale lumber, split firewood
+    "shed": "#dab680",
+    "shed_post": "#c49a62",
+    "shed_shadow": "#7a5a3a",
+    "split_wood": "#cfa56b",
 }
 
 # Faces meeting at less than this angle are shaded smoothly (spheres, 7-sided cones).

@@ -76,9 +76,29 @@ export function toFadeable(source: THREE.Material): THREE.Material {
   const key = `${currentLook}:${source.uuid}`
   const cached = fadeCache.get(key)
   if (cached) return cached
-  const mat = (toToon(source) as THREE.MeshToonMaterial).clone()
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uCutaway = cutaway
+  const mat = makeFadeable(source, cutaway)
+  fadeCache.set(key, mat)
+  return mat
+}
+
+/**
+ * A material of its own that dissolves in the same pixel dither, driven by its
+ * own amount (0 = solid, 1 = gone). Used for a tree that stands between the
+ * camera and the guest.
+ */
+export function toOwnFade(source: THREE.Material, amount: { value: number }): THREE.Material {
+  return makeFadeable(source, amount)
+}
+
+function makeFadeable(source: THREE.Material, amount: { value: number }): THREE.Material {
+  const toon = toToon(source) as THREE.MeshToonMaterial
+  const mat = toon.clone()
+  // keep the toon material's own shader changes (the foliage blotches)
+  const before = toon.onBeforeCompile.bind(toon)
+  const baseKey = toon.customProgramCacheKey()
+  mat.onBeforeCompile = (shader, renderer) => {
+    before(shader, renderer)
+    shader.uniforms.uCutaway = amount
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
@@ -95,8 +115,7 @@ float bayer4(vec2 p) {
         'void main() {\n  if (uCutaway > 0.001 && bayer4(gl_FragCoord.xy) < uCutaway) discard;',
       )
   }
-  mat.customProgramCacheKey = () => 'cabin-fade'
-  fadeCache.set(key, mat)
+  mat.customProgramCacheKey = () => `cabin-fade:${baseKey}`
   return mat
 }
 

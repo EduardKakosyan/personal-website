@@ -91,6 +91,9 @@ PADS = [(0.3, -4.6, 4.2, 2.8), (5.0, -1.0, 3.8, 3.2)]
 PATH = [(8.2, 0.4), (13.0, 0.8), (18.5, 0.1), (24.3, 0.2)]  # camp to the brook stairs
 SHOWER = (2.9, 4.0)
 WOODSHED = (5.8, -8.8)
+WORKBENCH_LOCAL = (-2.5, -0.35)  # in the shed's frame: off its south end, front nearly in line
+WOODSHED_ROT = 125  # degrees; the open front (local -Y) faces east-north-east
+CHOPPING_BLOCK = (5.62, -5.75, 0.0)
 # A small stand of trees between the driveway and the woodshed, wrapping along
 # its south side (Eduard: "the woodshed sits partly behind them"). x, y, height, kind.
 TREE_STAND = [
@@ -773,43 +776,184 @@ def outdoor_shower():
 
 
 def woodshed():
+    """Eduard's woodshed, after photo 07: fresh pale lumber, horizontal slats
+    with gaps on the sides and back, a single-slope roof (high at the open
+    front) with a wooden fascia, and split firewood stacked in the front."""
+    r = random.Random(55)
+    for _ in range(51):  # keep the shared stream where the old woodshed left it
+        rng.uniform(0, 1)
     p = []
     w, d = 2.8, 1.6
-    h_front, h_back = 2.1, 1.7
-    for sx in (-1, 1):
-        p.append(box("cabin_dark", (0.13, 0.13, h_front), (sx * w / 2, -d / 2, h_front / 2)))
-        p.append(box("cabin_dark", (0.13, 0.13, h_back), (sx * w / 2, d / 2, h_back / 2)))
-    p.append(box("cabin", (w, 0.05, h_back), (0, d / 2, h_back / 2)))
-    for sx in (-1, 1):
-        p.append(box("cabin", (0.05, d, h_back), (sx * w / 2, 0, h_back / 2)))
-    x = -w / 2 + 0.15
-    while x < w / 2:
-        p.append(box("cabin_dark", (0.04, 0.03, h_back), (x, d / 2 + 0.03, h_back / 2)))
-        x += 0.3
-    p.append(box("cabin_dark", (w, d, 0.1), (0, 0, 0.12)))
-    slope = math.atan2(h_front - h_back, d)
-    p.append(box("roof", (w + 0.4, d + 0.5, 0.07), (0, 0, (h_front + h_back) / 2 + 0.06), (slope, 0, 0)))
-    x = -w / 2 - 0.1
-    while x < w / 2 + 0.2:
-        p.append(box("roof_dark", (0.035, d + 0.5, 0.035), (x, 0, (h_front + h_back) / 2 + 0.11), (slope, 0, 0)))
-        x += 0.4
-    for row in range(6):
-        n = 9 if row % 2 == 0 else 8
-        for k in range(n):
-            xx = -w / 2 + 0.24 + k * 0.29 + (0.145 if row % 2 else 0)
-            r = rng.uniform(0.11, 0.14)
-            p.append(cyl("bark", r, 1.25, (xx, 0.1, 0.3 + row * 0.24), deg(90, 0, 0), seg=7, caps="endgrain"))
-    # open front faces the driveway (west-south-west)
-    compound("Woodshed", p, location=(*WOODSHED, 0.0), rot=deg(0, 0, -55), bevel=0.008)
+    base = 0.2  # the floor sits on skids
+    h_front, h_back = 2.15, 1.75
 
+    def top(y):  # height of the wall plate at depth y (front is -d/2)
+        return h_front + (h_back - h_front) * (y + d / 2) / d
+
+    # skids and floor
+    for sx in (-1, 0, 1):
+        p.append(box("shed_post", (0.1, d + 0.12, 0.12), (sx * (w / 2 - 0.08), 0, 0.06)))
+    p.append(box("shed", (w + 0.06, d + 0.06, 0.06), (0, 0, base - 0.03)))
+    # posts: corners and the middle of the front and back, two more along each side
+    for x in (-w / 2, 0, w / 2):
+        for y in (-d / 2, d / 2):
+            h = top(y) - base
+            p.append(box("shed_post", (0.1, 0.1, h), (x, y, base + h / 2)))
+    for sx in (-1, 1):
+        for y in (-d / 6, d / 6):
+            h = top(y) - base
+            p.append(box("shed_post", (0.08, 0.08, h), (sx * w / 2, y, base + h / 2)))
+    # top plates
+    p.append(box("shed_post", (w + 0.1, 0.12, 0.16), (0, -d / 2, h_front - 0.02)))
+    p.append(box("shed_post", (w + 0.1, 0.1, 0.12), (0, d / 2, h_back - 0.02)))
+    # slats with gaps: sides (cut to the slope) and back, set in line with the posts
+    # so the posts stand proud of them, as in the photo
+    slat, pitch = 0.12, 0.19
+    z = base + 0.12
+    while z < h_front - 0.2:
+        # sides: the slat runs from the front post back to where the slope comes down to it
+        y1 = d / 2 if z + slat < h_back - 0.12 else -d / 2 + (h_front - 0.14 - z - slat) / (h_front - h_back) * d
+        if y1 > -d / 2 + 0.15:
+            ln = y1 + d / 2
+            for sx in (-1, 1):
+                p.append(box("shed", (0.025, ln, slat), (sx * w / 2, -d / 2 + ln / 2, z + slat / 2)))
+        if z + slat < h_back - 0.12:
+            p.append(box("shed", (w, 0.025, slat), (0, d / 2, z + slat / 2)))
+        z += pitch
+    # roof: rafters running front to back, overhanging the front
+    slope = math.atan2(h_front - h_back, d)
+    over_f, over_b, over_s = 0.45, 0.15, 0.15
+    rlen = (d + over_f + over_b) / math.cos(slope)
+    yc = (over_b - over_f) / 2
+    zc = top(yc) + 0.1
+    x = -w / 2
+    while x <= w / 2 + 0.01:
+        p.append(box("shed_post", (0.05, rlen, 0.12), (x, yc, zc - 0.02), (-slope, 0, 0)))
+        x += w / 4
+    p.append(box("roof", (w + 2 * over_s, rlen, 0.04), (0, yc, zc + 0.06), (-slope, 0, 0)))
+    x = -w / 2 - over_s + 0.12
+    while x < w / 2 + over_s:
+        p.append(box("roof_dark", (0.03, rlen, 0.03), (x, yc, zc + 0.09), (-slope, 0, 0)))
+        x += 0.32
+    # fascia: a wide light board across the front and back, sloped boards on the sides
+    yf = -d / 2 - over_f
+    p.append(box("shed", (w + 2 * over_s + 0.05, 0.04, 0.17), (0, yf, top(yf) + 0.09)))
+    yb = d / 2 + over_b
+    p.append(box("shed", (w + 2 * over_s + 0.05, 0.04, 0.13), (0, yb, top(yb) + 0.09)))
+    for sx in (-1, 1):
+        p.append(box("shed", (0.04, rlen, 0.15), (sx * (w / 2 + over_s), yc, zc + 0.03), (-slope, 0, 0)))
+    # firewood: the stack behind (only seen through the slats), then split pieces at the front
+    stack = h_back - 0.2
+    p.append(box("shed_shadow", (w - 0.12, d - 0.5, stack - base), (0, 0.22, (stack + base) / 2)))
+    zr = base + 0.075
+    row = 0
+    while zr < stack:
+        x = -w / 2 + 0.13 + (0.07 if row % 2 else 0)
+        while x < w / 2 - 0.1:
+            if abs(x) > 0.11:  # leave the middle post clear
+                rad = r.uniform(0.062, 0.078)
+                side = "bark" if r.random() < 0.22 else "split_wood"
+                p.append(cyl(side, rad, r.uniform(0.42, 0.5), (x, -d / 2 + 0.3 + r.uniform(-0.03, 0.03), zr),
+                             deg(90, r.uniform(0, 360), 0), seg=r.choice((3, 4, 4, 5)), caps="endgrain"))
+            x += 0.14
+        zr += 0.125
+        row += 1
+    # the top of the stack: pieces lying front to back
+    x = -w / 2 + 0.14
+    while x < w / 2 - 0.1:
+        if abs(x) > 0.11:
+            p.append(cyl("bark" if r.random() < 0.3 else "split_wood", r.uniform(0.06, 0.075), d - 0.55,
+                         (x, 0.2, stack + 0.06), deg(90, r.uniform(0, 360), 0), seg=r.choice((4, 5)), caps="endgrain"))
+        x += 0.15
+    # the open front faces the yard and the grass field (east-north-east), as in photo 07.
+    # It fades like the trees when it hides the guest.
+    collection("SeeThrough")
+    compound("Woodshed", p, location=(*WOODSHED, 0.0), rot=deg(0, 0, WOODSHED_ROT), bevel=0.006)
+
+    collection("Set")
     blk = [cyl("bark", 0.3, 0.46, (0, 0, 0.23), seg=9, caps="endgrain")]
     blk.append(box("weathered", (0.045, 0.05, 0.7), (0.12, 0.0, 0.72), deg(0, 32, 0)))
     blk.append(box("hammer_head", (0.22, 0.05, 0.13), (-0.04, 0, 0.48), deg(0, 32, 0)))
     for i in range(5):
         a = i * 1.3
         blk.append(box("endgrain", (0.1, 0.32, 0.1), (math.cos(a) * 0.6, math.sin(a) * 0.6, 0.05), deg(0, 90 if i % 2 else 0, a * 57)))
-    # on the yard side of the woodshed, by the picnic table
-    compound("ChoppingBlock", blk, location=(4.6, -6.6, 0.0))
+    # in the yard off the woodshed's north end, clear of the workbench, with room to swing
+    compound("ChoppingBlock", blk, location=CHOPPING_BLOCK)
+
+
+def shed_point(lx, ly):
+    """A point given in the woodshed's own frame (front is -Y, x along the front), in the world."""
+    a = math.radians(WOODSHED_ROT)
+    return (WOODSHED[0] + lx * math.cos(a) - ly * math.sin(a), WOODSHED[1] + lx * math.sin(a) + ly * math.cos(a))
+
+
+def workbench():
+    """Eduard's workbench, beside the woodshed's south end (on your left as you
+    face the firewood, A79), turned the same way as the shed. The top is kept
+    clear for the project archive (scene 5)."""
+    p = []
+    L, D, H = 1.8, 0.7, 0.9
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p.append(box("shed_post", (0.09, 0.09, H - 0.06), (sx * (L / 2 - 0.08), sy * (D / 2 - 0.08), (H - 0.06) / 2)))
+    # aprons under the top and stretchers holding the lower shelf
+    for sy in (-1, 1):
+        p.append(box("shed", (L - 0.1, 0.03, 0.12), (0, sy * (D / 2 - 0.05), H - 0.12)))
+        p.append(box("shed", (L - 0.1, 0.03, 0.08), (0, sy * (D / 2 - 0.05), 0.2)))
+    for sx in (-1, 1):
+        p.append(box("shed", (0.03, D - 0.1, 0.12), (sx * (L / 2 - 0.05), 0, H - 0.12)))
+    # top: three thick planks, overhanging a little
+    for k in range(3):
+        p.append(box("lumber", (L, D / 3 - 0.008, 0.05), (0, -D / 3 + k * D / 3, H - 0.025)))
+    # lower shelf with offcuts and a toolbox
+    p.append(box("shed", (L - 0.14, D - 0.14, 0.03), (0, 0, 0.25)))
+    for i, (x, ln) in enumerate(((-0.55, 0.5), (-0.4, 0.42), (-0.5, 0.36))):
+        p.append(box("lumber", (ln, 0.09, 0.04), (x, -0.1 + i * 0.1, 0.285 + (0.04 if i == 2 else 0)), deg(0, 0, 4 * i - 4)))
+    p.append(box("bistro_red", (0.44, 0.22, 0.2), (0.45, 0.02, 0.37)))
+    p.append(box("metal_dark", (0.3, 0.03, 0.03), (0.45, 0.02, 0.49)))
+    # a vise on the right-hand front corner
+    vx, vy = L / 2 - 0.22, -D / 2 - 0.02
+    p.append(box("metal_dark", (0.16, 0.12, 0.09), (vx, vy + 0.06, H + 0.045)))
+    p.append(box("metal_dark", (0.16, 0.035, 0.11), (vx, vy - 0.03, H + 0.01)))
+    p.append(cyl("steel", 0.012, 0.22, (vx, vy - 0.12, H - 0.0), deg(90, 0, 0), seg=6))
+    p.append(cyl("steel", 0.01, 0.16, (vx, vy - 0.23, H - 0.0), deg(0, 90, 0), seg=6))
+    # back rail with a few hand tools hanging off it
+    p.append(box("shed_post", (0.07, 0.07, 0.7), (-L / 2 + 0.08, D / 2 - 0.08, H + 0.35)))
+    p.append(box("shed_post", (0.07, 0.07, 0.7), (L / 2 - 0.08, D / 2 - 0.08, H + 0.35)))
+    p.append(box("shed", (L, 0.025, 0.14), (0, D / 2 - 0.05, H + 0.62)))
+    # handsaw, square, hammer
+    p.append(box("steel", (0.42, 0.006, 0.11), (-0.45, D / 2 - 0.075, H + 0.43), deg(0, 8, 0)))
+    p.append(box("hammer_head", (0.1, 0.03, 0.08), (-0.69, D / 2 - 0.08, H + 0.5)))
+    p.append(box("hammer_head", (0.3, 0.006, 0.03), (0.05, D / 2 - 0.075, H + 0.52)))
+    p.append(box("hammer_head", (0.03, 0.006, 0.2), (-0.085, D / 2 - 0.075, H + 0.43)))
+    p.append(box("bark", (0.025, 0.025, 0.26), (0.5, D / 2 - 0.08, H + 0.42)))
+    p.append(box("hammer_head", (0.11, 0.035, 0.035), (0.5, D / 2 - 0.08, H + 0.55)))
+    # a few tools left out on the top (Eduard: "put a few tools on it"), towards the
+    # ends, so the middle stays free for the project archive
+    t = H  # the top surface
+    # cordless drill standing on its battery, back left
+    dx, dy = -0.66, 0.12
+    p.append(box("metal_dark", (0.11, 0.08, 0.06), (dx, dy, t + 0.03)))
+    p.append(box("jacket", (0.045, 0.05, 0.13), (dx + 0.01, dy, t + 0.125)))
+    p.append(cyl("jacket", 0.038, 0.17, (dx + 0.045, dy, t + 0.22), deg(0, 90, 0), seg=8))
+    p.append(cyl("metal_dark", 0.022, 0.06, (dx + 0.155, dy, t + 0.22), deg(0, 90, 0), seg=8))
+    p.append(cyl("steel", 0.006, 0.07, (dx + 0.215, dy, t + 0.22), deg(0, 90, 0), seg=5))
+    # tape measure lying flat, with its tab out
+    p.append(cyl("jacket", 0.042, 0.04, (-0.42, -0.1, t + 0.02), seg=8))
+    p.append(box("metal_dark", (0.03, 0.035, 0.042), (-0.38, -0.1, t + 0.021)))
+    p.append(box("moss", (0.07, 0.02, 0.004), (-0.33, -0.1, t + 0.003)))
+    # chisel and a carpenter's pencil, front right
+    p.append(cyl("bark", 0.014, 0.1, (0.28, -0.16, t + 0.014), deg(0, 90, 20), seg=6))
+    p.append(box("steel", (0.12, 0.02, 0.006), (0.39, -0.12, t + 0.006), deg(0, 0, 20)))
+    p.append(box("bistro_red", (0.17, 0.014, 0.008), (0.3, -0.27, t + 0.004), deg(0, 0, -12)))
+    # wooden mallet, back right
+    p.append(box("shed_post", (0.08, 0.15, 0.08), (0.5, 0.18, t + 0.04)))
+    p.append(cyl("lumber", 0.014, 0.26, (0.36, 0.18, t + 0.03), deg(0, 90, 0), seg=6))
+    # a coffee can of screws
+    p.append(cyl("steel", 0.045, 0.1, (0.62, 0.05, t + 0.05), seg=8))
+    p.append(cyl("hammer_head", 0.04, 0.005, (0.62, 0.05, t + 0.1), seg=8))
+    x, y = shed_point(*WORKBENCH_LOCAL)
+    compound("Workbench", p, location=(x, y, 0.0), rot=deg(0, 0, WOODSHED_ROT), bevel=0.006)
 
 
 def solar_panels():
@@ -986,6 +1130,10 @@ def forest():
             bi.append(prt)
     compound("Birches", bi)
 
+    # The stand and the saplings go in their own collection (exported to
+    # see-through.glb, not merged), so the website can fade one that stands
+    # between the camera and the guest.
+    collection("SeeThrough")
     # the stand between the driveway and the woodshed
     for k, (x, y, h, kind) in enumerate(TREE_STAND):
         parts = spruce_parts(h) if kind == "spruce" else birch_parts(h)
@@ -996,6 +1144,7 @@ def forest():
     for k, (x, y, h, kind) in enumerate(SAPLINGS):
         tones = ("blue_spruce", "blue_spruce_light") if kind == "blue" else ("spruce_light", "spruce")
         compound(f"SpruceSapling{k}", spruce_parts(h, tones), location=(x, y, 0), rot=(0, 0, k * 1.3))
+    collection("Set")
 
 
 def plants():
@@ -1058,6 +1207,7 @@ def build_set():
     yard()
     outdoor_shower()
     woodshed()
+    workbench()
     solar_panels()
     brook()
     forest()
@@ -1398,8 +1548,9 @@ def main():
         root.rotation_euler = rot
     preview_rig()
     os.makedirs(MODEL_DIR, exist_ok=True)
-    for name in ("Set", "CabinParts", "Eduard", "Hiker", "Rusty", "Cow", "Hugo"):
-        export(name, "cabin-parts.glb" if name == "CabinParts" else f"{name.lower()}.glb")
+    for name in ("Set", "CabinParts", "SeeThrough", "Eduard", "Hiker", "Rusty", "Cow", "Hugo"):
+        files = {"CabinParts": "cabin-parts.glb", "SeeThrough": "see-through.glb"}
+        export(name, files.get(name, f"{name.lower()}.glb"))
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
     print("BUILD_OK", BLEND_PATH)
 

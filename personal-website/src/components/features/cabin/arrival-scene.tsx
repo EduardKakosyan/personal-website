@@ -11,6 +11,7 @@ import {
   cutaway,
   makeGroundMaterial,
   toFadeable,
+  toOwnFade,
   toToon,
 } from './pixel-look'
 import { InteractPrompt, type PromptInput } from './interact-prompt'
@@ -134,6 +135,71 @@ function useModel(
   }, [gltf, opts.shadows, opts.raycast, opts.fade])
 }
 
+/** A tree or the woodshed: it fades out while it hides the guest. */
+type FadingTree = {
+  obj: THREE.Object3D
+  x: number
+  z: number
+  height: number
+  radius: number
+  amount: { value: number }
+}
+/** How see-through a tree in the way gets (1 would be gone). */
+const TREE_FADE = 0.85
+
+/** The woodshed, the stand of trees by it and the saplings, each with its own fade. */
+function useTrees() {
+  const gltf = useGLTF(MODELS.seeThrough)
+  return useMemo(() => {
+    const scene = gltf.scene.clone(true)
+    const trees: FadingTree[] = []
+    const box = new THREE.Box3()
+    const size = new THREE.Vector3()
+    const centre = new THREE.Vector3()
+    for (const obj of scene.children) {
+      const amount = { value: 0 }
+      obj.traverse((o) => {
+        const mesh = o as THREE.Mesh
+        if (!mesh.isMesh) return
+        mesh.castShadow = true
+        mesh.receiveShadow = true
+        mesh.material = toOwnFade(mesh.material as THREE.Material, amount)
+        mesh.raycast = noRaycast
+      })
+      box.setFromObject(obj)
+      box.getSize(size)
+      box.getCenter(centre)
+      trees.push({
+        obj,
+        x: centre.x,
+        z: centre.z,
+        height: box.max.y,
+        radius: Math.max(size.x, size.z) / 2,
+        amount,
+      })
+    }
+    return { scene, trees }
+  }, [gltf])
+}
+
+/**
+ * Whether a tree stands between the camera and the guest: the sight line
+ * passes through its crown and the tree is nearer the camera than the guest.
+ */
+function treeInTheWay(t: FadingTree, cam: THREE.Vector3, guest: THREE.Vector3) {
+  const dx = guest.x - cam.x
+  const dz = guest.z - cam.z
+  const len2 = dx * dx + dz * dz
+  if (len2 < 1e-4) return false
+  const along = ((t.x - cam.x) * dx + (t.z - cam.z) * dz) / len2
+  // behind the guest, or right beside them, doesn't count
+  if (along < 0 || along > 1 - (t.radius * 0.6) / Math.sqrt(len2)) return false
+  const px = cam.x + dx * along - t.x
+  const pz = cam.z + dz * along - t.z
+  const lineY = cam.y + (guest.y - cam.y) * along
+  return lineY < t.height + 0.3 && Math.hypot(px, pz) < t.radius + 0.6
+}
+
 function node(root: THREE.Object3D, name: string) {
   const found = root.getObjectByName(name)
   if (!found) throw new Error(`missing node ${name}`)
@@ -205,6 +271,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const hugo = useModel(MODELS.hugo)
   const cow = useModel(MODELS.cow, { raycast: true })
   const cabinParts = useModel(MODELS.cabinParts, { fade: true })
+  const trees = useTrees()
   /** The door and the fading parts, found once the frame loop starts. */
   const parts = useRef<{ door: Joint; cut: THREE.Object3D[] } | null>(null)
 
@@ -540,6 +607,17 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       o.userData.noOutline = s.cut > 0.02
     }
 
+    // ---------------------------------------------------------- trees in the way
+    // A tree between the camera and the guest dissolves to a see-through dither
+    // (the same pattern as the cabin cutaway), and comes back once they move on.
+    const guestEye = tmp.set(s.guest.x, groundHeight(s.guest) + 0.9, s.guest.z)
+    for (const t of trees.trees) {
+      const goal = treeInTheWay(t, camera.position, guestEye) ? TREE_FADE : 0
+      t.amount.value += (goal - t.amount.value) * damp(dt, 6)
+      if (t.amount.value < 0.01) t.amount.value = 0
+      t.obj.userData.noOutline = t.amount.value > 0.05
+    }
+
     // ---------------------------------------------------------- the welcome trigger
     if (
       !s.welcomed &&
@@ -857,6 +935,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
       <primitive object={set} />
       <primitive object={cabinParts} />
+      <primitive object={trees.scene} />
       <group ref={hikerG}>
         <primitive object={hiker} />
       </group>

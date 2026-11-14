@@ -2,7 +2,8 @@
 # Compress the exported models (about 2.4 MB down to about 0.6 MB).
 # The set is static, so its meshes are merged by material; the characters keep
 # their named, separately animated parts and are only compressed, and so do
-# the cabin parts the website moves or fades (roof, south wall, door).
+# the cabin parts the website moves or fades (roof, south wall, door), and the
+# woodshed and the trees near the yard, which fade when they hide the guest.
 # Run from personal-website/ after build_arrival.py.
 set -euo pipefail
 
@@ -16,7 +17,7 @@ trap 'rm -rf "$TMP"' EXIT
 "${GT[@]}" join "$TMP/b.glb" "$TMP/c.glb"
 "${GT[@]}" meshopt "$TMP/c.glb" "$DIR/set.glb"
 
-for name in cabin-parts eduard hiker rusty cow hugo; do
+for name in cabin-parts see-through eduard hiker rusty cow hugo; do
   "${GT[@]}" meshopt "$DIR/$name.glb" "$TMP/$name.glb"
   mv "$TMP/$name.glb" "$DIR/$name.glb"
 done

@@ -11,6 +11,8 @@ export const MODELS = {
   set: '/models/cabin/set.glb',
   /** The roof, south wall, string lights and door: faded or moved by the scene. */
   cabinParts: '/models/cabin/cabin-parts.glb',
+  /** The woodshed, the stand of trees by it and the saplings: each fades when it hides the guest. */
+  seeThrough: '/models/cabin/see-through.glb',
   eduard: '/models/cabin/eduard.glb',
   hiker: '/models/cabin/hiker.glb',
   rusty: '/models/cabin/rusty.glb',
@@ -138,7 +140,9 @@ const CIRCLES: Circle[] = [
   { x: 6.7, z: -1.1, r: 0.35 },
   { x: 7.7, z: -0.6, r: 0.35 },
   { x: 5.8, z: 8.8, r: 1.6 }, // woodshed
-  { x: 4.6, z: 6.6, r: 0.45 }, // chopping block
+  { x: 7.26, z: 10.28, r: 0.55 }, // workbench, off the woodshed's south end
+  { x: 7.78, z: 11.02, r: 0.55 },
+  { x: 5.62, z: 5.75, r: 0.45 }, // chopping block
   // the stand of trees between the driveway and the woodshed
   { x: 2.8, z: 7.6, r: 0.9 },
   { x: 3.3, z: 9.0, r: 1.1 },

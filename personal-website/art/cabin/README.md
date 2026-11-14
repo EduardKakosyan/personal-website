@@ -2,7 +2,7 @@
 
 Source for the arrival preview at `/preview/arrival` (redesign step 4).
 
-- `arrival.blend` is the editable scene. Open it in Blender 5.2+. Collections: `Set`, `Eduard`, `Hiker`, `Rusty`, `Cow`, `Hugo`, and `Preview` (the game camera and sun, not exported). The `GameCamera` matches the website's view.
+- `arrival.blend` is the editable scene. Open it in Blender 5.2+. Collections: `Set`, `CabinParts`, `SeeThrough`, `Eduard`, `Hiker`, `Rusty`, `Cow`, `Hugo`, and `Preview` (the game camera and sun, not exported). The `GameCamera` matches the website's view.
 - `scripts/build_arrival.py` rebuilds the whole scene from code and exports the models. Edits made only in the `.blend` file are overwritten the next time the script runs. Either change the script, or stop using it and export from Blender by hand.
 - `scripts/optimize_models.sh` compresses the exported `.glb` files. Run it after every build.
 - `scripts/render_previews.py` renders the game-camera view and a turnaround of each character, so you can check them without the website.
@@ -46,5 +46,6 @@ Blender's viewport shows the models with smooth shading on round shapes (`SMOOTH
 - `Rusty_Mouth` is an empty that marks where the plush cow sits; `Rusty_Tag` marks where his name tag hangs.
 - Object names `Ground`, `Brook` and `StringLights` are special on the website (painted ground, no shadows).
 - The cabin is in parts so the guest can go inside. `Cabin` (floor and the walls that stay) and `Cabin_Interior` go in `set.glb`. The parts the website moves or fades are in the `CabinParts` collection and exported to `cabin-parts.glb` without merging: `Cabin_Roof`, `Cabin_SouthWall` and `StringLights` dissolve when the guest is inside, and `Cabin_Door` swings open on its hinge. The walls, floor heights, door route and where the résumé and to-do list are live in `src/components/features/cabin/world.ts`.
+- Things that can hide the guest from the camera (the woodshed, the stand of trees by it, the saplings in the field) are in the `SeeThrough` collection and exported to `see-through.glb` without merging, so the website can fade each one on its own while it's in the way.
 - Colours come from the palette in `scripts/lib.py`: the "bit brighter" row sampled from Eduard's photos, plus a few neutrals.
 - Obstacles and spots on the website (`src/components/features/cabin/world.ts`) are copied from the script by hand. If you move something in the script, move it there too.

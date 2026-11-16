@@ -116,6 +116,8 @@ PALETTE = {
     "shed_post": "#c49a62",
     "shed_shadow": "#7a5a3a",
     "split_wood": "#cfa56b",
+    # the outdoor shower's corrugated sheets (photo 05): white with grey ribs
+    "panel_rib": "#b9c0c6",
 }
 
 # Faces meeting at less than this angle are shaded smoothly (spheres, 7-sided cones).

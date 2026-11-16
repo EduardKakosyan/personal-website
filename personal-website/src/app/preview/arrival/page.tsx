@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { Pixelify_Sans } from 'next/font/google'
 import { ArrivalPreview } from '@/components/features/cabin/arrival-preview'
-import type { CabinResume } from '@/components/features/cabin/cabin-content'
+import type { BenchProject, CabinResume } from '@/components/features/cabin/cabin-content'
+import { archiveProjects } from '@/content/projects'
 import { profile, resumePdfPath } from '@/content/profile'
 
 // Step 4 of the redesign: one small scene to test the look and feel.
@@ -52,10 +53,41 @@ function cabinResume(): CabinResume {
   }
 }
 
+/**
+ * The project boxes on the workbench (A84), newest first. Shoreline and Is the
+ * Beach Open belong at the brook, Camp Yahtzee and HUGO at the fire
+ * (storyboard), so they aren't here.
+ */
+const BENCH_SLUGS = [
+  'dev-template',
+  'healthbyte',
+  'network-sim',
+  'cargrep',
+  'second-brain',
+  'exosky',
+]
+
+function benchProjects(): BenchProject[] {
+  const bySlug = new Map(archiveProjects.map((p) => [p.slug, p]))
+  return BENCH_SLUGS.flatMap((slug) => {
+    const p = bySlug.get(slug)
+    return p ? [p] : []
+  }).map((p) => ({
+    slug: p.slug,
+    title: p.title,
+    tag: p.slug === 'network-sim' ? 'Q-Learning Sim' : p.title,
+    when: p.facts.when,
+    role: p.facts.role,
+    what: p.description,
+    detail: p.detail,
+    links: p.facts.links,
+  }))
+}
+
 export default function ArrivalPreviewPage() {
   return (
     <div className={pixel.variable}>
-      <ArrivalPreview resume={cabinResume()} />
+      <ArrivalPreview resume={cabinResume()} projects={benchProjects()} />
     </div>
   )
 }

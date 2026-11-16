@@ -5,9 +5,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CornerBar } from './corner-bar'
 import styles from './cabin.module.css'
 import type { Bubble, Face } from './arrival-scene'
-import { HUGO_CABIN_LINE, TODO_DRAFT, type CabinResume } from './cabin-content'
-import { ResumePanel, TodoPanel } from './cabin-panels'
-import { LOOK_ROWS, parseLook, type Look, type ReadableId } from './world'
+import {
+  HUGO_CABIN_LINE,
+  HUGO_LEAD_LINE,
+  HUGO_WOODSHED_LINE,
+  TODO_DRAFT,
+  type BenchProject,
+  type CabinResume,
+} from './cabin-content'
+import { ResumePanel, TodoPanel, WorkbenchPanel } from './cabin-panels'
+import { LOOK_ROWS, parseLook, type Look, type PanelId } from './world'
 
 // three.js loads only on this page, after hydration.
 const ArrivalScene = dynamic(() => import('./arrival-scene'), { ssr: false })
@@ -45,15 +52,29 @@ function useDpr(look: Look, lofi: boolean) {
   return dpr
 }
 
-export function ArrivalPreview({ resume }: { resume: CabinResume }) {
+export function ArrivalPreview({
+  resume,
+  projects,
+}: {
+  resume: CabinResume
+  projects: BenchProject[]
+}) {
   const [lofi, setLofi] = useState(false)
   const [sound, setSound] = useState(false)
   const [ready, setReady] = useState(false)
   const [moved, setMoved] = useState(false)
   const [bubble, setBubble] = useState<Bubble>(null)
   const [greeting, setGreeting] = useState(false)
-  const [panel, setPanel] = useState<ReadableId | null>(null)
-  const closePanel = useCallback(() => setPanel(null), [])
+  const [panel, setPanel] = useState<PanelId | null>(null)
+  const [openProject, setOpenProject] = useState<string | null>(null)
+  const onRead = useCallback((id: PanelId) => {
+    setOpenProject(null)
+    setPanel(id)
+  }, [])
+  const onOpenProject = useCallback((slug: string) => {
+    setOpenProject(slug)
+    setPanel('workbench')
+  }, [])
   const [startNearCabin] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('skip'),
   )
@@ -148,9 +169,45 @@ export function ArrivalPreview({ resume }: { resume: CabinResume }) {
     welcome()
   }, [welcome])
 
+  // Ten seconds after the guest steps into the cabin, HUGO leads them to the
+  // woodshed (Eduard). If a reading panel is open then, he waits until it's closed.
+  const [hugoLead, setHugoLead] = useState(false)
+  const lead = useRef({ started: false, waiting: false })
+  const reachedWoodshed = useRef(false)
+  const panelOpen = useRef(false)
+  useEffect(() => {
+    panelOpen.current = panel !== null
+  }, [panel])
+  const startLead = useCallback(() => {
+    if (lead.current.started || reachedWoodshed.current) return
+    if (panelOpen.current) {
+      lead.current.waiting = true
+      return
+    }
+    lead.current.started = true
+    setHugoLead(true)
+    setBubble({ speaker: 'HUGO', text: HUGO_LEAD_LINE })
+    later(6000, () => setBubble((b) => (b?.text === HUGO_LEAD_LINE ? null : b)))
+  }, [later])
+  const closePanel = useCallback(() => {
+    setPanel(null)
+    panelOpen.current = false
+    if (lead.current.waiting) {
+      lead.current.waiting = false
+      startLead()
+    }
+  }, [startLead])
+
   const onEnterCabin = useCallback(() => {
     setBubble({ speaker: 'HUGO', text: HUGO_CABIN_LINE })
     later(6500, () => setBubble((b) => (b?.text === HUGO_CABIN_LINE ? null : b)))
+    later(10000, startLead)
+  }, [later, startLead])
+
+  const onReachWoodshed = useCallback(() => {
+    reachedWoodshed.current = true
+    setBubble({ speaker: 'HUGO', text: HUGO_WOODSHED_LINE })
+    later(7000, () => setBubble((b) => (b?.text === HUGO_WOODSHED_LINE ? null : b)))
   }, [later])
 
   return (
@@ -164,16 +221,28 @@ export function ArrivalPreview({ resume }: { resume: CabinResume }) {
         eduardGreeting={greeting}
         startNearCabin={startNearCabin}
         rustyGo={rustyGo}
+        hugoLead={hugoLead}
         onRustyComing={onRustyComing}
         onReady={onReady}
         onFirstMove={onFirstMove}
         onGuestNear={onGuestNear}
         onCowDropped={onCowDropped}
         onEnterCabin={onEnterCabin}
-        onRead={setPanel}
+        onReachWoodshed={onReachWoodshed}
+        onRead={onRead}
+        boxTags={projects.map((p) => ({ slug: p.slug, tag: p.tag }))}
+        onOpenProject={onOpenProject}
       />
       {panel === 'resume' && <ResumePanel resume={resume} onClose={closePanel} />}
       {panel === 'todo' && <TodoPanel items={TODO_DRAFT} onClose={closePanel} />}
+      {panel === 'workbench' && (
+        <WorkbenchPanel
+          key={openProject ?? 'all'}
+          projects={projects}
+          initial={openProject}
+          onClose={closePanel}
+        />
+      )}
       <p className={`${styles.title} ${styles.pixel}`}>Eduard Kakosyan</p>
       <CornerBar
         sound={sound}

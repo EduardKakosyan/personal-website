@@ -17,6 +17,7 @@ import {
 import { InteractPrompt, type PromptInput } from './interact-prompt'
 import { createEduard, eduardPose, updateEduard } from './eduard'
 import { NameTag } from './name-tag'
+import styles from './cabin.module.css'
 import {
   PET_REACH,
   canRubBelly,
@@ -37,6 +38,15 @@ import {
   EDUARD_BLOCK,
   EDUARD_SPOT,
   READABLES,
+  WOODSHED,
+  WOODSHED_DISTANCE,
+  CAMERA_SPOTS,
+  LEAD_PATH,
+  WORKBENCH,
+  BOX_TAGS,
+  BENCH_FRONT,
+  BENCH_SPOT,
+  BOXES_CENTRE,
   GUEST_SKIP,
   GUEST_START,
   MODELS,
@@ -54,6 +64,7 @@ import {
   step,
   turnTowards,
   type Look,
+  type PanelId,
   type ReadableId,
   type Vec2,
 } from './world'
@@ -77,16 +88,24 @@ export type ArrivalSceneProps = {
   onCowDropped: () => void
   /** HUGO has introduced Rusty: he runs down the driveway to the guest. */
   rustyGo: boolean
+  /** HUGO leads the guest from the cabin to the woodshed (until they get there). */
+  hugoLead: boolean
   /** Rusty has set off down the driveway (HUGO points him out). */
   onRustyComing: () => void
   /** The first time the guest steps into the cabin. */
   onEnterCabin: () => void
+  /** The guest comes up to the woodshed for the first time. */
+  onReachWoodshed: () => void
   /** The guest picked up the résumé or looked at the to-do list. */
-  onRead: (id: ReadableId) => void
+  onRead: (id: PanelId) => void
+  /** The names on the project boxes, in BOX_TAGS order. */
+  boxTags: { slug: string; tag: string }[]
+  /** A box's tag was tapped: open the workbench panel at that project. */
+  onOpenProject: (slug: string) => void
 }
 
 /** What the prompt over the nearest usable thing does. */
-type PromptId = 'throw' | 'pet' | 'rub' | 'tag' | 'door-in' | 'door-out' | ReadableId
+type PromptId = 'throw' | 'pet' | 'rub' | 'tag' | 'door-in' | 'door-out' | PanelId
 const PROMPT_LABELS: Record<PromptId, string> = {
   throw: 'Throw',
   pet: 'Pet',
@@ -96,6 +115,7 @@ const PROMPT_LABELS: Record<PromptId, string> = {
   'door-out': 'Go out',
   resume: 'Read',
   todo: 'Read',
+  workbench: 'Look',
 }
 /** The roof, south wall and string lights fade when the guest is inside. */
 const CUTAWAY_PARTS = ['Cabin_Roof', 'Cabin_SouthWall', 'StringLights']
@@ -286,6 +306,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     guestY: 0,
     inside: false,
     enteredCabin: false,
+    reachedWoodshed: false,
+    /** Whether the guest has stepped to the end of the workbench this visit. */
+    benchStepped: false,
+    /** Which of CAMERA_SPOTS the camera is turned round for (-1: none). */
+    viewSpot: -1,
+    /** Which point of LEAD_PATH HUGO is waiting at. */
+    leadIndex: 0,
     doorOpen: 0,
     cut: 0,
     prompt: null as PromptId | null,
@@ -455,6 +482,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         break
       case 'resume':
       case 'todo':
+      case 'workbench':
         callbacks.current.onRead(s.prompt)
         break
     }
@@ -618,6 +646,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       t.obj.userData.noOutline = t.amount.value > 0.05
     }
 
+    // ---------------------------------------------------------- the woodshed (scene 5)
+    if (
+      !s.reachedWoodshed &&
+      Math.hypot(s.guest.x - WOODSHED.x, s.guest.z - WOODSHED.z) < WOODSHED_DISTANCE
+    ) {
+      s.reachedWoodshed = true
+      callbacks.current.onReachWoodshed()
+    }
+
     // ---------------------------------------------------------- the welcome trigger
     if (
       !s.welcomed &&
@@ -751,6 +788,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     } else if (s.tagAsked && canSeeTag(dog, s.guest)) {
       next = 'tag'
       at = overRusty
+    } else if (dist(WORKBENCH) < 1.8) {
+      // at the workbench, the project boxes win over Rusty and the cow
+      next = 'workbench'
+      at = WORKBENCH
     } else if (s.welcomed && dist(DOOR.outside) < 1.3) {
       // at the door, going in wins over Rusty and the cow (his spot is right by the deck)
       next = 'door-in'
@@ -774,6 +815,16 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     } else if (s.welcomed && dist(DOOR.outside) < 2.6) {
       next = 'door-in'
       at = DOOR.prompt
+    }
+    // Arriving at the workbench, the guest steps to its left end (once per
+    // visit) so they don't stand in front of the boxes.
+    if (next !== 'workbench') s.benchStepped = false
+    else if (!s.target && !s.benchStepped) {
+      s.benchStepped = true
+      if (dist(BENCH_SPOT) > 0.3) {
+        s.route = []
+        s.target = { ...BENCH_SPOT }
+      }
     }
     if (next !== s.prompt) {
       s.prompt = next
@@ -826,21 +877,46 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
     // ---------------------------------------------------------- HUGO
     // HUGO keeps to the guest's left on screen, a little further from the
-    // camera, so he never hides the guest or the room.
-    const side = { x: -0.9, z: -0.35 }
-    const hugoGoal = tmp.set(
-      s.guest.x + side.x,
-      s.guestY + 0.8 + Math.sin(t * 2.1) * 0.07,
-      s.guest.z + side.z,
-    )
+    // camera, so he never hides the guest or the room. At the workbench he
+    // floats off past the end of it, clear of the boxes; where the camera is
+    // turned round (CAMERA_SPOTS), "left" is a different way.
+    const turned = s.viewSpot >= 0 ? CAMERA_SPOTS[s.viewSpot].from : null
+    const side =
+      s.prompt === 'workbench'
+        ? { x: 0.68, z: 0.62 }
+        : turned
+          ? { x: turned.z * -0.9 - turned.x * 0.35, z: turned.x * 0.9 - turned.z * 0.35 }
+          : { x: -0.9, z: -0.35 }
+    // Leading the guest to the woodshed: HUGO waits at the next point of the
+    // way (outside the door first, if they're still in the cabin) and moves on
+    // once they've caught up, looking back at them.
+    const leading = callbacks.current.hugoLead && !s.reachedWoodshed
+    if (leading && !inside) {
+      const wp = LEAD_PATH[s.leadIndex]
+      if (
+        Math.hypot(s.guest.x - wp.x, s.guest.z - wp.z) < 2.4 &&
+        s.leadIndex < LEAD_PATH.length - 1
+      )
+        s.leadIndex++
+    }
+    const leadTo = !leading
+      ? null
+      : inside
+        ? { x: DOOR.outside.x + 0.5, z: DOOR.outside.z }
+        : LEAD_PATH[s.leadIndex]
+    const hugoGoal = leadTo
+      ? tmp.set(leadTo.x, 1.1 + Math.sin(t * 2.1) * 0.07, leadTo.z)
+      : tmp.set(s.guest.x + side.x, s.guestY + 0.8 + Math.sin(t * 2.1) * 0.07, s.guest.z + side.z)
     s.hugo.lerp(hugoGoal, damp(dt, 2.6))
     G.hugo.position.copy(s.hugo)
     const talking = bubble?.speaker === 'HUGO'
     const lookTarget = talking
       ? { x: camera.position.x, z: camera.position.z }
-      : walking
-        ? { x: s.guest.x + Math.sin(s.guestYaw) * 4, z: s.guest.z + Math.cos(s.guestYaw) * 4 }
-        : { x: s.guest.x, z: s.guest.z }
+      : leading
+        ? { x: s.guest.x, z: s.guest.z }
+        : walking
+          ? { x: s.guest.x + Math.sin(s.guestYaw) * 4, z: s.guest.z + Math.cos(s.guestYaw) * 4 }
+          : { x: s.guest.x, z: s.guest.z }
     s.hugoYaw = turnTowards(s.hugoYaw, facing({ x: s.hugo.x, z: s.hugo.z }, lookTarget), 4 * dt)
     G.hugo.rotation.y = s.hugoYaw
     const h = joints.hugo
@@ -867,6 +943,16 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const withRusty = !inside && (s.tagShow > 0 || dog.rubbing > 0 || dog.petting > 0)
     // the opening: a little closer while Rusty runs down the driveway to the guest
     const rustyRunning = !startNearCabin && !dog.firstDropDone
+    // standing at the workbench (the camera looks at its front, below)
+    const atBench = s.prompt === 'workbench' && !s.target
+    // by the woodshed or the shower, the camera turns round to show it (CAMERA_SPOTS)
+    const spotDist = (i: number) =>
+      Math.hypot(s.guest.x - CAMERA_SPOTS[i].at.x, s.guest.z - CAMERA_SPOTS[i].at.z)
+    if (inside || (s.viewSpot >= 0 && spotDist(s.viewSpot) > CAMERA_SPOTS[s.viewSpot].leave))
+      s.viewSpot = -1
+    if (s.viewSpot < 0 && !inside)
+      s.viewSpot = CAMERA_SPOTS.findIndex((_, i) => spotDist(i) < CAMERA_SPOTS[i].enter)
+    const spot = s.viewSpot >= 0 ? CAMERA_SPOTS[s.viewSpot] : null
     s.zoom +=
       ((inside
         ? 0.66
@@ -898,9 +984,30 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           : { x: s.guest.x, z: s.guest.z - 5 * k }
     // The camera sits a little west of the guest, so it looks past the stand of
     // trees by the woodshed towards the deck.
-    const camGoal = tmp.set(s.guest.x + CAMERA_SIDE * k, 8.6 * k, s.guest.z + 12.5 * k)
+    // At the workbench the camera swings round to look at its front from above,
+    // so the project boxes sit side by side (seen from the usual camera, the
+    // bench runs away from it and the boxes stack up behind one another).
+    // (a portrait phone screen is narrow, so it comes in closer and frames just the boxes)
+    const benchDistance = far > 1 ? 0.8 : 1
+    const camGoal = atBench
+      ? tmp.set(
+          BOXES_CENTRE.x + BENCH_FRONT.x * 3.2 * benchDistance,
+          4.6 * benchDistance,
+          BOXES_CENTRE.z + BENCH_FRONT.z * 3.2 * benchDistance,
+        )
+      : spot
+        ? // behind the guest, out along the spot's direction, looking back at it
+          tmp.set(s.guest.x + spot.from.x * 7 * k, 6 * k, s.guest.z + spot.from.z * 7 * k)
+        : tmp.set(s.guest.x + CAMERA_SIDE * k, 8.6 * k, s.guest.z + 12.5 * k)
     camera.position.lerp(camGoal, damp(dt, 2.2))
-    lookAt.current.lerp(tmp.set(aim.x, 0.5, aim.z), damp(dt, 3))
+    lookAt.current.lerp(
+      atBench
+        ? tmp.set(BOXES_CENTRE.x, 0.65, BOXES_CENTRE.z)
+        : spot
+          ? tmp.set(s.guest.x * 0.45 + spot.at.x * 0.55, 0.8, s.guest.z * 0.45 + spot.at.z * 0.55)
+          : tmp.set(aim.x, 0.5, aim.z),
+      damp(dt, 3),
+    )
     camera.lookAt(lookAt.current)
     if (sun.current) {
       // summer afternoon: the sun is low in the south-west
@@ -979,6 +1086,29 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         <meshBasicMaterial color="#fec54f" transparent opacity={0.85} depthWrite={false} />
       </mesh>
 
+      {/* the project boxes' name tags, while the guest is at the workbench */}
+      {prompt === 'workbench' &&
+        props.boxTags.slice(0, BOX_TAGS.length).map((b, i) => (
+          <group key={b.slug} position={[BOX_TAGS[i].x, BOX_TAGS[i].y, BOX_TAGS[i].z]}>
+            <Html zIndexRange={[28, 0]}>
+              <button
+                type="button"
+                className={`${styles.boxTag} ${styles.pixel}`}
+                // (pointer down, like the prompt, so the tap doesn't also walk the guest)
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                  if (e.button === 0) callbacks.current.onOpenProject(b.slug)
+                }}
+                onClick={(e) => {
+                  // keyboard (Enter or Space)
+                  if (e.detail === 0) callbacks.current.onOpenProject(b.slug)
+                }}
+              >
+                {b.tag}
+              </button>
+            </Html>
+          </group>
+        ))}
       <group ref={promptAnchor}>
         {prompt && (
           // the wrapper ignores taps (it would cover Rusty); only the button takes them

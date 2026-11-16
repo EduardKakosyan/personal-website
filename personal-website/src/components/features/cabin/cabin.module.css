@@ -461,3 +461,70 @@ button.todoItem:focus-visible .todoText {
     animation: none;
   }
 }
+
+.boxTag {
+  transform: translate(-50%, -100%);
+  padding: 2px 6px;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  color: #3b2a1e;
+  background: #fbf6ea;
+  border: 2px solid #3b2a1e;
+  box-shadow: 0 2px 0 rgba(59, 42, 30, 0.35);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.boxTag:hover,
+.boxTag:focus-visible {
+  background: #fec54f;
+}
+
+.boxList {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.box {
+  margin-bottom: 8px;
+  background: #fffaf0;
+  border: 2px solid #ead9bd;
+}
+
+.boxHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 9px 10px;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.boxHead:hover .todoText,
+.boxHead:focus-visible .todoText {
+  text-decoration: underline;
+}
+
+.boxBody {
+  padding: 0 10px 8px;
+  font-size: 0.9rem;
+}
+
+.boxLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.boxLinks a {
+  color: #8a4b12;
+  font-weight: 600;
+}

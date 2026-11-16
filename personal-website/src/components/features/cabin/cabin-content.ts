@@ -47,6 +47,34 @@ export const TODO_DRAFT: TodoItem[] = [
   },
 ]
 
+/**
+ * A project box on the workbench (scene 5, A84). Built on the server from the
+ * archive projects in src/content/projects.ts.
+ */
+export type BenchProject = {
+  slug: string
+  title: string
+  /** The name on the box's tag (short enough to fit). */
+  tag: string
+  when: string
+  role: string
+  /** What it is, in a sentence or two. */
+  what: string
+  /** Who built it, when, and Eduard's part. */
+  detail: string
+  links: { label: string; href: string }[]
+}
+
 /** HUGO's line when the guest steps into the cabin (Eduard's wording, A48). */
 export const HUGO_CABIN_LINE =
   'Here’s the cabin, where all the magic happens. Feel free to look around.'
+
+/**
+ * HUGO's line when he sets off to lead the guest from the cabin to the
+ * woodshed (A86). DRAFT, the agent's wording: Eduard to replace.
+ */
+export const HUGO_LEAD_LINE = 'Come on, I’ll show you the woodshed. Eduard built it himself.'
+
+/** HUGO's line when the guest reaches the woodshed (Eduard's wording, A48). */
+export const HUGO_WOODSHED_LINE =
+  'Here’s where all the wood is, in case you need to warm up. We’ll get the fire going later.'

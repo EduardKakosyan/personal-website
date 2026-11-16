@@ -74,6 +74,58 @@ export const READABLES = {
 } as const
 export type ReadableId = keyof typeof READABLES
 
+/** The workbench by the woodshed with the project boxes (scene 5): the prompt sits over it. */
+export const WORKBENCH = { x: 7.52, y: 1.7, z: 10.65 }
+/** The way the workbench's front faces (east-north-east, the same as the woodshed's). */
+export const BENCH_FRONT = { x: 0.819, z: -0.574 }
+/** The middle of the six project boxes, where the camera looks at the bench. */
+export const BOXES_CENTRE = { x: 7.606, z: 10.77 }
+/**
+ * Where the guest steps to at the bench: its left end, so they don't stand in
+ * front of the boxes.
+ */
+export const BENCH_SPOT: Vec2 = { x: 8.689, z: 11.356 }
+/**
+ * Where each project box's name tag shows, in the order of the projects (top of
+ * the bench left to right, then the shelf). Copied from the build script's
+ * crate positions; the middle tags are offset so neighbours don't overlap.
+ */
+export const BOX_TAGS = [
+  { x: 7.641, y: 1.15, z: 10.941 },
+  { x: 7.463, y: 1.33, z: 10.687 },
+  { x: 7.285, y: 1.15, z: 10.433 },
+  // the shelf: just in front of each box, so the tag shows below the bench top
+  { x: 7.996, y: 0.36, z: 11.047 },
+  { x: 7.824, y: 0.21, z: 10.801 },
+  { x: 7.652, y: 0.36, z: 10.555 },
+]
+/** HUGO's woodshed line plays the first time the guest comes this close. */
+export const WOODSHED = { x: 5.8, z: 8.8 }
+export const WOODSHED_DISTANCE = 4
+/**
+ * Places where the camera turns round to show the thing properly (Eduard): the
+ * usual camera looks north from behind the guest, so it sees the woodshed
+ * through the stand of trees and the outdoor shower over the cabin roof. Within
+ * `enter` metres the camera moves out along `from` (behind the guest) and looks
+ * back at it; it turns back once they're further than `leave` (so it doesn't
+ * flip back and forth at the edge).
+ */
+export const CAMERA_SPOTS = [
+  // the woodshed, from the grass field, facing its open front and the workbench
+  { at: WOODSHED, from: { x: 0.819, z: -0.574 }, enter: 4.2, leave: 5.6 },
+  // the outdoor shower, from the east, facing its open side
+  { at: { x: 2.9, z: -4.0 }, from: { x: 0.88, z: -0.47 }, enter: 3.0, leave: 4.2 },
+]
+/** HUGO's way from the cabin to the woodshed when he leads the guest there. */
+export const LEAD_PATH: Vec2[] = [
+  { x: 3.6, z: 3.0 },
+  { x: 4.9, z: 4.6 },
+  { x: 6.6, z: 6.0 },
+]
+
+/** Every reading panel: the two inside the cabin, and the workbench. */
+export type PanelId = ReadableId | 'workbench'
+
 export function insideCabin(p: Vec2) {
   return (
     p.x > CABIN_INSIDE.x0 && p.x < CABIN_INSIDE.x1 && p.z > CABIN_INSIDE.z0 && p.z < CABIN_INSIDE.z1
@@ -133,6 +185,7 @@ const BOXES: Box[] = [
 const CIRCLES: Circle[] = [
   { x: -1.5, z: 0.85, r: 0.18 }, // propane tank
   { x: 4.15, z: -3.27, r: 0.5 }, // shower door
+  { x: 3.0, z: -2.7, r: 0.35 }, // the stepladder by the shower
   { x: 2.45, z: -2.05, r: 0.35 }, // grill
   { x: 4.4, z: -3.5, r: 0.6 }, // sawhorse
   { x: 6.0, z: 2.6, r: 0.8 }, // fire ring

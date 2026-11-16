@@ -746,31 +746,85 @@ def camp_chair():
 
 # ---------------------------------------------------------------- outbuildings
 def outdoor_shower():
-    """Tall posts and solid white corrugated walls, open on the south side (photo 05)."""
+    """The outdoor shower Eduard is finishing, after photo 05: thick posts on
+    black metal bases and concrete pads, white corrugated panels raised off the
+    ground, darker rails holding them, a pallet floor, the water line looping
+    over the top to the shower head, the pump hose, and the stepladder still
+    standing beside it. Open on one side, with the door panel half open."""
     p = []
-    w, d, h = 1.5, 1.5, 2.15
+    w, d = 1.5, 1.5
+    post_h = 2.5
+    lift, top = 0.16, 2.2  # the panels stop short of the ground and the post tops
+    ph = top - lift
+    # posts on black bases and concrete pads
     for sx in (-1, 1):
         for sy in (-1, 1):
-            p.append(box("cabin_dark", (0.12, 0.12, h + 0.3), (sx * w / 2, sy * d / 2, (h + 0.3) / 2)))
-    lift = 0.18
-    ph = h - lift - 0.05
-    p.append(box("panel", (w - 0.08, 0.04, ph), (0, d / 2, lift + ph / 2)))
+            x, y = sx * w / 2, sy * d / 2
+            p.append(box("stone", (0.3, 0.3, 0.06), (x, y, 0.03)))
+            p.append(box("metal_dark", (0.18, 0.18, 0.12), (x, y, 0.12)))
+            p.append(box("deck", (0.14, 0.14, post_h - 0.06), (x, y, 0.06 + (post_h - 0.06) / 2)))
+            p.append(box("cabin_dark", (0.15, 0.15, 0.02), (x, y, post_h)))
+
+    def panel(cx, cy, length, along_x, out, rot=(0, 0, 0)):
+        """A white corrugated sheet: a flat sheet with grey ribs every 12 cm, on both faces."""
+        if along_x:
+            p.append(box("trim", (length, 0.02, ph), (cx, cy, lift + ph / 2), rot))
+            n = int(length / 0.12)
+            for k in range(n):
+                x = cx - length / 2 + 0.06 + k * 0.12
+                p.append(box("panel_rib", (0.035, 0.036, ph), (x, cy, lift + ph / 2), rot))
+        else:
+            p.append(box("trim", (0.02, length, ph), (cx, cy, lift + ph / 2), rot))
+            n = int(length / 0.12)
+            for k in range(n):
+                y = cy - length / 2 + 0.06 + k * 0.12
+                p.append(box("panel_rib", (0.036, 0.035, ph), (cx, y, lift + ph / 2), rot))
+
+    # back wall: sheet on the inside, the rails on the outside (the right-hand wall in the photo)
+    panel(0, d / 2 - 0.08, w - 0.14, True, -1)
+    for z in (lift + 0.12, lift + ph * 0.52, top - 0.1):
+        p.append(box("cabin", (w - 0.14, 0.06, 0.1), (0, d / 2 - 0.02, z)))
+    # side walls: sheet on the outside, rails on the inside (the left-hand wall in the photo)
     for sx in (-1, 1):
-        p.append(box("panel", (0.04, d - 0.08, ph), (sx * w / 2, 0, lift + ph / 2)))
-    # south side: one panel as the door, half open
-    p.append(box("panel", (0.04, w * 0.72, ph), (-w / 2 + 0.36 * w * 0.0 + 0.02, -d / 2 - w * 0.33, lift + ph / 2), deg(0, 0, 60)))
-    # corrugation lines, a few per wall so they survive the low resolution
-    for k in range(1, 6):
-        t = -0.5 + k / 6
-        p.append(box("roof", (0.03, 0.05, ph), (t * w, d / 2 + 0.01, lift + ph / 2)))
-        for sx in (-1, 1):
-            p.append(box("roof", (0.05, 0.03, ph), (sx * (w / 2 + 0.01), t * d, lift + ph / 2)))
-    # top rails, the pump line and a shower head
+        panel(sx * (w / 2 + 0.08), 0, d + 0.02, False, sx)
+        for z in (lift + 0.12, lift + ph * 0.52, top - 0.1):
+            p.append(box("cabin", (0.06, d - 0.14, 0.1), (sx * (w / 2 + 0.01), 0, z)))
+    # the open side: a door panel on its own frame, swung half open
+    door_w = w - 0.2
+    hinge = (-w / 2 + 0.07, -d / 2 - 0.08)
+    a = math.radians(-60)
+    dc = (hinge[0] + math.cos(a) * door_w / 2, hinge[1] + math.sin(a) * door_w / 2)
+    p.append(box("trim", (door_w, 0.02, ph - 0.1), (dc[0], dc[1], lift + 0.05 + (ph - 0.1) / 2), (0, 0, a)))
+    for k in range(int(door_w / 0.12)):
+        off = -door_w / 2 + 0.06 + k * 0.12
+        p.append(box("panel_rib", (0.035, 0.036, ph - 0.1),
+                     (dc[0] + math.cos(a) * off, dc[1] + math.sin(a) * off, lift + 0.05 + (ph - 0.1) / 2), (0, 0, a)))
+    for z in (lift + 0.2, top - 0.2):
+        p.append(box("cabin", (door_w, 0.05, 0.09), (dc[0] - math.sin(a) * 0.04, dc[1] + math.cos(a) * 0.04, z), (0, 0, a)))
+    # pallet floor
+    for sy in (-0.45, 0, 0.45):
+        p.append(box("weathered", (w - 0.2, 0.09, 0.07), (0, sy, 0.035)))
+    for k in range(7):
+        p.append(box("lumber", (0.11, d - 0.2, 0.025), (-w / 2 + 0.22 + k * 0.175, 0, 0.085)))
+    # water: the white line comes up the back corner post, loops over the wall
+    # and down to the shower head on an arm; the black pump hose runs down a side post
+    bx, by = w / 2 - 0.02, d / 2 + 0.02
+    p.append(cyl("trim", 0.016, post_h - 0.2, (bx + 0.09, by, (post_h - 0.2) / 2), seg=6))
+    p.append(cyl("trim", 0.016, 0.5, (bx + 0.09, by - 0.25, post_h - 0.12), deg(90, 0, 0), seg=6))
+    p.append(cyl("trim", 0.016, 0.62, (bx - 0.22, by - 0.5, post_h - 0.12), deg(0, 90, 0), seg=6))
+    p.append(cyl("steel", 0.02, 0.35, (bx - 0.53, by - 0.5, post_h - 0.3), seg=6))
+    p.append(cyl("steel", 0.1, 0.05, (bx - 0.53, by - 0.5, post_h - 0.5), seg=10))
+    p.append(cyl("wire", 0.02, 1.9, (-w / 2 - 0.1, d / 2 - 0.3, 0.95), seg=6))
+    p.append(cyl("wire", 0.02, 0.8, (-w / 2 - 0.1, d / 2 - 0.7, 0.03), deg(90, 0, 0), seg=6))
+    # the stepladder left beside it (it's still being finished)
+    lx, ly = -w / 2 - 0.55, -0.1
     for sy in (-1, 1):
-        p.append(box("cabin_dark", (w + 0.1, 0.1, 0.1), (0, sy * d / 2, h + 0.2)))
-    p.append(cyl("steel", 0.025, 0.5, (0.2, d / 2 - 0.2, h + 0.0), deg(90, 0, 0), seg=6))
-    p.append(cyl("steel", 0.09, 0.05, (0.2, d / 2 - 0.45, h - 0.04), seg=10))
-    p.append(box("weathered", (w + 0.2, d + 0.2, 0.08), (0, 0, 0.04)))
+        for sx in (-1, 1):
+            p.append(box("steel", (0.04, 0.025, 1.3), (lx + sx * 0.22, ly + sy * 0.2, 0.62), deg(sy * 9, 0, 0)))
+    for k in range(3):
+        z = 0.3 + k * 0.32
+        p.append(box("trim", (0.46, 0.09, 0.025), (lx, ly - 0.2 + z * 0.16, z)))
+    p.append(box("trim", (0.48, 0.2, 0.04), (lx, ly, 1.25)))
     # opening faces east, away from the cabin
     compound("OutdoorShower", p, location=(*SHOWER, 0.0), rot=deg(0, 0, 90))
 
@@ -905,10 +959,8 @@ def workbench():
     # top: three thick planks, overhanging a little
     for k in range(3):
         p.append(box("lumber", (L, D / 3 - 0.008, 0.05), (0, -D / 3 + k * D / 3, H - 0.025)))
-    # lower shelf with offcuts and a toolbox
+    # lower shelf: three of the project boxes (below) and a toolbox
     p.append(box("shed", (L - 0.14, D - 0.14, 0.03), (0, 0, 0.25)))
-    for i, (x, ln) in enumerate(((-0.55, 0.5), (-0.4, 0.42), (-0.5, 0.36))):
-        p.append(box("lumber", (ln, 0.09, 0.04), (x, -0.1 + i * 0.1, 0.285 + (0.04 if i == 2 else 0)), deg(0, 0, 4 * i - 4)))
     p.append(box("bistro_red", (0.44, 0.22, 0.2), (0.45, 0.02, 0.37)))
     p.append(box("metal_dark", (0.3, 0.03, 0.03), (0.45, 0.02, 0.49)))
     # a vise on the right-hand front corner
@@ -928,30 +980,60 @@ def workbench():
     p.append(box("hammer_head", (0.03, 0.006, 0.2), (-0.085, D / 2 - 0.075, H + 0.43)))
     p.append(box("bark", (0.025, 0.025, 0.26), (0.5, D / 2 - 0.08, H + 0.42)))
     p.append(box("hammer_head", (0.11, 0.035, 0.035), (0.5, D / 2 - 0.08, H + 0.55)))
-    # a few tools left out on the top (Eduard: "put a few tools on it"), towards the
-    # ends, so the middle stays free for the project archive
+    # a few tools left out on the top (Eduard: "put a few tools on it"), around
+    # the project boxes
     t = H  # the top surface
     # cordless drill standing on its battery, back left
-    dx, dy = -0.66, 0.12
+    dx, dy = -0.76, 0.15
     p.append(box("metal_dark", (0.11, 0.08, 0.06), (dx, dy, t + 0.03)))
     p.append(box("jacket", (0.045, 0.05, 0.13), (dx + 0.01, dy, t + 0.125)))
     p.append(cyl("jacket", 0.038, 0.17, (dx + 0.045, dy, t + 0.22), deg(0, 90, 0), seg=8))
     p.append(cyl("metal_dark", 0.022, 0.06, (dx + 0.155, dy, t + 0.22), deg(0, 90, 0), seg=8))
     p.append(cyl("steel", 0.006, 0.07, (dx + 0.215, dy, t + 0.22), deg(0, 90, 0), seg=5))
-    # tape measure lying flat, with its tab out
-    p.append(cyl("jacket", 0.042, 0.04, (-0.42, -0.1, t + 0.02), seg=8))
-    p.append(box("metal_dark", (0.03, 0.035, 0.042), (-0.38, -0.1, t + 0.021)))
-    p.append(box("moss", (0.07, 0.02, 0.004), (-0.33, -0.1, t + 0.003)))
-    # chisel and a carpenter's pencil, front right
-    p.append(cyl("bark", 0.014, 0.1, (0.28, -0.16, t + 0.014), deg(0, 90, 20), seg=6))
-    p.append(box("steel", (0.12, 0.02, 0.006), (0.39, -0.12, t + 0.006), deg(0, 0, 20)))
-    p.append(box("bistro_red", (0.17, 0.014, 0.008), (0.3, -0.27, t + 0.004), deg(0, 0, -12)))
-    # wooden mallet, back right
-    p.append(box("shed_post", (0.08, 0.15, 0.08), (0.5, 0.18, t + 0.04)))
-    p.append(cyl("lumber", 0.014, 0.26, (0.36, 0.18, t + 0.03), deg(0, 90, 0), seg=6))
-    # a coffee can of screws
-    p.append(cyl("steel", 0.045, 0.1, (0.62, 0.05, t + 0.05), seg=8))
-    p.append(cyl("hammer_head", 0.04, 0.005, (0.62, 0.05, t + 0.1), seg=8))
+    # tape measure lying flat, with its tab out, front left
+    p.append(cyl("jacket", 0.042, 0.04, (-0.62, -0.2, t + 0.02), seg=8))
+    p.append(box("metal_dark", (0.03, 0.035, 0.042), (-0.58, -0.2, t + 0.021)))
+    p.append(box("moss", (0.07, 0.02, 0.004), (-0.53, -0.2, t + 0.003)))
+    # chisel and a carpenter's pencil, front middle
+    p.append(cyl("bark", 0.014, 0.1, (-0.16, -0.24, t + 0.014), deg(0, 90, 20), seg=6))
+    p.append(box("steel", (0.12, 0.02, 0.006), (-0.05, -0.2, t + 0.006), deg(0, 0, 20)))
+    p.append(box("bistro_red", (0.17, 0.014, 0.008), (0.12, -0.3, t + 0.004), deg(0, 0, -12)))
+    # wooden mallet, front right
+    p.append(box("shed_post", (0.08, 0.15, 0.08), (0.48, -0.2, t + 0.04)))
+    p.append(cyl("lumber", 0.014, 0.26, (0.34, -0.2, t + 0.03), deg(0, 90, 0), seg=6))
+    # a coffee can of screws, back right
+    p.append(cyl("steel", 0.045, 0.1, (0.64, 0.14, t + 0.05), seg=8))
+    p.append(cyl("hammer_head", 0.04, 0.005, (0.64, 0.14, t + 0.1), seg=8))
+
+    # the project boxes (scene 5, A83/A84): six small slatted crates, one per
+    # archive project, each with a paper name label on its front. Three on the
+    # top, three on the shelf. The website lists them when the guest looks.
+    def crate(cx, cy, z0, rz, tone):
+        w, d = 0.26, 0.2
+        a = math.radians(rz)
+        rot = deg(0, 0, rz)
+
+        def at(lx, ly):
+            return (cx + lx * math.cos(a) - ly * math.sin(a), cy + lx * math.sin(a) + ly * math.cos(a))
+
+        p.append(box(tone, (w, d, 0.015), (cx, cy, z0 + 0.0075), rot))
+        p.append(box("shed_shadow", (w - 0.04, d - 0.04, 0.09), (cx, cy, z0 + 0.06), rot))
+        for zs in (0.05, 0.12):
+            for sy in (-1, 1):
+                p.append(box(tone, (w, 0.015, 0.055), (*at(0, sy * (d / 2 - 0.0075)), z0 + zs), rot))
+            for sx in (-1, 1):
+                p.append(box(tone, (0.015, d - 0.03, 0.055), (*at(sx * (w / 2 - 0.0075), 0), z0 + zs), rot))
+        for sx in (-1, 1):  # corner battens hold the slats
+            for sy in (-1, 1):
+                p.append(box("shed_post", (0.022, 0.022, 0.15), (*at(sx * (w / 2 - 0.018), sy * (d / 2 - 0.018)), z0 + 0.09), rot))
+        # the name label on the front, and a line of writing on it
+        p.append(box("paper", (0.12, 0.004, 0.045), (*at(0, -d / 2 - 0.002), z0 + 0.12), rot))
+        p.append(box("ink", (0.08, 0.003, 0.01), (*at(0, -d / 2 - 0.0045), z0 + 0.123), rot))
+
+    for i, x in enumerate((-0.31, 0.0, 0.31)):
+        crate(x, 0.07, t, (-3, 2, -2)[i], ("shed", "lumber", "shed")[i])
+    for i, x in enumerate((-0.6, -0.3, 0.0)):
+        crate(x, -0.02, 0.265, (2, -3, 1)[i], ("lumber", "shed", "lumber")[i])
     x, y = shed_point(*WORKBENCH_LOCAL)
     compound("Workbench", p, location=(x, y, 0.0), rot=deg(0, 0, WOODSHED_ROT), bevel=0.006)
 

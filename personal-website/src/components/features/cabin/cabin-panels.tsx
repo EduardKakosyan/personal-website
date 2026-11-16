@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { CabinResume, TodoItem } from './cabin-content'
+import type { BenchProject, CabinResume, TodoItem } from './cabin-content'
 import styles from './cabin.module.css'
 
 /**
@@ -126,6 +126,57 @@ export function TodoPanel({ items, onClose }: { items: TodoItem[]; onClose: () =
               </div>
             )}
             {open === i && item.note && <p className={styles.todoNote}>{item.note}</p>}
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  )
+}
+
+/** The project boxes on the workbench: one per archive project, each opens to a short card. */
+export function WorkbenchPanel({
+  projects,
+  initial,
+  onClose,
+}: {
+  projects: BenchProject[]
+  /** The project to open straight away (its box's tag was tapped). */
+  initial: string | null
+  onClose: () => void
+}) {
+  const [open, setOpen] = useState<string | null>(initial)
+  return (
+    <Panel title="On the workbench" onClose={onClose}>
+      <p className={styles.resumeMeta}>
+        Things Eduard built before, mostly at hackathons and school.
+      </p>
+      <ul className={styles.boxList}>
+        {projects.map((p) => (
+          <li key={p.slug} className={styles.box}>
+            <button
+              type="button"
+              className={styles.boxHead}
+              aria-expanded={open === p.slug}
+              onClick={() => setOpen(open === p.slug ? null : p.slug)}
+            >
+              <span className={styles.todoText}>{p.title}</span>
+              <span className={styles.resumeMeta}>{p.when}</span>
+            </button>
+            {open === p.slug && (
+              <div className={styles.boxBody}>
+                <p>{p.what}</p>
+                <p>{p.detail}</p>
+                <p className={styles.resumeMeta}>Eduard’s part: {p.role}</p>
+                <p className={styles.boxLinks}>
+                  <a href={`/projects/${p.slug}`}>The full story</a>
+                  {p.links.map((l) => (
+                    <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer">
+                      {l.label}
+                    </a>
+                  ))}
+                </p>
+              </div>
+            )}
           </li>
         ))}
       </ul>

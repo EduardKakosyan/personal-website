@@ -25,7 +25,7 @@ bash art/cabin/scripts/optimize_models.sh
 Or inside a running Blender (this is how the MCP runs it; it clears the scene without resetting Blender, so the MCP add-on stays on):
 
 ```python
-import sys; [sys.modules.pop(m, None) for m in ("lib", "shapes", "rusty_model", "eduard_model")]  # pick up changes (Blender keeps the old modules loaded)
+import sys; [sys.modules.pop(m, None) for m in ("lib", "shapes", "rusty_model", "eduard_model", "guest_model")]  # pick up changes (Blender keeps the old modules loaded)
 p = "/full/path/to/art/cabin/scripts/build_arrival.py"
 exec(compile(open(p).read(), p, "exec"), {"__file__": p, "__name__": "__main__"})
 ```

@@ -44,6 +44,7 @@ from lib import (  # noqa: E402
 )
 import eduard_model  # noqa: E402  (Eduard, A107)
 import rusty_model  # noqa: E402  (Rusty, A105)
+import guest_model  # noqa: E402  (the guests, A111)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))  # personal-website/
@@ -1162,7 +1163,12 @@ def crate_item(slug):
         p = [
             box("tee_red", (0.15, 0.08, 0.04), (0, 0, 0.045)),
             box("tee_red", (0.085, 0.07, 0.035), (-0.01, 0, 0.08)),
-            box("glass", (0.06, 0.072, 0.025), (-0.01, 0, 0.085)),
+            # the windows: bands of glass standing a hair proud of the cabin's
+            # sides and ends, below the roof. (The glass used to end level with
+            # the roof, and the two flickered red and blue: overlapping flat
+            # faces, see the README.)
+            box("glass", (0.06, 0.073, 0.02), (-0.01, 0, 0.081)),
+            box("glass", (0.088, 0.054, 0.017), (-0.01, 0, 0.0815)),
             box("yolk", (0.008, 0.02, 0.012), (0.075, 0.025, 0.05)),
             box("yolk", (0.008, 0.02, 0.012), (0.075, -0.025, 0.05)),
         ]
@@ -1456,46 +1462,6 @@ def build_set():
 HIP, SHOULDER, NECK = 0.4, 0.74, 0.76
 
 
-def person(name, skin, top, legs, boot, head_extra, arm_extra=None, torso_extra=None):
-    collection(name)
-    root = empty(name)
-    torso = [
-        sphere(top, 0.23, (0, 0, 0.17), scale=(0.95, 0.68, 0.95), seg=12, rings=8),
-        cyl(top, 0.19, 0.12, (0, 0, 0.05), r2=0.2, seg=12),
-    ]
-    torso += torso_extra or []
-    compound(f"{name}_Torso", torso, location=(0, 0, HIP), parent=root)
-    for side, sx in (("L", 1), ("R", -1)):
-        thigh = compound(f"{name}_Leg{side}", [cyl(legs, 0.08, 0.22, (0, 0, -0.1), seg=8)], location=(sx * 0.1, 0, HIP), parent=root)
-        compound(
-            f"{name}_Shin{side}",
-            [cyl(legs, 0.075, 0.12, (0, 0, -0.06), seg=8), sphere(boot, 0.085, (0, -0.04, -0.13), scale=(1, 1.35, 0.7), seg=10, rings=6)],
-            location=(0, 0, -0.2),
-            parent=thigh,
-        )
-        arm_parts = [
-            sphere(top, 0.085, (0, 0, -0.03), seg=10, rings=6),
-            cyl(top, 0.075, 0.1, (0, 0, -0.08), seg=8),
-            cyl(skin, 0.06, 0.16, (0, 0, -0.2), seg=8),
-            sphere(skin, 0.07, (0, 0, -0.3), seg=8, rings=6),
-        ]
-        arm = compound(f"{name}_Arm{side}", arm_parts, location=(sx * 0.26, 0, SHOULDER), parent=root)
-        if arm_extra and side in arm_extra:
-            arm_extra[side](arm)
-    head = [
-        sphere(skin, 0.25, (0, 0, 0.25), scale=(1, 0.94, 0.96), seg=16, rings=10),
-        sphere(skin, 0.045, (0, -0.235, 0.21), seg=6, rings=4),  # nose
-        sphere(skin, 0.05, (0.245, 0, 0.23), scale=(0.5, 1, 1), seg=6, rings=4),  # ears
-        sphere(skin, 0.05, (-0.245, 0, 0.23), scale=(0.5, 1, 1), seg=6, rings=4),
-    ] + head_extra
-    compound(f"{name}_Head", head, location=(0, 0, NECK), parent=root)
-    return root
-
-
-def eyes(color, z=0.27, spread=0.09):
-    return [sphere(color, 0.032, (sx * spread, -0.22, z), scale=(1, 0.5, 1.25), seg=6, rings=4) for sx in (-1, 1)]
-
-
 def eduard():
     """Eduard, remodelled (A107): see eduard_model.py. The board he carries and
     his kneeling rest pose are set up here as before."""
@@ -1517,16 +1483,6 @@ def eduard():
     bpy.data.objects["Eduard_ArmR"].rotation_euler = deg(-70, 0, 0)
     head.rotation_euler = deg(-15, 0, 0)
     return root
-
-
-def hiker_pack():
-    return [
-        box("pack", (0.34, 0.2, 0.4), (0, 0.2, 0.2)),
-        box("pack", (0.28, 0.07, 0.16), (0, 0.32, 0.12)),
-        cyl("cabin", 0.08, 0.4, (0, 0.2, 0.45), deg(0, 90, 0), seg=8),
-        box("hair", (0.04, 0.03, 0.34), (0.12, -0.15, 0.2)),
-        box("hair", (0.04, 0.03, 0.34), (-0.12, -0.15, 0.2)),
-    ]
 
 
 def hiker_axe(name):
@@ -1553,52 +1509,21 @@ def hiker_axe(name):
 
 
 def hiker():
-    """The guest (A36): a hiker with a backpack. Character 1 of the two the guest can pick from (A99)."""
-    hat = [
-        sphere("beanie", 0.265, (0, 0.01, 0.33), scale=(1.0, 0.98, 0.72), seg=16, rings=10),
-        cyl("beanie", 0.262, 0.07, (0, 0.0, 0.32), seg=16),
-        sphere("trim", 0.07, (0, 0, 0.53), seg=8, rings=6),
-        sphere("hair_brown", 0.25, (0, 0.06, 0.24), scale=(1.01, 0.92, 0.8), seg=14, rings=8),
-        sphere("lupine_pink", 0.03, (0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
-        sphere("lupine_pink", 0.03, (-0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
-    ] + eyes("hair", z=0.26)
-    root = person("Hiker", "skin_guest", "jacket", "khaki", "boot", hat, arm_extra=hiker_axe("Hiker"), torso_extra=hiker_pack())
-    for ob in ("Hiker_Torso",):
-        for mod in bpy.data.objects[ob].modifiers:
-            mod.width = 0.03
+    """The guest (A36), Character 1 of the two the guest can pick from (A99),
+    remodelled (A111): see guest_model.py."""
+    root, arm_r = guest_model.build("Hiker")
+    hiker_axe("Hiker")["R"](arm_r)
     return root
 
 
 def hiker_2():
-    """Character 2 of the two the guest can pick from (A99): the same hiker
-    with longer hair in a ponytail under a lupine-coloured beanie. Same parts
-    and names (with the Hiker2 prefix), so the website animates both the same way."""
-    hat = [
-        sphere("lupine", 0.265, (0, 0.01, 0.33), scale=(1.0, 0.98, 0.72), seg=16, rings=10),
-        cyl("lupine", 0.262, 0.07, (0, 0.0, 0.32), seg=16),
-        sphere("trim", 0.07, (0, 0, 0.53), seg=8, rings=6),
-        # longer hair: down round the sides and back of the head
-        sphere("hair_brown", 0.255, (0, 0.07, 0.2), scale=(1.02, 0.92, 0.95), seg=14, rings=8),
-        # a fringe under the rim of the beanie
-        sphere("hair_brown", 0.11, (0, -0.19, 0.3), scale=(1.7, 0.5, 0.45), seg=10, rings=5),
-        # the ponytail, tied at the back and hanging down
-        sphere("hair_brown", 0.07, (0, 0.28, 0.2), seg=10, rings=6),
-        cyl("hair_brown", 0.05, 0.24, (0, 0.31, 0.05), deg(-8, 0, 0), r2=0.028, seg=8),
-        sphere("hair_brown", 0.034, (0, 0.33, -0.08), seg=8, rings=5),
-        sphere("lupine_pink", 0.03, (0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
-        sphere("lupine_pink", 0.03, (-0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
-        # lashes: a dark line over each eye
-        box("hair", (0.07, 0.02, 0.014), (0.09, -0.222, 0.305)),
-        box("hair", (0.07, 0.02, 0.014), (-0.09, -0.222, 0.305)),
-    ] + eyes("hair", z=0.26)
-    root = person("Hiker2", "skin_guest", "jacket", "khaki", "boot", hat, arm_extra=hiker_axe("Hiker2"), torso_extra=hiker_pack())
-    for ob in ("Hiker2_Torso",):
-        for mod in bpy.data.objects[ob].modifiers:
-            mod.width = 0.03
+    """Character 2 (A99), remodelled (A111): see guest_model.py. Same parts and
+    names (with the Hiker2 prefix), so the website animates both the same way."""
+    root, arm_r = guest_model.build("Hiker2")
+    hiker_axe("Hiker2")["R"](arm_r)
     return root
 
 
-# ---------------------------------------------------------------- Rusty and the cow
 def rusty():
     """Rusty, the yellow Lab, remodelled from photo 05 (A105): see rusty_model.py."""
     collection("Rusty")

@@ -187,6 +187,30 @@ type PromptId =
   | 'sit'
   | 'getup'
   | ReadableId
+/** The guests' build (guest_model.py): hip height, hip to shoulder, shoulder out from the middle, shoulder to palm. */
+const HIP_Y = 0.4
+const SPINE = 0.34
+const SHOULDER_OUT = 0.26
+const ARM_LENGTH = 0.32
+/** Petting Rusty: knees bent a little, his head this far from the guest's middle, and no deeper a bow than this. */
+const PET_CROUCH = 0.12
+const PET_HEAD_AT = 0.4
+const PET_BOW_MAX = 0.3
+
+/** How fast HUGO glides between pieces and to the woodshed (m/s). */
+const HUGO_GLIDE = 2.6
+/** How many joints HUGO's hose has. */
+const HOSE_POINTS = 13
+
+/** At the workbench: a click this close to a box or its tag (on screen) opens it. */
+const BENCH_MISS_PX = 56
+/** The bench as the click guard sees it: half its length, its height with the tool board, a margin on screen. */
+const BENCH_HALF_LENGTH = 1.3
+const BENCH_TOP_Y = 1.8
+const BENCH_MARGIN_PX = 28
+/** A tap on the grass in front of the bench walks the guest at least this far out from it. */
+const BENCH_LEAVE_OUT = 2.5
+
 const PROMPT_LABELS: Record<PromptId, string> = {
   throw: 'Throw',
   pet: 'Pet',
@@ -346,6 +370,9 @@ function buildRig(g: Groups, guest: string) {
       armL: node(g.hiker, `${guest}_ArmL`),
       armR: node(g.hiker, `${guest}_ArmR`),
       head: node(g.hiker, `${guest}_Head`),
+      // the right hand: open, or a fist round the axe's handle
+      handR: node(g.hiker, `${guest}_HandR`),
+      fistR: node(g.hiker, `${guest}_FistR`),
       // the axe turns in the hand (its pivot), not about its own node origin
       axe: {
         obj: pivotWrap(node(g.hiker, `${guest}_Axe`).obj, new THREE.Vector3(0, -0.31, 0.02)),
@@ -362,6 +389,11 @@ function buildRig(g: Groups, guest: string) {
       shinL: node(g.eduard, 'Eduard_ShinL'),
       shinR: node(g.eduard, 'Eduard_ShinR'),
       board: node(g.eduard, 'Eduard_Board'),
+      // the hammer turns in his fist (the wrist), like the guest's axe
+      hammer: {
+        obj: pivotWrap(node(g.eduard, 'Eduard_Hammer').obj, new THREE.Vector3(0, -0.31, 0.02)),
+        base: new THREE.Euler(),
+      },
     },
     rusty: {
       fl: node(g.rusty, 'Rusty_LegFL'),
@@ -440,6 +472,9 @@ const CABIN_BOX = new THREE.Box3(
 )
 const tmpA = new THREE.Vector3()
 const tmpB = new THREE.Vector3()
+const tmpC = new THREE.Vector3()
+const tmpD = new THREE.Vector3()
+const tmpE = new THREE.Vector3()
 const CAMERA_SIDE = -2.6
 const damp = (dt: number, speed: number) => 1 - Math.exp(-speed * dt)
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
@@ -478,22 +513,68 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const dark =
       mats.hugo_base ?? mats.metal_dark ?? new THREE.MeshToonMaterial({ color: '#2b2f36' })
     const white = mats.hugo_white ?? new THREE.MeshToonMaterial({ color: '#f3f1ec' })
+    // The hose is a chain of short lengths with a rib at each joint, laid
+    // along a curve each frame (it bends, and a lump can travel through it);
+    // a flared nozzle with a white rim; white O-rings that run along it; a
+    // ring of puff when a piece pops out; and a few streaks of air going in.
     const hose = new THREE.Group()
-    const tubeGeo = new THREE.CylinderGeometry(0.03, 0.038, 1, 10, 1)
-    tubeGeo.translate(0, -0.5, 0) // (its top at the origin, so scaling Y pays it out downwards)
-    const tube = new THREE.Mesh(tubeGeo, dark)
-    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.04, 0.07, 12), dark)
-    const ringGeo = new THREE.TorusGeometry(0.047, 0.012, 6, 16)
-    ringGeo.rotateX(Math.PI / 2) // (lying round the hose)
-    const rings = Array.from({ length: 4 }, () => new THREE.Mesh(ringGeo, white))
-    hose.add(tube, nozzle, ...rings)
-    hose.visible = false
-    hose.traverse((o) => {
-      ;(o as THREE.Mesh).raycast = noRaycast
-      o.castShadow = true
+    const lengthGeo = new THREE.CylinderGeometry(0.03, 0.03, 1, 8, 1)
+    lengthGeo.translate(0, 0.5, 0) // (from its start, along +Y)
+    const lengths = Array.from({ length: HOSE_POINTS - 1 }, () => new THREE.Mesh(lengthGeo, dark))
+    const ribGeo = new THREE.TorusGeometry(0.034, 0.011, 5, 12)
+    ribGeo.rotateX(Math.PI / 2) // (lying round the hose)
+    const ribs = Array.from({ length: HOSE_POINTS }, () => new THREE.Mesh(ribGeo, dark))
+    const nozzle = new THREE.Group()
+    const coneMat = dark.clone()
+    coneMat.side = THREE.DoubleSide
+    const cone = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.036, 0.1, 12, 1, true), coneMat)
+    cone.position.y = 0.05
+    const rimGeo = new THREE.TorusGeometry(0.077, 0.014, 6, 16)
+    rimGeo.rotateX(Math.PI / 2)
+    const rim = new THREE.Mesh(rimGeo, white)
+    rim.position.y = 0.1
+    nozzle.add(cone, rim)
+    const ringGeo = new THREE.TorusGeometry(0.05, 0.013, 6, 16)
+    ringGeo.rotateX(Math.PI / 2)
+    const rings = Array.from({ length: 3 }, () => new THREE.Mesh(ringGeo, white))
+    const puffGeo = new THREE.TorusGeometry(0.07, 0.016, 6, 18)
+    puffGeo.rotateX(Math.PI / 2)
+    const puff = new THREE.Mesh(
+      puffGeo,
+      new THREE.MeshBasicMaterial({ color: '#fffaf0', transparent: true, depthWrite: false }),
+    )
+    puff.userData.noOutline = true
+    const streakGeo = new THREE.SphereGeometry(0.016, 6, 4)
+    const streakMat = new THREE.MeshBasicMaterial({ color: '#fffaf0' })
+    const streaks = Array.from({ length: 6 }, () => {
+      const m = new THREE.Mesh(streakGeo, streakMat)
+      m.userData.noOutline = true
+      return m
     })
+    hose.add(...lengths, ...ribs, nozzle, ...rings)
+    hose.visible = false
+    const extras = new THREE.Group()
+    extras.add(puff, ...streaks)
+    for (const g of [hose, extras])
+      g.traverse((o) => {
+        ;(o as THREE.Mesh).raycast = noRaycast
+        o.castShadow = g === hose
+      })
     const stack = new THREE.Group()
-    return { hose, tube, nozzle, rings, stack }
+    return {
+      hose,
+      lengths,
+      ribs,
+      nozzle,
+      rings,
+      puff,
+      streaks,
+      extras,
+      stack,
+      /** where the nozzle's mouth is (the scene's pieces go to it and come from it) */
+      tip: new THREE.Vector3(),
+      points: Array.from({ length: HOSE_POINTS }, () => new THREE.Vector3()),
+    }
   }, [hugo])
   const cow = useModel(MODELS.cow, { raycast: true })
   const cabinParts = useModel(MODELS.cabinParts, { fade: true })
@@ -601,6 +682,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     pendingRub: false,
     /** 0..1, how far the guest has crouched (rubbing Rusty's belly). */
     crouch: 0,
+    /** Petting Rusty: 0..1 how far the hand is on his head, how far the guest bends, which hand (+1 right). */
+    petK: 0,
+    bow: 0,
+    petSide: 1,
     guestYaw: Math.PI,
     walkPhase: 0,
     moved: false,
@@ -624,6 +709,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     hugo: new THREE.Vector3(GUEST_START.x + 0.9, 1.0, GUEST_START.z - 0.2),
     zoom: startNearCabin ? 1 : 0.72,
     hugoYaw: Math.PI,
+    /** Tidying up: how fast he's gliding, how far he leans into it, his head down over a piece. */
+    hugoSpeed: 0,
+    hugoLean: 0,
+    hugoNod: 0,
     marker: { x: 0, z: 0, life: 0 },
     /** The project boxes: which is wanted, which is open, and how far each lid and thing has moved. */
     box: {
@@ -681,7 +770,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   /** What a press on the scene does if it turns out to be a tap, not a drag. */
   const tap = useRef<null | (() => void)>(null)
   /** The loose halves and logs lying about the block: a mesh per chunk, made from the props' templates. */
-  const chunkMeshes = useRef<THREE.Object3D[]>([])
+  const chunkMeshes = useRef(new Map<Chunk, THREE.Object3D>())
 
   useEffect(() => {
     callbacks.current.onReady()
@@ -836,6 +925,91 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       // (the swing is a timing game: it goes the moment the button does)
       if (s.split.phase === 'ready') swingAxe(s.split)
       return
+    }
+    // At the workbench (the camera is on the boxes) a click that just misses a
+    // box or its tag must not send the guest off round the back of the bench
+    // (Eduard: "if you miss the click by literal pixel your character just
+    // starts walking behind the wood shed"). The nearest box takes a near
+    // miss; anywhere else on or behind the bench the click does no walking
+    // (it puts an open box back). Only a click out in the yard, on the
+    // guest's side of the bench, walks away.
+    if ((s.prompt === 'workbench' || s.box.want >= 0) && !insideCabin(s.guest)) {
+      const rect = gl.domElement.getBoundingClientRect()
+      const px = e.nativeEvent.clientX - rect.left
+      const py = e.nativeEvent.clientY - rect.top
+      let nearest = -1
+      let nearestPx = BENCH_MISS_PX
+      CRATES.forEach((c, i) => {
+        for (const p of [c, BOX_TAGS[i]]) {
+          tmp.set(p.x, p.y, p.z).project(camera)
+          const d = Math.hypot(
+            ((tmp.x + 1) / 2) * rect.width - px,
+            ((1 - tmp.y) / 2) * rect.height - py,
+          )
+          if (d < nearestPx) {
+            nearestPx = d
+            nearest = i
+          }
+        }
+      })
+      if (nearest >= 0) {
+        tap.current = () => callbacks.current.onOpenBox(nearest)
+        return
+      }
+      // on the bench as the camera sees it (its outline on screen, with a margin) ...
+      let x0 = Infinity
+      let x1 = -Infinity
+      let y0 = Infinity
+      let y1 = -Infinity
+      for (const a of [-BENCH_HALF_LENGTH, BENCH_HALF_LENGTH])
+        for (const o of [-0.55, 0.32])
+          for (const y of [0, BENCH_TOP_Y]) {
+            tmp
+              .set(
+                BOXES_CENTRE.x - BENCH_FRONT.z * a + BENCH_FRONT.x * o,
+                y,
+                BOXES_CENTRE.z + BENCH_FRONT.x * a + BENCH_FRONT.z * o,
+              )
+              .project(camera)
+            const sx = ((tmp.x + 1) / 2) * rect.width
+            const sy = ((1 - tmp.y) / 2) * rect.height
+            x0 = Math.min(x0, sx)
+            x1 = Math.max(x1, sx)
+            y0 = Math.min(y0, sy)
+            y1 = Math.max(y1, sy)
+          }
+      // (Below the bench on screen is the grass on the guest's side: that
+      // always walks them away from it, far enough to leave the bench. On a
+      // phone the bench fills the screen and that strip is all there is.)
+      if (py > y1) {
+        const out0 =
+          (e.point.x - BOXES_CENTRE.x) * BENCH_FRONT.x +
+          (e.point.z - BOXES_CENTRE.z) * BENCH_FRONT.z
+        const push = Math.max(0, BENCH_LEAVE_OUT - out0)
+        const away = { x: e.point.x + BENCH_FRONT.x * push, z: e.point.z + BENCH_FRONT.z * push }
+        tap.current = () => {
+          leaveActivities()
+          walkTo(away)
+        }
+        return
+      }
+      const onBench =
+        px > x0 - BENCH_MARGIN_PX &&
+        px < x1 + BENCH_MARGIN_PX &&
+        py > y0 - BENCH_MARGIN_PX &&
+        py < y1 + BENCH_MARGIN_PX
+      // ... or on the ground right behind it
+      const out =
+        (e.point.x - BOXES_CENTRE.x) * BENCH_FRONT.x + (e.point.z - BOXES_CENTRE.z) * BENCH_FRONT.z
+      const along =
+        (e.point.x - BOXES_CENTRE.x) * -BENCH_FRONT.z + (e.point.z - BOXES_CENTRE.z) * BENCH_FRONT.x
+      const behind = out < 0.45 && out > -3 && Math.abs(along) < BENCH_HALF_LENGTH + 0.8
+      if (onBench || behind) {
+        tap.current = () => {
+          if (s.box.want >= 0) callbacks.current.onCloseBox()
+        }
+        return
+      }
     }
     const point = e.point.clone()
     const ray = e.ray.clone()
@@ -1360,6 +1534,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const axeHeld = holdsAxe(sp)
     p3.blockAxe.visible = !axeHeld
     joints.hiker.axe.obj.visible = axeHeld
+    joints.hiker.fistR.obj.visible = axeHeld
+    joints.hiker.handR.obj.visible = !axeHeld
     // the log on the block pops up, and the chunks that came off it lie about
     p3.log.visible = sp.logIn > 0.02
     if (p3.log.visible) {
@@ -1367,48 +1543,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       p3.log.position.set(CHOPPING_BLOCK.x, LOG_Y, CHOPPING_BLOCK.z)
       p3.log.scale.set(0.6 + 0.4 * pop, pop, 0.6 + 0.4 * pop)
     }
-    if (chunksG.current) {
-      const g = chunksG.current
-      const meshes = chunkMeshes.current
-      while (meshes.length < sp.chunks.length) {
-        const c = sp.chunks[meshes.length]
-        const template = c.kind === 2 ? p3.log : p3.halves[c.kind]
-        const m = template.clone(true)
-        m.visible = true
-        m.scale.set(1, 1, 1)
-        g.add(m)
-        meshes.push(m)
-      }
-      while (meshes.length > sp.chunks.length) {
-        const m = meshes.shift()!
-        g.remove(m)
-      }
-      sp.chunks.forEach((c: Chunk, i: number) => {
-        const m = meshes[i]
-        const fall = c.tip * c.tip * (3 - 2 * c.tip)
-        m.position.set(c.pos.x, c.pos.y + fall * 0.11, c.pos.z)
-        // tips over sideways about its base, turned the way it was flung
-        tmpQ.setFromAxisAngle(AXIS_Y, c.yaw)
-        tmpQ2.setFromAxisAngle(AXIS_Z, -c.side * fall * (Math.PI / 2))
-        m.quaternion.copy(tmpQ).multiply(tmpQ2)
-        // a half lies flat side down once it's settled; a whole log just rolls a little
-        if (c.kind !== 2)
-          m.quaternion.multiply(tmpQ2.setFromAxisAngle(AXIS_Y, (c.kind ? 1 : -1) * fall * 1.2))
-        // going up HUGO's hose: rising, shrinking and turning into him
-        const up = c.suck ?? 0
-        if (up > 0) {
-          const k = up * up
-          m.position.lerp(tmpA.set(s.hugo.x, s.hugo.y, s.hugo.z), k)
-          m.quaternion.multiply(tmpQ2.setFromAxisAngle(AXIS_Y, up * 7))
-        }
-        m.scale.setScalar(1 - 0.85 * up)
-      })
-    }
-
     // ---------------------------------------------------------- HUGO tidies up (vacuum.ts)
     const vac = s.vac
-    if (splitActive(sp) && vac.phase !== 'idle' && vac.phase !== 'toShed' && vac.phase !== 'drop')
+    if (splitActive(sp) && vac.phase !== 'idle' && vac.phase !== 'toShed' && vac.phase !== 'drop') {
       vac.phase = vac.carried.length ? 'toShed' : 'idle'
+      if (vac.chunk) vac.chunk.suck = 0
+      vac.chunk = null
+    }
     if (
       vac.phase === 'idle' &&
       !(callbacks.current.hugoLead && !s.reachedWoodshed) &&
@@ -1418,44 +1559,218 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       vac.t = 0
     }
     const vacGoal = updateVacuum(vac, sp, s.hugo, dt)
+    const vp = vacParts
     {
-      const vp = vacParts
+      // The hose: out of the bottom of his body, straight down at first, then
+      // bending to wherever the nozzle is. It pays out towards the place the
+      // nozzle is reaching for, trembles while the suction's on and kicks
+      // back when a piece pops out.
       const reach = vac.reach
-      vp.hose.visible = vac.hose > 0.01 && reach !== null
+      vp.hose.visible = vac.hose > 0.03 && reach !== null
+      vp.puff.visible = false
+      vp.streaks.forEach((m) => (m.visible = false))
       if (vp.hose.visible && reach) {
-        const from = tmpA.set(s.hugo.x, s.hugo.y + 0.01, s.hugo.z)
-        const way = tmpB.set(reach.x, reach.y, reach.z).sub(from)
-        const len = Math.max(0.02, (way.length() - 0.03) * vac.hose)
-        vp.hose.position.copy(from)
-        vp.hose.quaternion.setFromUnitVectors(DOWN, way.normalize())
-        vp.tube.scale.set(1, len, 1)
-        vp.nozzle.position.set(0, -len, 0)
+        const from = tmpA.set(s.hugo.x, s.hugo.y + 0.02, s.hugo.z)
+        const tip = vp.tip
+          .set(reach.x, reach.y, reach.z)
+          .sub(from)
+          .multiplyScalar(vac.hose)
+          .add(from)
+        const dangling = 1 - Math.min(1, vac.hose)
+        tip.x += Math.sin(t * 7.3) * 0.04 * dangling + Math.sin(t * 41) * 0.006 * vac.suction
+        tip.z += Math.cos(t * 6.1) * 0.04 * dangling + Math.cos(t * 37) * 0.006 * vac.suction
+        const along = tmpB.copy(tip).sub(from)
+        const len = Math.max(0.05, along.length())
+        along.divideScalar(len)
+        // (the kick: back towards him and up)
+        const kick = Math.sin(vac.puff * Math.PI) * 0.09
+        tip.addScaledVector(along, -kick)
+        tip.y += kick * 0.6
+        // the bend's middle: below him, pulled a little towards the nozzle, swaying
+        const mid = tmpC
+          .copy(from)
+          .addScaledVector(along, len * 0.25)
+          .setY(from.y - Math.max(0.12, (from.y - tip.y) * 0.62 + len * 0.22))
+        mid.x += Math.sin(t * 2.3) * 0.02
+        mid.z += Math.cos(t * 1.9) * 0.02
+        const pts = vp.points
+        const last = pts.length - 1
+        for (let i = 0; i <= last; i++) {
+          const u = i / last
+          const a = (1 - u) * (1 - u)
+          const m = 2 * u * (1 - u)
+          const c = u * u
+          pts[i].set(
+            from.x * a + mid.x * m + tip.x * c,
+            from.y * a + mid.y * m + tip.y * c,
+            from.z * a + mid.z * m + tip.z * c,
+          )
+        }
+        // the lump: a piece on its way through
+        const fat = (u: number) =>
+          vac.lump < 0 ? 0 : 1.15 * Math.exp(-(((u - vac.lump) / 0.13) ** 2))
+        for (let i = 0; i <= last; i++) {
+          const u = i / last
+          const dir = tmpD
+            .copy(pts[Math.min(last, i + 1)])
+            .sub(pts[Math.max(0, i - 1)])
+            .normalize()
+          const rib = vp.ribs[i]
+          rib.position.copy(pts[i])
+          rib.quaternion.setFromUnitVectors(AXIS_Y, dir)
+          const wide = 1 + fat(u)
+          rib.scale.set(wide, 1, wide)
+          if (i < last) {
+            const piece = vp.lengths[i]
+            const d = tmpD.copy(pts[i + 1]).sub(pts[i])
+            const l = d.length()
+            piece.position.copy(pts[i])
+            piece.quaternion.setFromUnitVectors(AXIS_Y, d.divideScalar(l || 1))
+            const w = 1 + fat(u + 0.5 / last)
+            piece.scale.set(w, l, w)
+          }
+        }
+        const mouth = tmpD
+          .copy(pts[last])
+          .sub(pts[last - 1])
+          .normalize()
+        vp.nozzle.position.copy(tip)
+        vp.nozzle.quaternion.setFromUnitVectors(AXIS_Y, mouth)
+        const flare =
+          1 + vac.suction * (0.12 + 0.08 * Math.sin(t * 30)) + Math.sin(vac.puff * Math.PI) * 0.35
+        vp.nozzle.scale.set(flare, 1, flare)
+        // (the mouth of the nozzle, for the pieces)
+        tip.addScaledVector(mouth, 0.1)
+        // white O-rings running along it: up into him, or down to the nozzle
         vp.rings.forEach((r, k) => {
           const f = (((vac.ringT + k / vp.rings.length) % 1) + 1) % 1
           r.visible = vac.flow !== 0
-          // sucking: from the nozzle up into him; laying a piece: down to the nozzle
-          r.position.set(0, -(vac.flow > 0 ? 1 - f : f) * len, 0)
-          const bulge = 1 + Math.sin(f * Math.PI) * 0.4
-          r.scale.set(bulge, 1, bulge)
+          if (!r.visible) return
+          const u = vac.flow > 0 ? 1 - f : f
+          const at = u * last
+          const i = Math.min(last - 1, Math.floor(at))
+          r.position.copy(pts[i]).lerp(pts[i + 1], at - i)
+          r.quaternion.setFromUnitVectors(
+            AXIS_Y,
+            tmpE
+              .copy(pts[i + 1])
+              .sub(pts[i])
+              .normalize(),
+          )
+          const swell = (0.75 + Math.sin(f * Math.PI) * 0.55) * (1 + fat(u) * 0.6)
+          r.scale.set(swell, 1, swell)
         })
+        // the puff as a piece pops out: a white ring that widens and thins away
+        if (vac.puff > 0.02) {
+          const gone = 1 - vac.puff
+          vp.puff.visible = true
+          vp.puff.position.copy(tip).addScaledVector(mouth, 0.04 + gone * 0.22)
+          vp.puff.quaternion.setFromUnitVectors(AXIS_Y, mouth)
+          const wide = 1 + gone * 2.4
+          vp.puff.scale.set(wide, 1 - gone * 0.5, wide)
+          ;(vp.puff.material as THREE.MeshBasicMaterial).opacity = vac.puff
+        }
+        // streaks of air drawn in from round the piece
+        if (vac.suction > 0) {
+          vp.streaks.forEach((m, k) => {
+            const f = (((t * 2.6 + k / vp.streaks.length) % 1) + 1) % 1
+            const a = k * 2.4 + t * 5
+            const r = 0.34 * (1 - f) * (1 - f)
+            m.visible = true
+            m.position.set(
+              tip.x + Math.sin(a) * r,
+              reach.y - 0.28 + (tip.y - reach.y + 0.28) * (f * f),
+              tip.z + Math.cos(a) * r,
+            )
+            m.scale.setScalar(1.3 - f)
+          })
+        }
       }
-      // the pieces he's laid on the stack, lying front to back like the rest
+      // The pieces he's laid on the stack, lying front to back like the rest.
+      // Each one pops out of the nozzle small, flies the last bit in a little
+      // arc, and lands at full size.
       while (vp.stack.children.length < vac.placed.length) {
         const n = vp.stack.children.length
         const kind = vac.placed[n]
         const m = (kind === 2 ? p3.log : p3.halves[kind]).clone(true)
         m.visible = true
-        m.scale.set(1, 1, 1)
         const spot = stackSpot(n)
         const base = shedPoint(spot.lx, -0.86, spot.at.y)
         const back = shedPoint(spot.lx, 0.26, spot.at.y)
-        m.position.set(base.x, base.y, base.z)
         m.quaternion.setFromUnitVectors(
           AXIS_Y,
           tmpA.set(back.x - base.x, 0, back.z - base.z).normalize(),
         )
         m.rotateY(n * 1.9) // (each one turned a little differently, like split wood)
+        m.userData.rest = new THREE.Vector3(base.x, base.y, base.z)
+        m.userData.from = vp.tip.clone()
+        m.userData.flying = true
         vp.stack.add(m)
+      }
+      const newest = vp.stack.children[vp.stack.children.length - 1]
+      for (const m of vp.stack.children) {
+        if (!m.userData.flying) continue
+        const rest = m.userData.rest as THREE.Vector3
+        const k = m === newest ? vac.fly : 1
+        if (k >= 1) {
+          m.userData.flying = false
+          m.position.copy(rest)
+          m.scale.set(1, 1, 1)
+          continue
+        }
+        const e = 1 - (1 - k) * (1 - k)
+        m.position.copy(m.userData.from as THREE.Vector3).lerp(rest, e)
+        m.position.y += Math.sin(k * Math.PI) * 0.1
+        const back = k - 1
+        m.scale.setScalar(0.3 + 0.7 * (1 + back * back * (2.8 * back + 1.8)))
+      }
+    }
+
+    // ---------------------------------------------------------- the split pieces
+    if (chunksG.current) {
+      const g = chunksG.current
+      const meshes = chunkMeshes.current
+      for (const c of sp.chunks) {
+        if (meshes.has(c)) continue
+        const template = c.kind === 2 ? p3.log : p3.halves[c.kind]
+        const m = template.clone(true)
+        m.visible = true
+        m.scale.set(1, 1, 1)
+        g.add(m)
+        meshes.set(c, m)
+      }
+      for (const [c, m] of meshes) {
+        if (sp.chunks.includes(c)) continue
+        g.remove(m)
+        meshes.delete(c)
+      }
+      for (const [c, m] of meshes) {
+        // Going up HUGO's hose: the suction rattles it, it stands up on end
+        // under the nozzle, then it's drawn up into it, stretching thin.
+        const up = c.suck ?? 0
+        const stand = easeInOut(clamp01(up / 0.4))
+        const rise = clamp01((up - 0.4) / 0.6)
+        const rattle = up > 0 ? (1 - rise) * Math.min(1, up * 6) : 0
+        const fall = c.tip * c.tip * (3 - 2 * c.tip) * (1 - stand)
+        m.position.set(
+          c.pos.x + Math.sin(t * 47) * 0.012 * rattle,
+          c.pos.y + fall * 0.11 + Math.abs(Math.sin(t * 31)) * 0.035 * rattle,
+          c.pos.z + Math.cos(t * 43) * 0.012 * rattle,
+        )
+        // tips over sideways about its base, turned the way it was flung
+        tmpQ.setFromAxisAngle(AXIS_Y, c.yaw + Math.sin(t * 39) * 0.2 * rattle + rise * rise * 5)
+        tmpQ2.setFromAxisAngle(AXIS_Z, -c.side * fall * (Math.PI / 2))
+        m.quaternion.copy(tmpQ).multiply(tmpQ2)
+        // a half lies flat side down once it's settled; a whole log just rolls a little
+        if (c.kind !== 2)
+          m.quaternion.multiply(tmpQ2.setFromAxisAngle(AXIS_Y, (c.kind ? 1 : -1) * fall * 1.2))
+        if (rise > 0) {
+          const k = rise * rise
+          // (its top end leads into the nozzle)
+          m.position.lerp(tmpA.copy(vp.tip).setY(vp.tip.y - LOG_H * 0.55 * (1 - k)), k)
+          const thin = 1 - 0.72 * k
+          m.scale.set(thin, (1 + 0.3 * Math.sin(rise * Math.PI)) * (1 - 0.5 * k * k), thin)
+        } else m.scale.set(1, 1, 1)
       }
     }
 
@@ -1546,11 +1861,56 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
     const rubbing = dog.rubbing > 0 && toDog < 1.4 && !s.target
     const petting = dog.petting > 0 && toDog < 2 && !s.target
-    if (rubbing || petting) s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, dog.pos), 8 * dt)
-    s.crouch += ((rubbing ? 1 : petting ? 0.55 : bx.hold * shelfCrouch) - s.crouch) * damp(dt, 7)
+    // Petting: the hand goes to the top of his head, wherever that is this
+    // frame (Eduard: "petting animation seems to be offset, I am not touching
+    // him"). The guest turns so that shoulder is in line with his head, bends
+    // forward at the hips just far enough to reach, and strokes back from his
+    // brow towards his ears, lifting the hand a little on the way forward.
+    const petOn = petting && dog.sit > 0.5
+    s.petK += ((petOn ? 1 : 0) - s.petK) * damp(dt, petOn ? 7 : 9)
+    let petYaw: number | null = null
+    let petArm = 0
+    let bowGoal = 0
+    if (petting) {
+      const stroke = 0.5 + 0.5 * Math.sin(t * 5)
+      const top = joints.rusty.head.obj.localToWorld(
+        tmpA.set(0, 0.222 + 0.01 * stroke, 0.05 - 0.09 * stroke),
+      )
+      const d = Math.max(0.3, Math.hypot(top.x - s.guest.x, top.z - s.guest.z))
+      const yawTo = Math.atan2(top.x - s.guest.x, top.z - s.guest.z)
+      // (sat down, he shuffles the last few centimetres so his head is at arm's length)
+      if (petOn && dog.petSettled) {
+        const shuffle = Math.max(-0.3, Math.min(0.3, d - PET_HEAD_AT)) * damp(dt, 4)
+        dog.pos.x -= Math.sin(yawTo) * shuffle
+        dog.pos.z -= Math.cos(yawTo) * shuffle
+      }
+      // the hand on the side his nose points past, so his muzzle (and the cow) is clear of that arm
+      if (!petOn || s.petK < 0.05) {
+        const noseRight = Math.sin(dog.yaw) * -Math.cos(yawTo) + Math.cos(dog.yaw) * Math.sin(yawTo)
+        s.petSide = noseRight >= 0 ? 1 : -1
+      }
+      petYaw = yawTo + s.petSide * Math.asin(Math.min(0.95, SHOULDER_OUT / d))
+      // in the upright plane through that shoulder: how far ahead and how high his head is
+      const ahead = Math.sqrt(Math.max(0.0004, d * d - SHOULDER_OUT * SHOULDER_OUT))
+      const high = top.y - s.guestY + PET_CROUCH * 0.24
+      let b = 0
+      for (; b < PET_BOW_MAX; b += 0.025)
+        if (
+          Math.hypot(ahead - SPINE * Math.sin(b), high - HIP_Y - SPINE * Math.cos(b)) <= ARM_LENGTH
+        )
+          break
+      bowGoal = b
+      const lift = Math.max(0, -Math.cos(t * 5)) * 0.1
+      // (the arm's angle from hanging straight down, forwards)
+      petArm = Math.atan2(ahead - SPINE * Math.sin(b), HIP_Y + SPINE * Math.cos(b) - high) + lift
+    }
+    s.bow += (bowGoal * s.petK - s.bow) * damp(dt, 8)
+    const bow = s.bow
+    if (rubbing) s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, dog.pos), 8 * dt)
+    else if (petYaw !== null) s.guestYaw = turnTowards(s.guestYaw, petYaw, 8 * dt)
+    s.crouch +=
+      ((rubbing ? 1 : petting ? PET_CROUCH : bx.hold * shelfCrouch) - s.crouch) * damp(dt, 7)
     const crouch = s.crouch
-    // patting his head: the right hand reaches out and pats
-    const pat = petting ? 1 : 0
     // step up onto the deck and the cabin floor
     s.guestY += (groundHeight(s.guest) - s.guestY) * damp(dt, 14)
     s.walkPhase += walking ? dt * 11 : 0
@@ -1565,8 +1925,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const rubStroke = Math.sin(t * 7) * 0.18
     // sitting on the bench: thighs out over the end of it, shins hanging, hands on knees
     const seat = s.sit.k * s.sit.k * (3 - 2 * s.sit.k)
-    lerpRot(j.legL, 'x', swing * 0.6 - crouch * 1.1 - seat * 1.5)
-    lerpRot(j.legR, 'x', -swing * 0.6 - crouch * 1.1 - seat * 1.5)
+    lerpRot(j.legL, 'x', swing * 0.6 - crouch * 1.1 - seat * 1.5 - bow)
+    lerpRot(j.legR, 'x', -swing * 0.6 - crouch * 1.1 - seat * 1.5 - bow)
     lerpRot(
       j.shinL,
       'x',
@@ -1592,35 +1952,37 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       lerpRot(j.axe, 'x', 1.25 - raise * 0.9 + (sp.phase === 'chop' ? -0.3 : 0), fast)
       lerpRot(j.head, 'x', raise * 0.25 + (sp.phase === 'chop' ? 0.4 : 0.15), fast)
     } else {
-      lerpRot(
-        j.armL,
-        'x',
-        -swing * 0.5 - rub * (0.8 - rubStroke) - hold * 1.05 - s.reach * 0.2 - seat * 0.55,
-      )
+      // (bent forward to pet him, the arms hang straight down unless one is on his head)
+      const petL = s.petSide < 0 ? s.petK : 0
+      const petR = s.petSide > 0 ? s.petK : 0
+      const restL =
+        -swing * 0.5 - rub * (0.8 - rubStroke) - hold * 1.05 - s.reach * 0.2 - seat * 0.55 - bow
+      const restR =
+        swing * 0.5 - rub * (0.8 + rubStroke) - hold * 1.05 - s.reach * 1.25 - seat * 0.55 - bow
+      lerpRot(j.armL, 'x', restL + (-(petArm + bow) - restL) * petL, petL > 0.5 ? snap : relax)
+      lerpRot(j.armR, 'x', restR + (-(petArm + bow) - restR) * petR, petR > 0.5 ? snap : relax)
+      lerpRot(j.armL, 'z', (rub * (0.12 - Math.cos(t * 7) * 0.15) + hold * 0.3) * (1 - petL))
       lerpRot(
         j.armR,
-        'x',
-        swing * 0.5 -
-          rub * (0.8 + rubStroke) -
-          pat * (1.25 + Math.max(0, Math.sin(t * 9)) * 0.3) -
-          hold * 1.05 -
-          s.reach * 1.25 -
-          seat * 0.55,
+        'z',
+        (rub * (-0.12 + Math.cos(t * 7) * 0.15) - hold * 0.3 - s.reach * 0.1) * (1 - petR),
       )
-      lerpRot(j.armL, 'z', rub * (0.12 - Math.cos(t * 7) * 0.15) + hold * 0.3)
-      lerpRot(j.armR, 'z', rub * (-0.12 + Math.cos(t * 7) * 0.15) - hold * 0.3 - s.reach * 0.1)
       lerpRot(j.axe, 'x', 0)
-      lerpRot(j.head, 'x', hold * 0.3 - s.reach * 0.05)
+      lerpRot(j.head, 'x', hold * 0.3 - s.reach * 0.05 + s.petK * 0.12)
     }
+    // (bending forward turns the whole model about its feet; the legs are
+    // swung back upright above, so shift it to keep the feet where they were)
+    const hipBack = HIP_Y * Math.sin(bow)
     G.hiker.position.set(
-      s.guest.x,
+      s.guest.x - Math.sin(s.guestYaw) * hipBack,
       s.guestY +
         (walking ? Math.abs(Math.sin(s.walkPhase)) * 0.05 : Math.sin(t * 2) * 0.006) -
         crouch * 0.24 +
+        HIP_Y * (1 - Math.cos(bow)) +
         seat * (BENCH_SEAT.y - 0.4 + 0.03),
-      s.guest.z,
+      s.guest.z - Math.cos(s.guestYaw) * hipBack,
     )
-    G.hiker.rotation.y = s.guestYaw
+    G.hiker.rotation.set(bow, s.guestYaw, 0, 'YXZ')
 
     // the little tap marker
     if (marker.current) {
@@ -1951,6 +2313,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     follow(e.armR, 'z', ep.armRz, 8)
     follow(e.armL, 'x', ep.armL, 8)
     follow(e.armL, 'z', ep.armLz, 8)
+    follow(e.hammer, 'x', ep.wrist, ep.snap)
     // the wave
     e.armL.obj.rotation.y =
       eduardGreeting === 'guest'
@@ -2040,7 +2403,18 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const hugoGoal = vacGoal
       ? tmp.set(vacGoal.x, vacGoal.y, vacGoal.z)
       : tmp.set(hugoAt.x, (leadTo ? 1.1 : s.guestY + 0.8) + Math.sin(t * 2.1) * 0.07, hugoAt.z)
-    s.hugo.lerp(hugoGoal, damp(dt, vacGoal ? 4.5 : 2.6))
+    if (vacGoal) {
+      // Tidying up, he glides: picks up speed, then eases in over the spot
+      // (he used to dart from piece to piece).
+      const to = tmp2.copy(hugoGoal).sub(s.hugo)
+      const dist = to.length()
+      const wanted = Math.min(HUGO_GLIDE, dist * 3.4)
+      s.hugoSpeed += Math.max(-12 * dt, Math.min(5 * dt, wanted - s.hugoSpeed))
+      if (dist > 1e-4) s.hugo.addScaledVector(to, Math.min(1, (s.hugoSpeed * dt) / dist))
+    } else {
+      s.hugoSpeed = 0
+      s.hugo.lerp(hugoGoal, damp(dt, 2.6))
+    }
     // never inside Eduard, even on the way past him
     const fromEd = Math.hypot(s.hugo.x - ed.pos.x, s.hugo.z - ed.pos.z)
     if (fromEd < HUGO_FROM_EDUARD) {
@@ -2049,23 +2423,48 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       s.hugo.z = ed.pos.z + (s.hugo.z - ed.pos.z) * k
     }
     G.hugo.position.copy(s.hugo)
+    // Swallowing a piece (or swelling to blow one out): a squash, a stretch
+    // and a little hop. Pulling at one, he's drawn down a touch.
+    const gulped = 1 - vac.gulp
+    const squash = vac.gulp > 0 ? Math.sin(gulped * Math.PI * 2) * vac.gulp * 0.2 : 0
+    G.hugo.scale.set(1 + squash * 0.7, 1 - squash, 1 + squash * 0.7)
+    G.hugo.position.y +=
+      (vac.gulp > 0 ? Math.sin(gulped * Math.PI) * 0.05 : 0) -
+      0.03 * vac.suction * (vac.chunk?.suck ?? 0)
     const talking = bubble?.speaker === 'HUGO'
+    const hosing = vac.phase === 'suck' || vac.phase === 'drop'
     const lookTarget = talking
       ? { x: camera.position.x, z: camera.position.z }
-      : vacGoal && vac.reach
+      : vacGoal && vac.phase === 'drop' && vac.reach
         ? { x: vac.reach.x, z: vac.reach.z }
-        : leading
-          ? { x: s.guest.x, z: s.guest.z }
-          : walking
-            ? { x: s.guest.x + Math.sin(s.guestYaw) * 4, z: s.guest.z + Math.cos(s.guestYaw) * 4 }
-            : { x: s.guest.x, z: s.guest.z }
+        : vacGoal && Math.hypot(vacGoal.x - s.hugo.x, vacGoal.z - s.hugo.z) > 0.25
+          ? { x: vacGoal.x, z: vacGoal.z }
+          : vacGoal
+            ? // (over a piece: he stays as he is)
+              { x: s.hugo.x + Math.sin(s.hugoYaw), z: s.hugo.z + Math.cos(s.hugoYaw) }
+            : leading
+              ? { x: s.guest.x, z: s.guest.z }
+              : walking
+                ? {
+                    x: s.guest.x + Math.sin(s.guestYaw) * 4,
+                    z: s.guest.z + Math.cos(s.guestYaw) * 4,
+                  }
+                : { x: s.guest.x, z: s.guest.z }
     s.hugoYaw = turnTowards(s.hugoYaw, facing({ x: s.hugo.x, z: s.hugo.z }, lookTarget), 4 * dt)
-    G.hugo.rotation.y = s.hugoYaw
+    // He leans the way he's gliding; and when the last piece is stacked, a
+    // quick spin on the spot.
+    const glide = vacGoal ? Math.min(1, s.hugoSpeed / HUGO_GLIDE) : 0
+    s.hugoLean += (glide * 0.3 - s.hugoLean) * damp(dt, 5)
+    const spin = vac.proud > 0 ? easeInOut(clamp01((1.4 - vac.proud) / 0.8)) * Math.PI * 2 : 0
+    G.hugo.rotation.set(s.hugoLean, s.hugoYaw + spin, 0, 'YXZ')
     const h = joints.hugo
     h.head.obj.rotation.z = h.head.base.z + Math.sin(t * 0.8) * (talking ? 0.18 : 0.1)
-    h.head.obj.rotation.x = h.head.base.x + Math.sin(t * 1.3) * 0.06
-    const wiggle = talking ? 0.32 : 0.08
-    const speed = talking ? 13 : 2
+    // (he looks down at the piece he's picking up)
+    s.hugoNod += ((vac.phase === 'suck' ? 0.4 : 0) - s.hugoNod) * damp(dt, 6)
+    h.head.obj.rotation.x = h.head.base.x + Math.sin(t * 1.3) * 0.06 + s.hugoNod
+    const lively = talking || vac.gulp > 0 || vac.proud > 0
+    const wiggle = lively ? 0.32 : hosing ? 0.16 : 0.08
+    const speed = lively ? 13 : hosing ? 6 : 2
     h.antL.obj.rotation.x = h.antL.base.x + Math.sin(t * speed) * wiggle
     h.antR.obj.rotation.x = h.antR.base.x + Math.sin(t * speed + 1.7) * wiggle
     h.antL.obj.rotation.y = h.antL.base.y + (talking ? Math.sin(t * 7) * 0.12 : 0)
@@ -2341,6 +2740,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         <primitive object={hugo} />
       </group>
       <primitive object={vacParts.hose} />
+      <primitive object={vacParts.extras} />
       <primitive object={vacParts.stack} />
       <group ref={cowG} onPointerDown={onCowDown}>
         <primitive object={cow} />

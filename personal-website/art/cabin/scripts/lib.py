@@ -91,6 +91,15 @@ PALETTE = {
     "skin_shade": "#c48f69",
     "belt": "#3b2a20",
     "sole": "#2a221d",
+    # the guests, remodelled (A111): the second jacket and hair, the pack's
+    # darker panels, straps, zips and the bedroll
+    "jacket_2": "#c4602e",
+    "jacket_dark": "#a7741c",
+    "jacket_2_dark": "#9b4721",
+    "hair_auburn": "#7a3d22",
+    "pack_dark": "#24524f",
+    "strap": "#2b2a28",
+    "bedroll": "#5f7a3c",
     "collar": "#e0702a",
     "nose": "#1d1a19",
     "tongue": "#e07d8c",

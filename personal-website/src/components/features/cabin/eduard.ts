@@ -265,6 +265,8 @@ export type EduardPose = {
   /** Arm swing sideways (z), + towards his left. */
   armLz: number
   armRz: number
+  /** The hammer in his fist: + swings its head down past the hand. */
+  wrist: number
   head: number
   headTurn: number
   /** Whole-body pitch: + leans forward. */
@@ -287,6 +289,7 @@ export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose
     armL: -0.5,
     armLz: 0,
     armRz: 0,
+    wrist: 0,
     head: 0,
     headTurn: e.headTurn,
     lean: 0,
@@ -319,9 +322,18 @@ export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose
       // bouts of strikes (a slow lift, a quick hit), then setting the next nail
       const bout = k % 4.6
       if (bout < 3.4) {
+        // Each strike lands on the board in front of his knees: he leans in
+        // over it, the arm comes down and the wrist flicks the head onto the
+        // nail; then up again, the wrist cocked back. (He used to swing at
+        // the air beside him.) The other hand steadies the board.
         const cycle = (bout * 1.25) % 1
         const lift = cycle < 0.7 ? cycle / 0.7 : 1 - (cycle - 0.7) / 0.3
-        p.armR = 0.35 - lift * 0.9
+        const up = lift * lift * (3 - 2 * lift)
+        p.armR = 0.67 - up * 1.45
+        p.wrist = 1.05 - up * 1.5
+        p.lean = 0.3 - up * 0.18
+        p.armL = -0.7
+        p.head = 0.28 - up * 0.1
         p.snap = 22
       } else {
         p.armR = 0.55

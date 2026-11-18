@@ -215,13 +215,17 @@ def build_torso(root):
     ]
     j = Joint()
     j.add(painted(loft([((0, 0, z), w, d, opts(up=FRONT)) for z, w, d in S], n=20, up=FRONT), torso_colour))
+    # the shoulders: a rounded cap under each sleeve, so the arm stays joined
+    # to him however far it swings (hammering, it used to come away from his side)
+    for sx in (-1, 1):
+        j.add(smoothed(ellipsoid(1.0, (sx * 0.218, 0, 0.326), (0.074, 0.074, 0.07), seg=12, rings=8), 1), "tee_red")
     # the T-shirt's collar, and the belt buckle
     j.add(torus(0.074, 0.009, (0, 0, 0.356), squash=0.8, scale_r=(1.0, 0.92), seg=20), "tee_red")
     j.add(ellipsoid(1.0, (0, -0.121, 0.046), (0.028, 0.008, 0.017), seg=8, rings=4), "steel")
     return j.build("Eduard_Torso", (0, 0, HIP), root)
 
 
-def open_hand(j, sx):
+def open_hand(j, sx, skin="skin"):
     """The free hand, open: palm, four fingers and a thumb. It's turned so
     the palm faces back at rest; raised to wave, it faces the guest."""
     turn = Matrix.Rotation(sx * math.radians(-40), 4, "Z")
@@ -241,20 +245,20 @@ def open_hand(j, sx):
         n=12,
         up=FRONT,
     )
-    j.add(put(smoothed(palm, 2)), "skin")
+    j.add(put(smoothed(palm, 2)), skin)
     for k, (y, ln) in enumerate(((-0.033, 0.036), (-0.012, 0.044), (0.01, 0.042), (0.031, 0.034))):
-        j.add(put(ellipsoid(1.0, (0, y, -0.338 - ln / 2), (0.0125, 0.0115, ln / 2 + 0.006), seg=8, rings=6)), "skin")
-    j.add(put(ellipsoid(1.0, (sx * -0.022, -0.04, -0.298), (0.013, 0.014, 0.032), deg(30, sx * 20, 0), seg=8, rings=6)), "skin")
+        j.add(put(ellipsoid(1.0, (0, y, -0.338 - ln / 2), (0.0125, 0.0115, ln / 2 + 0.006), seg=8, rings=6)), skin)
+    j.add(put(ellipsoid(1.0, (sx * -0.022, -0.04, -0.298), (0.013, 0.014, 0.032), deg(30, sx * 20, 0), seg=8, rings=6)), skin)
 
 
-def fist(j, sx):
+def fist(j, sx, skin="skin"):
     """The hammer hand: a fist round the handle (which runs forward)."""
-    j.add(smoothed(ellipsoid(1.0, (0, 0.0, -0.31), (0.044, 0.05, 0.05), seg=12, rings=8), 1), "skin")
+    j.add(smoothed(ellipsoid(1.0, (0, 0.0, -0.31), (0.044, 0.05, 0.05), seg=12, rings=8), 1), skin)
     # the fingers curled round the handle: knuckles in a row down the outside
     for y in (-0.027, -0.009, 0.009, 0.027):
-        j.add(ellipsoid(0.0135, (sx * 0.036, y, -0.334), seg=8, rings=5), "skin")
+        j.add(ellipsoid(0.0135, (sx * 0.036, y, -0.334), seg=8, rings=5), skin)
     # the thumb over the top of the handle
-    j.add(ellipsoid(1.0, (sx * -0.028, -0.036, -0.29), (0.013, 0.021, 0.012), seg=8, rings=5), "skin")
+    j.add(ellipsoid(1.0, (sx * -0.028, -0.036, -0.29), (0.013, 0.021, 0.012), seg=8, rings=5), skin)
 
 
 def build_arm(root, side, sx):

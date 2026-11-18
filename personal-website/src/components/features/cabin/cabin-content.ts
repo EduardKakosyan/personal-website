@@ -70,11 +70,32 @@ export const HUGO_CABIN_LINE =
   'Here’s the cabin, where all the magic happens. Feel free to look around.'
 
 /**
- * HUGO's line when he sets off to lead the guest from the cabin to the
- * woodshed (A86). DRAFT, the agent's wording: Eduard to replace.
+ * HUGO's line when the guest walks out of the cabin and he sets off to lead
+ * them to the woodshed (A86, A103; Eduard's wording).
  */
-export const HUGO_LEAD_LINE = 'Come on, I’ll show you the woodshed. Eduard built it himself.'
+export const HUGO_LEAD_LINE = 'Let’s go on a little walk.'
 
 /** HUGO's line when the guest reaches the woodshed (Eduard's wording, A48). */
 export const HUGO_WOODSHED_LINE =
   'Here’s where all the wood is, in case you need to warm up. We’ll get the fire going later.'
+
+/**
+ * What HUGO says when the guest looks at one of the easter eggs in the cabin.
+ * DRAFTS, the agent's wording from the brief's facts: Eduard to replace.
+ */
+export const HUGO_LOOK_LINES = {
+  basket: 'Eduard’s foraging basket. Golden chanterelles and king boletes, his go-tos.',
+  rod: 'His surf rod. Endless hours on the beach with that one, fishing for stripers.',
+  tackle: 'The tackle box. Everything in there has a story, and most of them got away.',
+} as const
+
+/** HUGO, when the guest has split the night's firewood. DRAFT. */
+export const HUGO_SPLIT_DONE_LINE = 'That’s plenty for tonight. Eduard will be pleased.'
+
+/**
+ * Eduard's welcome, in two beats (Eduard: he "should acknowledge our guest
+ * and not just say Hey HUGO show them around"). The second line is his own
+ * wording (A44); the first is a DRAFT for him to replace.
+ */
+export const EDUARD_HELLO_LINE = 'Hey, you made it! Welcome. Make yourself at home.'
+export const EDUARD_HANDOVER_LINE = 'HUGO, show them around, I’ll finish up here.'

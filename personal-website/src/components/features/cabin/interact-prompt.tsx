@@ -7,7 +7,7 @@ export type PromptInput = 'right-click' | 'tap'
 
 /**
  * A small prompt over something you can interact with ("show interactions",
- * Eduard). On a computer it shows which mouse button to use (right-click), and
+ * Eduard). On a computer it shows the E key and the mouse (right-click), and
  * can be clicked as well; on a touch screen it is a button to tap.
  */
 export function InteractPrompt({
@@ -33,12 +33,12 @@ export function InteractPrompt({
       </button>
     )
   }
-  // On a computer it shows the mouse hint, and clicking it works too.
+  // On a computer it shows the key and the mouse hint, and clicking it works too.
   return (
     <button
       type="button"
       className={`${styles.prompt} ${styles.promptClickable} ${styles.pixel}`}
-      aria-label={`${label} (right-click)`}
+      aria-label={`${label} (E, or right-click)`}
       onPointerDown={(e) => {
         e.stopPropagation()
         if (e.button === 0) onPress()
@@ -50,6 +50,7 @@ export function InteractPrompt({
         onPress()
       }}
     >
+      <kbd className={styles.promptKey}>E</kbd>
       <MouseIcon />
       <span>{label}</span>
     </button>

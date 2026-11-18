@@ -74,10 +74,26 @@ PALETTE = {
     "khaki": "#8a7a5a",
     "hair_brown": "#5a3a24",
     "rusty": "#d4a85c",
-    "rusty_dark": "#b88a44",
+    "rusty_dark": "#c3954e",
     "rusty_muzzle": "#e6d3a8",
+    # Rusty, remodelled from photo 05 (A105): cream chest, belly and legs, the
+    # greying face, a deeper gold along his back, the liver nose, brown eyes
+    "rusty_light": "#ecd3a0",
+    "rusty_face": "#e9d8b2",
+    "rusty_toes": "#f3ead6",
+    "rusty_saddle": "#c99b55",
+    "rusty_nose": "#7a4e45",
+    "rusty_eye": "#3a2316",
+    "eye_shine": "#fffaf0",
+    "mouth": "#4a2328",
+    "pad": "#57433f",
+    # Eduard, remodelled (A107): the inside of his ears, his belt, boot soles
+    "skin_shade": "#c48f69",
+    "belt": "#3b2a20",
+    "sole": "#2a221d",
     "collar": "#e0702a",
     "nose": "#1d1a19",
+    "tongue": "#e07d8c",
     "cow_white": "#f4f1ea",
     "cow_black": "#1f1d1c",
     "cow_snout": "#b9b9bd",
@@ -241,6 +257,13 @@ def wedge(mat_name, width, depth, height, center=(0, 0, 0), rot=(0, 0, 0)):
     return Part("wedge", mat_name, center, rot, width=width, depth=depth, height=height)
 
 
+def half_log(mat_name, r, length, center=(0, 0, 0), rot=(0, 0, 0), seg=7, caps=None, flat=None):
+    """Half a log, split lengthwise. The log runs along Z, the flat split face
+    is the plane y = 0 and the round half bulges towards -Y. `caps` is the
+    end-grain material, `flat` the pale split face."""
+    return Part("half_log", mat_name, center, rot, r=r, length=length, seg=seg, caps=caps, flat=flat)
+
+
 def compound(name, parts, location=(0, 0, 0), parent=None, rot=(0, 0, 0), bevel=0.0, bevel_segments=1):
     me = bpy.data.meshes.new(name)
     bm = bmesh.new()
@@ -286,16 +309,33 @@ def compound(name, parts, location=(0, 0, 0), parent=None, rot=(0, 0, 0), bevel=
             bm.faces.new((vs[0], vs[3], vs[4], vs[1]))
             bm.faces.new((vs[1], vs[4], vs[5], vs[2]))
             bm.faces.new((vs[2], vs[5], vs[3], vs[0]))
+        elif p.kind == "half_log":
+            m = _matrix(p.center, p.rot, (1, 1, 1))
+            r, ln, n = p.kw["r"], p.kw["length"], p.kw["seg"]
+            # a half-disc (the chord along X at y = 0, the arc bulging to -Y), extruded along Z
+            ring = [(r * math.cos(math.pi * k / n), -r * math.sin(math.pi * k / n)) for k in range(n + 1)]
+            bottom = [bm.verts.new(m @ Vector((x, y, -ln / 2))) for x, y in ring]
+            top = [bm.verts.new(m @ Vector((x, y, ln / 2))) for x, y in ring]
+            bm.faces.new(tuple(reversed(bottom)))
+            bm.faces.new(tuple(top))
+            for k in range(n):
+                bm.faces.new((bottom[k], bottom[k + 1], top[k + 1], top[k]))
+            flat_face = bm.faces.new((bottom[-1], bottom[0], top[0], top[-1]))
+            flat_face.tag = True
         new = _new_faces(bm, before)
         caps = p.kw.get("caps")
         axis = Euler(p.rot).to_matrix() @ Vector((0, 0, 1))
         caps_mi = slot(caps) if caps else None
+        flat_mi = slot(p.kw["flat"]) if p.kw.get("flat") else None
         for f in new:
             f.material_index = mi
             if caps_mi is not None:
                 f.normal_update()
                 if abs(f.normal.dot(axis)) > 0.9:
                     f.material_index = caps_mi
+            if flat_mi is not None and f.tag:
+                f.material_index = flat_mi
+                f.tag = False
 
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bm.to_mesh(me)

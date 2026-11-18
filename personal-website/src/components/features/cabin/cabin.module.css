@@ -17,6 +17,8 @@
 
 .pixel {
   font-family: var(--font-pixel), ui-monospace, monospace;
+  /* (its fi and fl ligatures draw as an "A": "Split Ave logs") */
+  font-variant-ligatures: none;
   -webkit-font-smoothing: none;
   font-smooth: never;
 }
@@ -150,17 +152,19 @@
 @media (max-width: 640px) {
   .bar {
     top: auto;
-    bottom: 0.7rem;
+    bottom: 0.5rem;
     right: 50%;
     transform: translateX(50%);
     justify-content: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    width: calc(100vw - 1rem);
   }
 
   .barItem {
-    height: 1.9rem;
-    padding: 0 0.45rem;
-    font-size: 0.75rem;
+    height: 1.7rem;
+    padding: 0 0.4rem;
+    font-size: 0.68rem;
   }
 
   .hint {
@@ -222,131 +226,344 @@
   }
 }
 
-/* Reading panels (A43): calm, readable, over the right side of the scene. */
-.panel {
-  position: absolute;
-  top: 64px;
-  right: 16px;
-  bottom: 16px;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  width: min(440px, calc(100vw - 32px));
-  color: #2f2219;
-  background: #fffaf0;
-  border: 3px solid #3b2a1e;
-  box-shadow: 0 6px 0 rgba(59, 42, 30, 0.35);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
-  outline: none;
+/* ---------------------------------------------------------- paper (A102)
+   Everything you read is paper, like the things in the world: the résumé
+   and the to-do list come up as the sheet itself over the scene, dimmed in
+   the cutaway's dither; the box cards and the checklist are paper cards.
+   Stepped pixel corners, a light top-left edge and a shaded bottom-right
+   one, and a hard shadow. */
+.sheet,
+.sheetBack,
+.card {
+  clip-path: polygon(
+    0 6px,
+    3px 6px,
+    3px 3px,
+    6px 3px,
+    6px 0,
+    calc(100% - 6px) 0,
+    calc(100% - 6px) 3px,
+    calc(100% - 3px) 3px,
+    calc(100% - 3px) 6px,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 3px) calc(100% - 6px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 6px) calc(100% - 3px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    6px calc(100% - 3px),
+    3px calc(100% - 3px),
+    3px calc(100% - 6px),
+    0 calc(100% - 6px)
+  );
 }
 
-.panelHeader {
+.sheet::after,
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 3px 3px 0 #fffdf7,
+    inset -4px -4px 0 #e6d8bb;
+  pointer-events: none;
+}
+
+.reading {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 16px 14px;
+  background: repeating-conic-gradient(rgba(35, 22, 14, 0.55) 0 25%, transparent 0 50%) 0 0 / 4px
+    4px;
+  animation: dimIn 0.2s steps(3, end);
+}
+
+.sheetWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  filter: drop-shadow(7px 8px 0 rgba(25, 15, 8, 0.55));
+  animation: paperUp 0.24s steps(4, end);
+}
+
+.sheetWrapResume {
+  width: min(640px, 100%);
+  height: 690px;
+}
+
+.sheetWrapTodo {
+  width: min(440px, 100%);
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  color: #3b2a1e;
+  background: #fbf6ea;
+}
+
+/* the résumé's second sheet, peeking out underneath (two sheets on the table) */
+.sheetBack {
+  position: absolute;
+  inset: 0;
+  background: #e9dcc0;
+  transform: rotate(3.2deg) translate(14px, 6px);
+}
+
+.sheetScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 40px 8px;
+  font-size: 0.94rem;
+  line-height: 1.34;
+  outline: none;
+  scrollbar-color: #b98d5c transparent;
+  scrollbar-width: thin;
+}
+
+.sheetScroll p {
+  margin: 0 0 0.55em;
+}
+
+.sheetScrollTodo {
+  padding: 40px 40px 28px;
+}
+
+.sheetFoot {
+  display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  color: #fff7e6;
-  background: #3b2a1e;
+  gap: 10px;
+  margin: 0 40px;
+  padding: 12px 0 16px;
+  background: repeating-linear-gradient(90deg, rgba(59, 42, 30, 0.35) 0 6px, transparent 6px 10px)
+    top / 100% 3px no-repeat;
+}
+
+.sheetName {
+  margin: 0 0 6px;
+  font-size: 2.1rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.sheetSub {
+  margin-bottom: 10px !important;
+  color: #8a4b12;
   font-size: 1rem;
 }
 
-.panelClose {
-  padding: 2px 8px;
+.sheetRunning {
+  margin-bottom: 14px !important;
+  color: #8a7a5a;
+  font-size: 0.875rem;
+}
+
+.sheetRule {
+  height: 3px;
+  margin: 10px 0 10px;
+  background: repeating-linear-gradient(90deg, #3b2a1e 0 6px, transparent 6px 10px);
+  border: 0;
+  opacity: 0.35;
+}
+
+.sheetHeading {
+  margin: 2px 0 6px;
+  color: #b8352f;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.sheetItem {
+  margin-bottom: 10px;
+}
+
+.sheetItemTitle {
+  margin: 0 !important;
+  font-size: 1.06rem;
+  font-weight: 600;
+}
+
+.sheetItemTitle span {
+  font-weight: 400;
+}
+
+.sheetMeta {
+  margin: 1px 0 4px !important;
+  color: #8a7a5a;
+  font-size: 0.875rem;
+}
+
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+.pagerButton {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  padding: 0;
   color: #3b2a1e;
   background: #fff7e6;
-  border: 2px solid #fff7e6;
+  border: 3px solid #3b2a1e;
   font: inherit;
   font-size: 0.8rem;
   cursor: pointer;
 }
 
-.panelClose:hover,
-.panelClose:focus-visible {
+.pagerButton:hover:not(:disabled),
+.pagerButton:focus-visible {
   background: #fec54f;
+  outline: none;
 }
 
-.panelBody {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px 18px;
-  font-size: 0.92rem;
-  line-height: 1.5;
+.pagerButton:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
-.panelBody p {
-  margin: 0 0 0.6em;
-}
-
-.panelActions {
-  display: flex;
-  gap: 8px;
-  padding: 10px 16px 14px;
-  border-top: 2px solid #ead9bd;
-}
-
-.panelButton {
-  padding: 8px 14px;
+/* buttons on paper: the main one yellow, the rest paper-coloured */
+.panelButton,
+.panelButtonQuiet {
+  display: inline-block;
+  padding: 6px 14px 7px;
   color: #3b2a1e;
   background: #fec54f;
-  border: 2px solid #3b2a1e;
+  border: 3px solid #3b2a1e;
+  box-shadow: 3px 3px 0 rgba(59, 42, 30, 0.35);
+  font-size: 1rem;
+  line-height: 1.2;
   text-decoration: none;
-  font-size: 0.9rem;
+}
+
+.panelButtonQuiet {
+  background: #fff7e6;
 }
 
 .panelButton:hover,
 .panelButton:focus-visible {
   background: #ffd774;
+  outline: none;
 }
 
-.resumeName {
-  margin: 0 0 2px;
-  font-size: 1.3rem;
+.panelButtonQuiet:hover,
+.panelButtonQuiet:focus-visible {
+  background: #fec54f;
+  outline: none;
 }
 
-.resumeMeta {
-  color: #6b5644;
+.panelButton:active,
+.panelButtonQuiet:active {
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}
+
+/* the small "Close" / "Put back" on the paper cards */
+.paperClose {
+  flex: none;
+  padding: 3px 9px 4px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 2px 2px 0 rgba(59, 42, 30, 0.35);
+  font: inherit;
   font-size: 0.85rem;
+  cursor: pointer;
 }
 
-.resumeSection {
-  margin: 1.1em 0 0.5em;
-  padding-bottom: 3px;
-  border-bottom: 2px solid #ead9bd;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.paperClose:hover,
+.paperClose:focus-visible {
+  background: #fec54f;
+  outline: none;
 }
 
-.resumeItem {
-  margin-bottom: 0.8em;
+.putDown {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 6px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 3px 3px 0 rgba(59, 42, 30, 0.35);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
-.resumeItemTitle {
-  margin-bottom: 0 !important;
+.putDown:hover,
+.putDown:focus-visible {
+  background: #fec54f;
+  outline: none;
+}
+
+.putDownKey {
+  margin: 0;
+}
+
+/* (no Esc key on a phone; .key, further down, would win without the .putDown) */
+@media (hover: none) {
+  .putDown .putDownKey {
+    display: none;
+  }
+}
+
+/* the to-do list, as pinned to the wall */
+.pin {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  transform: translateX(-50%);
+}
+
+.todoTitle {
+  margin: 0 0 14px;
+  font-size: 1.9rem;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .todoList {
   margin: 0;
   padding: 0;
   list-style: none;
+  font-size: 1.125rem;
 }
 
 .todoItem {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
   width: 100%;
-  padding: 7px 4px;
+  padding: 7px 0;
   color: inherit;
   background: none;
   border: none;
-  border-bottom: 1px dashed #ead9bd;
   font: inherit;
+  line-height: 1.3;
   text-align: left;
 }
 
@@ -357,36 +574,95 @@ button.todoItem {
 button.todoItem:hover .todoText,
 button.todoItem:focus-visible .todoText {
   text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+button.todoItem:focus-visible {
+  outline: none;
 }
 
 .todoText {
-  font-weight: 600;
+  flex: 1;
 }
 
 .todoBox {
   flex: none;
-  width: 14px;
-  height: 14px;
-  border: 2px solid #3b2a1e;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  background: #fff;
+  border: 3px solid #3b2a1e;
+}
+
+.todoMore {
+  flex: none;
+  padding-left: 8px;
+  color: #8a7a5a;
+  font-size: 0.9rem;
 }
 
 .todoNote {
-  margin: 4px 0 8px 28px !important;
-  padding: 8px 10px;
-  color: #3b2a1e;
-  background: #fff1cf;
-  border-left: 3px solid #fec54f;
-  font-size: 0.88rem;
+  margin: 0 0 6px 30px !important;
+  padding: 2px 0 2px 12px;
+  color: #6b5644;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  border-left: 3px dotted rgba(59, 42, 30, 0.4);
+}
+
+@keyframes dimIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes paperUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
 }
 
 @media (max-width: 640px) {
-  .panel {
-    top: auto;
-    right: 8px;
-    left: 8px;
-    bottom: 76px;
-    width: auto;
-    max-height: 62vh;
+  .reading {
+    gap: 10px;
+    padding: 44px 10px 10px;
+  }
+
+  .sheetScroll {
+    padding: 22px 20px 8px;
+    font-size: 0.9rem;
+  }
+
+  .sheetScrollTodo {
+    padding: 34px 20px 20px;
+  }
+
+  .sheetFoot {
+    margin: 0 20px;
+  }
+
+  .sheetName {
+    font-size: 1.75rem;
+  }
+
+  .sheetSub {
+    font-size: 0.875rem;
+  }
+
+  .todoTitle {
+    font-size: 1.6rem;
+  }
+
+  .todoList {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading,
+  .sheetWrap {
+    animation: none;
   }
 }
 
@@ -479,52 +755,683 @@ button.todoItem:focus-visible .todoText {
 .boxTag:focus-visible {
   background: #fec54f;
 }
-
-.boxList {
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
+/* ---------------------------------------------------------- the E key on the prompt */
+.promptKey,
+.key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 2px solid #3b2a1e;
+  box-shadow: 0 2px 0 #3b2a1e;
+  vertical-align: middle;
 }
 
-.box {
-  margin-bottom: 8px;
-  background: #fffaf0;
-  border: 2px solid #ead9bd;
+.key {
+  margin: 0 2px 2px 0;
 }
 
-.boxHead {
+/* the rows of the How-to-play card: groups of keys, the mouse, a word or two */
+.keyGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 10px 2px 0;
+  vertical-align: middle;
+}
+
+.keyGroup:last-child {
+  margin-right: 0;
+}
+
+.keyMouse {
+  display: block;
+  margin-right: 2px;
+  image-rendering: pixelated;
+}
+
+/* ---------------------------------------------------------- how to play */
+.controls {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0.9rem;
+  z-index: 35;
+  width: min(300px, calc(100vw - 1.8rem));
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 4px 4px 0 rgba(59, 42, 30, 0.35);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.controlsHead {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 4px 12px;
-  width: 100%;
-  padding: 9px 10px;
-  color: inherit;
-  text-align: left;
-  background: none;
-  border: none;
+  padding: 5px 8px 5px 10px;
+  color: #fff7e6;
+  background: #3b2a1e;
+  font-size: 0.85rem;
+}
+
+.controlsHide {
+  padding: 1px 7px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 2px solid #fff7e6;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.controlsHide:hover,
+.controlsHide:focus-visible {
+  background: #fec54f;
+}
+
+.controlsList {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 10px;
+  align-items: center;
+  margin: 0;
+  padding: 9px 10px 10px;
+}
+
+.controlsList dt {
+  color: #8a4b12;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+}
+
+.controlsList dd {
+  margin: 0;
+}
+
+.guestChoice {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.guestOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 3px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 2px solid #3b2a1e;
   font: inherit;
   cursor: pointer;
 }
 
-.boxHead:hover .todoText,
-.boxHead:focus-visible .todoText {
-  text-decoration: underline;
+.guestOption img {
+  display: block;
+  image-rendering: pixelated;
+  background: #a9d3ef;
+  border: 1px solid #3b2a1e;
 }
 
-.boxBody {
-  padding: 0 10px 8px;
+.guestOption:hover,
+.guestOption:focus-visible {
+  background: #fec54f;
+  outline: none;
+}
+
+.guestOption[aria-checked='true'] {
+  background: #3b2a1e;
+  color: #fff7e6;
+}
+
+/* ---------------------------------------------------------- the checklist (a paper card, A102) */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  color: #3b2a1e;
+  background: #fbf6ea;
+}
+
+.checklist {
+  position: absolute;
+  top: 64px;
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(330px, calc(100vw - 32px));
+  max-height: calc(100vh - 100px);
+  filter: drop-shadow(6px 7px 0 rgba(25, 15, 8, 0.5));
+  outline: none;
+  animation: cardIn 0.22s steps(4, end);
+}
+
+.checklistHead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 8px;
+}
+
+.checklistHead h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.checklistCount {
+  color: #8a4b12;
   font-size: 0.9rem;
 }
 
-.boxLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
+.checklistList {
+  margin: 0;
+  padding: 0 16px 14px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 0.9rem;
 }
 
-.boxLinks a {
+.checklistList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.goalBox {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: #fff7e6;
+  background: #fff;
+  border: 3px solid #3b2a1e;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.goalDone .goalBox {
+  background: #4d8a3a;
+}
+
+.goalDone .goalText {
+  color: #8a7a5a;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.goalText {
+  flex: 1;
+}
+
+.goalParts {
   color: #8a4b12;
+  font-size: 0.8rem;
+}
+
+.checklistAll {
+  flex: none;
+  margin: 0 16px 14px;
+  padding-top: 10px;
+  color: #b8352f;
+  background: repeating-linear-gradient(90deg, rgba(59, 42, 30, 0.35) 0 6px, transparent 6px 10px)
+    top / 100% 3px no-repeat;
+  font-size: 0.9rem;
+}
+
+.toast {
+  position: absolute;
+  top: 3.6rem;
+  left: 50%;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 4px 4px 0 rgba(59, 42, 30, 0.35);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  animation:
+    toastIn 0.25s steps(4, end),
+    toastOut 0.3s steps(4, end) 3.2s forwards;
+  pointer-events: none;
+}
+
+/* while a paper is up, the note goes to the top edge, clear of the sheet */
+.reading ~ .toast {
+  top: 0.7rem;
+}
+
+.toastTick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: #fff7e6;
+  background: #4d8a3a;
+  border: 2px solid #3b2a1e;
+  font-size: 0.75rem;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+/* ---------------------------------------------------------- the project boxes */
+.boxTagOpen {
+  background: #fec54f;
+}
+
+/* The card that opens while the guest holds the thing out of a box: a paper
+   index card (A102), bottom-right so the thing in their hands stays in view. */
+.boxCard {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 90px);
+  filter: drop-shadow(6px 7px 0 rgba(25, 15, 8, 0.5));
+  outline: none;
+  animation: cardIn 0.22s steps(4, end);
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* the red line across an index card, under the heading */
+.boxCardHead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  border-bottom: 3px solid rgba(184, 53, 47, 0.8);
+}
+
+.boxCardIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+}
+
+.boxCardTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.boxCardTitle h2 {
+  margin: 2px 0 3px;
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.boxCardLabel {
+  display: block;
+  color: #8a7a5a;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.boxCardWhen {
+  display: block;
+  color: #8a4b12;
+  font-size: 0.85rem;
+}
+
+.boxCardBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 16px 6px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  scrollbar-color: #b98d5c transparent;
+  scrollbar-width: thin;
+}
+
+.boxCardBody p {
+  margin: 0 0 0.65em;
+}
+
+.boxCardWhat {
+  font-size: 1rem;
   font-weight: 600;
+}
+
+.boxCardRole {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.boxCardRole > span {
+  color: #b8352f;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.boxCardLinks .panelButton,
+.boxCardLinks .panelButtonQuiet {
+  padding: 5px 10px 6px;
+  font-size: 0.9rem;
+}
+
+.boxCardLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0.4em;
+  padding-bottom: 6px;
+}
+
+.boxCardNav {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 16px;
+  padding: 11px 0 14px;
+  background: repeating-linear-gradient(90deg, rgba(59, 42, 30, 0.35) 0 6px, transparent 6px 10px)
+    top / 100% 3px no-repeat;
+}
+
+.boxCardNavButton {
+  padding: 4px 10px 5px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.boxCardNavButton:hover:not(:disabled),
+.boxCardNavButton:focus-visible {
+  background: #fec54f;
+  outline: none;
+}
+
+.boxCardNavButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.boxGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+
+.boxGridItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px 8px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 2px 2px 0 rgba(59, 42, 30, 0.3);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.boxGridItem:hover,
+.boxGridItem:focus-visible {
+  background: #fec54f;
+  outline: none;
+}
+
+/* ---------------------------------------------------------- splitting wood */
+.splitHud {
+  position: absolute;
+  left: 50%;
+  bottom: 4.2rem;
+  z-index: 40;
+  width: min(360px, calc(100vw - 32px));
+  padding: 8px 10px 10px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 4px 4px 0 rgba(59, 42, 30, 0.35);
+  transform: translateX(-50%);
+}
+
+.splitTop {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.splitHint {
+  color: #8a4b12;
+  font-size: 0.72rem;
+}
+
+.splitBar {
+  position: relative;
+  height: 22px;
+  background: #ead9bd;
+  border: 2px solid #3b2a1e;
+  overflow: hidden;
+}
+
+.splitSweet {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 38%;
+  width: 24%;
+  background: #79b24c;
+}
+
+.splitPerfect {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 45.5%;
+  width: 9%;
+  background: #fec54f;
+}
+
+.splitMarker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 0;
+  width: 6px;
+  margin-left: -3px;
+  background: #3b2a1e;
+  border-left: 1px solid #fff7e6;
+  border-right: 1px solid #fff7e6;
+}
+
+.splitBar[data-ready='no'] .splitMarker {
+  opacity: 0.35;
+}
+
+.splitButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.splitSwing {
+  flex: 1;
+  padding: 10px 14px;
+  color: #3b2a1e;
+  background: #fec54f;
+  border: 2px solid #3b2a1e;
+  box-shadow: 0 3px 0 #3b2a1e;
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.splitSwing:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #3b2a1e;
+}
+
+.splitDone {
+  padding: 6px 12px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 2px solid #3b2a1e;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.splitDone:hover,
+.splitDone:focus-visible {
+  background: #fec54f;
+}
+
+.splitWord {
+  position: absolute;
+  left: 50%;
+  top: -2.4rem;
+  padding: 4px 10px;
+  color: #fff7e6;
+  background: #3b2a1e;
+  border: 2px solid #fff7e6;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  transform: translateX(-50%) rotate(-4deg);
+  animation: wordPop 0.9s steps(6, end) forwards;
+  pointer-events: none;
+}
+
+.splitWord_perfect {
+  background: #c0392f;
+}
+
+.splitWord_thunk {
+  background: #6b5644;
+}
+
+.splitWord_done {
+  background: #4d8a3a;
+}
+
+@keyframes wordPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) rotate(-4deg) scale(0.7);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, 0) rotate(-4deg) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -4px) rotate(-4deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -14px) rotate(-4deg) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .controls {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 5.4rem;
+    width: auto;
+  }
+
+  .checklist {
+    top: 0.6rem;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-height: calc(100vh - 5rem);
+  }
+
+  .boxCard {
+    right: 8px;
+    left: 8px;
+    bottom: 5.4rem;
+    width: auto;
+    max-height: 50vh;
+  }
+
+  .boxCardIcon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .splitHud {
+    bottom: 5.4rem;
+  }
+
+  .toast {
+    top: 0.8rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .boxCard,
+  .splitWord {
+    animation: none;
+  }
 }

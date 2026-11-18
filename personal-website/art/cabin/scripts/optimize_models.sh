@@ -17,7 +17,7 @@ trap 'rm -rf "$TMP"' EXIT
 "${GT[@]}" join "$TMP/b.glb" "$TMP/c.glb"
 "${GT[@]}" meshopt "$TMP/c.glb" "$DIR/set.glb"
 
-for name in cabin-parts see-through eduard hiker rusty cow hugo; do
+for name in cabin-parts see-through props eduard hiker hiker-2 rusty cow hugo; do
   "${GT[@]}" meshopt "$DIR/$name.glb" "$TMP/$name.glb"
   mv "$TMP/$name.glb" "$DIR/$name.glb"
 done

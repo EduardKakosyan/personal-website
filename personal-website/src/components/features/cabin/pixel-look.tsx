@@ -254,6 +254,90 @@ ${NOISE_GLSL}`,
   return mat
 }
 
+// ------------------------------------------------------------------ highlights
+/**
+ * Things the guest can use glow (Eduard: "a little glow or slight hint"). Each
+ * registered object carries `userData.glow` (0 = off .. 1 = full); the pass
+ * draws them into a mask and the composite puts a pulsing light outline round
+ * them, and a faint tint on them, only where they're actually in view.
+ */
+const highlighted = new Set<THREE.Object3D>()
+const maskMaterials = new Map<THREE.Object3D, THREE.MeshBasicMaterial>()
+export const HIGHLIGHT_LAYER = 1
+
+export function registerHighlight(obj: THREE.Object3D) {
+  obj.userData.glow = 0
+  highlighted.add(obj)
+}
+
+export function unregisterHighlight(obj: THREE.Object3D) {
+  highlighted.delete(obj)
+}
+
+/**
+ * Put every mesh of a glowing object on the highlight layer with its mask
+ * material for the mask render, then put it back.
+ */
+function withMaskMaterials(fn: () => void) {
+  const swapped: { mesh: THREE.Mesh; material: THREE.Material | THREE.Material[] }[] = []
+  for (const obj of highlighted) {
+    const glow = obj.userData.glow as number
+    if (!(glow > 0.01) || !obj.visible) continue
+    let mask = maskMaterials.get(obj)
+    if (!mask) {
+      mask = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false })
+      maskMaterials.set(obj, mask)
+    }
+    mask.color.setScalar(Math.min(1, glow))
+    const maskMaterial = mask
+    obj.traverse((o) => {
+      const mesh = o as THREE.Mesh
+      // (invisible tap areas are marked noGlow)
+      if (!mesh.isMesh || !mesh.visible || mesh.userData.noGlow) return
+      swapped.push({ mesh, material: mesh.material })
+      mesh.material = maskMaterial
+      mesh.layers.enable(HIGHLIGHT_LAYER)
+    })
+  }
+  if (swapped.length > 0) fn()
+  for (const s of swapped) {
+    s.mesh.material = s.material
+    s.mesh.layers.disable(HIGHLIGHT_LAYER)
+  }
+  return swapped.length > 0
+}
+
+/** A tiny pixel star for the sparkles over the easter eggs (nearest-filtered, so it stays crisp). */
+export function makeSparkleTexture() {
+  const size = 9
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.clearRect(0, 0, size, size)
+  const px = (x: number, y: number, c: string) => {
+    ctx.fillStyle = c
+    ctx.fillRect(x, y, 1, 1)
+  }
+  // a four-point star: a bright cross with a warm centre
+  for (let i = 0; i < size; i++) {
+    const d = Math.abs(i - 4)
+    const c = d === 0 ? '#fff7e6' : d <= 2 ? '#ffe9a8' : '#fec54f'
+    px(i, 4, c)
+    px(4, i, c)
+  }
+  px(3, 3, '#ffe9a8')
+  px(5, 3, '#ffe9a8')
+  px(3, 5, '#ffe9a8')
+  px(5, 5, '#ffe9a8')
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.magFilter = THREE.NearestFilter
+  tex.minFilter = THREE.NearestFilter
+  tex.generateMipmaps = false
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
 // ------------------------------------------------------------------ low-res render + outlines
 const compositeVertex = /* glsl */ `
 varying vec2 vUv;
@@ -269,10 +353,14 @@ const compositeFragment = /* glsl */ `
 uniform sampler2D tColor;
 uniform sampler2D tDepth;
 uniform sampler2D tNormal;
+uniform sampler2D tMask;
+uniform sampler2D tMaskDepth;
 uniform vec2 uRes;
 uniform float uNear;
 uniform float uFar;
 uniform float uOutlines;
+uniform float uGlow;
+uniform vec3 uGlowColor;
 varying vec2 vUv;
 
 float depthAt(vec2 uv) {
@@ -281,9 +369,28 @@ float depthAt(vec2 uv) {
 vec3 normalAt(vec2 uv) {
   return texture2D(tNormal, uv).xyz * 2.0 - 1.0;
 }
+// how much a glowing thing shows at this pixel: its mask, if nothing nearer hides it
+float glowAt(vec2 uv) {
+  float m = texture2D(tMask, uv).r;
+  if (m < 0.01) return 0.0;
+  float md = -perspectiveDepthToViewZ(texture2D(tMaskDepth, uv).x, uNear, uFar);
+  float d = depthAt(uv);
+  return md <= d + 0.03 + d * 0.012 ? m : 0.0;
+}
 
 void main() {
   vec4 col = texture2D(tColor, vUv);
+  if (uGlow > 0.5) {
+    vec2 t = 1.0 / uRes;
+    float here = glowAt(vUv);
+    float around = max(
+      max(glowAt(vUv + vec2(t.x, 0.0)), glowAt(vUv - vec2(t.x, 0.0))),
+      max(glowAt(vUv + vec2(0.0, t.y)), glowAt(vUv - vec2(0.0, t.y))));
+    // a warm outline just outside the thing, and a faint lift on it
+    float rim = step(0.01, around) * (1.0 - step(0.01, here)) * around;
+    col.rgb = mix(col.rgb, uGlowColor, rim * 0.95);
+    col.rgb = mix(col.rgb, uGlowColor, here * 0.14);
+  }
   if (uOutlines > 0.5) {
     vec2 t = 1.0 / uRes;
     float d = depthAt(vUv);
@@ -327,6 +434,14 @@ function createPixelPass() {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
   })
+  // the glowing things, with their own depth, so the glow stops where a wall hides them
+  const maskDepth = new THREE.DepthTexture(1, 1)
+  maskDepth.type = THREE.UnsignedIntType
+  const mask = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    depthTexture: maskDepth,
+  })
   const material = new THREE.ShaderMaterial({
     vertexShader: compositeVertex,
     fragmentShader: compositeFragment,
@@ -334,10 +449,14 @@ function createPixelPass() {
       tColor: { value: color.texture },
       tDepth: { value: depthTexture },
       tNormal: { value: normal.texture },
+      tMask: { value: mask.texture },
+      tMaskDepth: { value: maskDepth },
       uRes: { value: new THREE.Vector2(1, 1) },
       uNear: { value: 0.5 },
       uFar: { value: 140 },
       uOutlines: { value: 1 },
+      uGlow: { value: 0 },
+      uGlowColor: { value: new THREE.Color('#ffd25a') },
     },
     depthTest: false,
     depthWrite: false,
@@ -360,6 +479,7 @@ function createPixelPass() {
     if (color.width !== size.x || color.height !== size.y) {
       color.setSize(size.x, size.y)
       normal.setSize(size.x, size.y)
+      mask.setSize(size.x, size.y)
     }
     const cam = camera as THREE.PerspectiveCamera
     material.uniforms.uRes.value.copy(size)
@@ -370,6 +490,23 @@ function createPixelPass() {
     gl.setRenderTarget(color)
     gl.render(scene, camera)
 
+    // The glowing things alone, drawn flat into the mask (their brightness is
+    // how strongly each glows). Only the highlight layer is drawn.
+    const layers = camera.layers.mask
+    const bg = scene.background
+    const fog = scene.fog
+    scene.background = null
+    scene.fog = null
+    camera.layers.set(HIGHLIGHT_LAYER)
+    gl.setRenderTarget(mask)
+    gl.setClearColor(0x000000, 1)
+    gl.clear()
+    const anyGlow = withMaskMaterials(() => gl.render(scene, camera))
+    camera.layers.mask = layers
+    scene.background = bg
+    scene.fog = fog
+    material.uniforms.uGlow.value = anyGlow ? 1 : 0
+
     if (outlines) {
       // Normals of everything solid (things marked noOutline are skipped).
       const hidden: THREE.Object3D[] = []
@@ -379,8 +516,6 @@ function createPixelPass() {
           hidden.push(o)
         }
       })
-      const bg = scene.background
-      const fog = scene.fog
       scene.background = null
       scene.fog = null
       scene.overrideMaterial = normalMaterial
@@ -401,12 +536,16 @@ function createPixelPass() {
   function dispose() {
     color.dispose()
     normal.dispose()
+    mask.dispose()
+    maskDepth.dispose()
     depthTexture.dispose()
     material.dispose()
     normalMaterial.dispose()
     quad.geometry.dispose()
   }
 
+  if (process.env.NODE_ENV !== 'production')
+    Object.assign(window, { __cabinPass: { material, mask, highlighted } })
   return { render, dispose }
 }
 

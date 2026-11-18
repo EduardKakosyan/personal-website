@@ -36,11 +36,14 @@ from lib import (  # noqa: E402
     cyl,
     deg,
     empty,
+    half_log,
     ico,
     reset_scene,
     sphere,
     wedge,
 )
+import eduard_model  # noqa: E402  (Eduard, A107)
+import rusty_model  # noqa: E402  (Rusty, A105)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))  # personal-website/
@@ -107,6 +110,10 @@ TREE_STAND = [
     (7.0, -12.9, 4.8, "birch"),
     (8.2, -13.5, 5.4, "spruce"),
 ]
+# Taken out so the way from the cabin to the woodshed is clear (Eduard, A104).
+# They stay in the lists (and are skipped) so nothing else moves or turns.
+REMOVED_SAPLINGS = {(7.8, -5.6), (11.0, -4.6)}
+REMOVED_ROCKS = {(8.4, -4.0)}
 # young trees in the grass field: x, y, height, "spruce" or "blue" (blue spruce)
 SAPLINGS = [
     (7.8, -5.6, 1.4, "spruce"),
@@ -303,7 +310,10 @@ def gravel_stones():
 
     rocks = []
     for x, y, s in ((-5.6, -9.0, 0.45), (8.4, -4.0, 0.6), (-6.8, -2.0, 0.55), (7.0, -18.0, 0.4), (-4.6, -20.0, 0.5)):
-        rocks.append(ico("stone", s, (x, y, s * 0.2), scale=(1.25, 1, 0.65), rot=deg(0, 0, rng.uniform(0, 90))))
+        turn = rng.uniform(0, 90)  # (drawn even for a removed rock, so the rest of the scene stays put)
+        if (x, y) in REMOVED_ROCKS:
+            continue
+        rocks.append(ico("stone", s, (x, y, s * 0.2), scale=(1.25, 1, 0.65), rot=deg(0, 0, turn)))
     # blueberry fields are full of rocks
     for _ in range(140):
         x, y = rng.uniform(BLUEBERRY[0] + 1, BLUEBERRY[1] - 1), rng.uniform(BLUEBERRY[2] + 1, BLUEBERRY[3] - 1)
@@ -425,12 +435,19 @@ def cabin():
     p.append(box("roof_dark", (CABIN_W + 0.52, 0.2, 0.07), (0, 0, WALL_TOP + RIDGE + 0.09)))
     compound("Cabin_Roof", p, rot=rot)
 
-    # ---- the front door, hinged at its south edge so the website can swing it open
+    # ---- the front door: the white storm door from photo 02 (a big glass pane
+    # over the dark door behind it), hinged at its south edge and opening
+    # outward onto the deck, as a storm door does. The website swings it.
     hinge = (-FRONT_Y, d0)  # local (d0, FRONT_Y) turned to face east
     door = [
-        box("door", (dw - 0.04, 0.06, dh - 0.02), (dw / 2, -0.03, WALL_BASE + dh / 2)),
-        box("glass", (dw - 0.3, 0.07, 0.75), (dw / 2, -0.035, WALL_BASE + 1.15)),
-        box("steel", (0.04, 0.12, 0.1), (dw - 0.14, -0.03, WALL_BASE + 1.0)),
+        box("trim", (dw - 0.04, 0.05, dh - 0.02), (dw / 2, -0.035, WALL_BASE + dh / 2)),
+        # the glass pane, with the dark inner door showing through it
+        box("glass", (dw - 0.2, 0.06, dh - 0.7), (dw / 2, -0.035, WALL_BASE + dh / 2 + 0.22)),
+        box("door", (dw - 0.2, 0.052, dh - 0.7), (dw / 2, -0.02, WALL_BASE + dh / 2 + 0.22)),
+        # the dark kick panel at the bottom
+        box("door", (dw - 0.2, 0.06, 0.4), (dw / 2, -0.035, WALL_BASE + 0.28)),
+        # the handle, on the latch side
+        box("steel", (0.03, 0.08, 0.1), (dw - 0.1, -0.075, WALL_BASE + 1.0)),
     ]
     compound("Cabin_Door", door, location=(hinge[0], hinge[1], 0.0), rot=rot)
 
@@ -555,6 +572,10 @@ def cabin_interior():
     p.append(box("weathered", (0.04, 0.04, 0.8), (ex - 0.12, -1.8, f + 0.4), deg(12, 0, 0)))
     p.append(box("hammer_head", (0.05, 0.2, 0.1), (ex - 0.12, -1.72, f + 0.78), deg(12, 0, 0)))
     compound("Cabin_Interior", p)
+
+    # Things the guest can use glow on the website, so each is its own object
+    # in props.glb (the Props collection isn't merged, see optimize_models.sh).
+    collection("Props")
     mushroom_basket((ex - 0.25, 1.03, f + 0.92))
     striper_rod(CABIN_D / 2 - 0.16)
 
@@ -577,6 +598,7 @@ def cabin_interior():
         todo.append(box("ink", (0.03, 0.004, 0.03), (-0.13, -0.01, 0.17 - k * 0.055)))
     todo.append(sphere("collar", 0.02, (0, -0.015, 0.21), seg=6, rings=4))
     compound("TodoList", todo, location=(0.85, CABIN_W / 2 - 0.12, 1.5))
+    collection("Set")
 
 
 def mushroom_basket(at):
@@ -660,15 +682,33 @@ def deck():
     # boards run along the wall; the north end is done, the south end is still open
     y = DECK_Y1 + 0.08
     i = 0
+    rows = []
     while y < DECK_Y0 - 0.02:
         tone = "lumber" if i % 3 == 0 else "deck"
         p.append(box(tone, (w * 0.6, 0.15, 0.045), (DECK_X1 - w * 0.3, y, DECK_TOP - 0.02)))
+        rows.append(y)
         y += 0.17
         i += 1
-    # a loose board, ready to go down
-    p.append(box("lumber", (1.0, 0.15, 0.045), (DECK_X0 + 0.7, DECK_Y1 + 0.6, DECK_TOP + 0.03), deg(0, 0, 4)))
     p.append(box("deck", (0.9, 0.34, 0.14), (DECK_X1 - 0.9, DECK_Y1 - 0.2, 0.07)))
     compound("Deck", p, rot=deg(0, 0, CABIN_ROT), bevel=0.01)
+
+    # The boards still to go down, one per row over the open joists, and the
+    # loose one lying ready: each its own object in CabinParts, so the website
+    # can show them as Eduard lays them (A110; watching him finish the deck).
+    # They're hidden here; DECK_BOARDS in world.ts mirrors where they are.
+    collection("CabinParts")
+    rest = (DECK_X0 + 0.02, DECK_X1 - w * 0.6 - 0.005)  # the open part of each row
+    for k, yy in enumerate(rows):
+        ob = compound(
+            f"DeckBoard_{k}",
+            [box("lumber", (rest[1] - rest[0], 0.15, 0.045), ((rest[0] + rest[1]) / 2, yy, DECK_TOP - 0.02), deg(0, 0, 0))],
+            rot=deg(0, 0, CABIN_ROT),
+            bevel=0.01,
+        )
+        ob.hide_render = True
+    # a loose board, ready to go down (it goes once he's laid the first board)
+    compound("DeckLooseBoard", [box("lumber", (1.0, 0.15, 0.045), (DECK_X0 + 0.7, DECK_Y1 + 0.6, DECK_TOP + 0.03), deg(0, 0, 4))], rot=deg(0, 0, CABIN_ROT), bevel=0.01)
+    collection("Set")
 
     pile = []
     for row in range(4):
@@ -924,15 +964,32 @@ def woodshed():
     collection("SeeThrough")
     compound("Woodshed", p, location=(*WOODSHED, 0.0), rot=deg(0, 0, WOODSHED_ROT), bevel=0.006)
 
-    collection("Set")
+    # The chopping block, with the axe stuck in it, and the log the guest splits
+    # (the splitting game, scene 5). The axe, the log and its halves are their
+    # own objects: the website hides the axe while the guest holds it, puts a
+    # log on the block, and sends the halves flying.
+    collection("Props")
     blk = [cyl("bark", 0.3, 0.46, (0, 0, 0.23), seg=9, caps="endgrain")]
-    blk.append(box("weathered", (0.045, 0.05, 0.7), (0.12, 0.0, 0.72), deg(0, 32, 0)))
-    blk.append(box("hammer_head", (0.22, 0.05, 0.13), (-0.04, 0, 0.48), deg(0, 32, 0)))
     for i in range(5):
         a = i * 1.3
         blk.append(box("endgrain", (0.1, 0.32, 0.1), (math.cos(a) * 0.6, math.sin(a) * 0.6, 0.05), deg(0, 90 if i % 2 else 0, a * 57)))
     # in the yard off the woodshed's north end, clear of the workbench, with room to swing
-    compound("ChoppingBlock", blk, location=CHOPPING_BLOCK)
+    compound("ChoppingBlock", blk, location=CHOPPING_BLOCK, bevel=0.006)
+    axe = [
+        box("weathered", (0.045, 0.05, 0.7), (0.12, 0.0, 0.72), deg(0, 32, 0)),
+        box("hammer_head", (0.22, 0.05, 0.13), (-0.04, 0, 0.48), deg(0, 32, 0)),
+        box("steel", (0.05, 0.045, 0.14), (-0.145, 0, 0.42), deg(0, 32, 0)),
+    ]
+    compound("BlockAxe", axe, location=CHOPPING_BLOCK, bevel=0.006)
+    bx, by, bz = CHOPPING_BLOCK
+    log_z = bz + 0.46
+    compound("Log", [cyl("bark", 0.11, 0.36, (0, 0, 0.18), seg=9, caps="endgrain")], location=(bx, by, log_z))
+    for name in ("LogHalfA", "LogHalfB"):
+        compound(name, [half_log("bark", 0.11, 0.36, (0, 0, 0.18), seg=6, caps="endgrain", flat="split_wood")], location=(bx, by, log_z))
+    for name in ("Log", "LogHalfA", "LogHalfB"):
+        bpy.data.objects[name].hide_render = True
+        bpy.data.objects[name].hide_viewport = True
+    collection("Set")
 
 
 def shed_point(lx, ly):
@@ -1005,37 +1062,133 @@ def workbench():
     p.append(cyl("steel", 0.045, 0.1, (0.64, 0.14, t + 0.05), seg=8))
     p.append(cyl("hammer_head", 0.04, 0.005, (0.64, 0.14, t + 0.1), seg=8))
 
-    # the project boxes (scene 5, A83/A84): six small slatted crates, one per
-    # archive project, each with a paper name label on its front. Three on the
-    # top, three on the shelf. The website lists them when the guest looks.
-    def crate(cx, cy, z0, rz, tone):
-        w, d = 0.26, 0.2
-        a = math.radians(rz)
-        rot = deg(0, 0, rz)
-
-        def at(lx, ly):
-            return (cx + lx * math.cos(a) - ly * math.sin(a), cy + lx * math.sin(a) + ly * math.cos(a))
-
-        p.append(box(tone, (w, d, 0.015), (cx, cy, z0 + 0.0075), rot))
-        p.append(box("shed_shadow", (w - 0.04, d - 0.04, 0.09), (cx, cy, z0 + 0.06), rot))
-        for zs in (0.05, 0.12):
-            for sy in (-1, 1):
-                p.append(box(tone, (w, 0.015, 0.055), (*at(0, sy * (d / 2 - 0.0075)), z0 + zs), rot))
-            for sx in (-1, 1):
-                p.append(box(tone, (0.015, d - 0.03, 0.055), (*at(sx * (w / 2 - 0.0075), 0), z0 + zs), rot))
-        for sx in (-1, 1):  # corner battens hold the slats
-            for sy in (-1, 1):
-                p.append(box("shed_post", (0.022, 0.022, 0.15), (*at(sx * (w / 2 - 0.018), sy * (d / 2 - 0.018)), z0 + 0.09), rot))
-        # the name label on the front, and a line of writing on it
-        p.append(box("paper", (0.12, 0.004, 0.045), (*at(0, -d / 2 - 0.002), z0 + 0.12), rot))
-        p.append(box("ink", (0.08, 0.003, 0.01), (*at(0, -d / 2 - 0.0045), z0 + 0.123), rot))
-
-    for i, x in enumerate((-0.31, 0.0, 0.31)):
-        crate(x, 0.07, t, (-3, 2, -2)[i], ("shed", "lumber", "shed")[i])
-    for i, x in enumerate((-0.6, -0.3, 0.0)):
-        crate(x, -0.02, 0.265, (2, -3, 1)[i], ("lumber", "shed", "lumber")[i])
     x, y = shed_point(*WORKBENCH_LOCAL)
     compound("Workbench", p, location=(x, y, 0.0), rot=deg(0, 0, WOODSHED_ROT), bevel=0.006)
+
+    # The project boxes (scene 5, A84): six small slatted crates, one per
+    # archive project, each with a paper name label on its front and a lid.
+    # Three on the top, three on the shelf. Each is its own object in props.glb
+    # (so it can glow), with its lid and the thing inside it as children: the
+    # website opens the lid and lifts the thing out when the guest looks in.
+    collection("Props")
+    crate_at = [(-0.31, 0.07, t), (0.0, 0.07, t), (0.31, 0.07, t), (-0.6, -0.02, 0.265), (-0.3, -0.02, 0.265), (0.0, -0.02, 0.265)]
+    crate_turn = (-3, 2, -2, 2, -3, 1)
+    crate_tone = ("shed", "lumber", "shed", "lumber", "shed", "lumber")
+    a = math.radians(WOODSHED_ROT)
+    for i, (cx, cy, z0) in enumerate(crate_at):
+        wx = x + cx * math.cos(a) - cy * math.sin(a)
+        wy = y + cx * math.sin(a) + cy * math.cos(a)
+        crate(i, (wx, wy, z0), WOODSHED_ROT + crate_turn[i], crate_tone[i])
+    collection("Set")
+
+
+CRATE_W, CRATE_D, CRATE_H = 0.26, 0.2, 0.15
+# the archive projects in the boxes, in the website's order (src/app/preview/arrival/page.tsx)
+CRATE_ITEMS = ("dev-template", "healthbyte", "network-sim", "cargrep", "second-brain", "exosky")
+
+
+def crate(i, at, yaw, tone):
+    """One project box: a slatted crate with its lid hinged along the back edge
+    (Crate_i_Lid, pivot on the hinge) and the thing inside (Crate_i_Item)."""
+    w, d, h = CRATE_W, CRATE_D, CRATE_H
+    p = [box(tone, (w, d, 0.015), (0, 0, 0.0075))]
+    p.append(box("shed_shadow", (w - 0.03, d - 0.03, 0.004), (0, 0, 0.017)))
+    for zs in (0.05, 0.12):
+        for sy in (-1, 1):
+            p.append(box(tone, (w, 0.015, 0.055), (0, sy * (d / 2 - 0.0075), zs)))
+        for sx in (-1, 1):
+            p.append(box(tone, (0.015, d - 0.03, 0.055), (sx * (w / 2 - 0.0075), 0, zs)))
+    for sx in (-1, 1):  # corner battens hold the slats
+        for sy in (-1, 1):
+            p.append(box("shed_post", (0.022, 0.022, h), (sx * (w / 2 - 0.018), sy * (d / 2 - 0.018), h / 2)))
+    # the name label on the front, and a line of writing on it
+    p.append(box("paper", (0.12, 0.004, 0.045), (0, -d / 2 - 0.002, 0.12)))
+    p.append(box("ink", (0.08, 0.003, 0.01), (0, -d / 2 - 0.0045, 0.123)))
+    root = compound(f"Crate_{i}", p, location=at, rot=deg(0, 0, yaw), bevel=0.004)
+    # the lid: two slats and a batten each end, hinged along the back edge
+    lid = [
+        box(tone, (w + 0.01, d / 2 - 0.012, 0.014), (0, -d / 4, 0.007)),
+        box(tone, (w + 0.01, d / 2 - 0.012, 0.014), (0, -3 * d / 4, 0.007)),
+    ]
+    for sx in (-1, 1):
+        lid.append(box("shed_post", (0.025, d - 0.02, 0.018), (sx * (w / 2 - 0.03), -d / 2, 0.022)))
+    compound(f"Crate_{i}_Lid", lid, location=(0, d / 2, h), parent=root, bevel=0.003)
+    item = compound(f"Crate_{i}_Item", crate_item(CRATE_ITEMS[i]), location=(0, 0, 0.02), parent=root, bevel=0.003)
+    item.hide_render = True
+    item.hide_viewport = True
+
+
+def crate_item(slug):
+    """A small thing standing for each archive project, chunky enough to read
+    once it's lifted out of the box (about 15 cm across)."""
+    if slug == "dev-template":
+        # a rubber stamp: you stamp new projects out of the template
+        return [
+            box("bistro_red", (0.11, 0.07, 0.012), (0, 0, 0.006)),
+            box("metal_dark", (0.12, 0.08, 0.022), (0, 0, 0.023)),
+            cyl("lumber", 0.018, 0.055, (0, 0, 0.06), seg=8),
+            sphere("lumber", 0.03, (0, 0, 0.1), seg=10, rings=6),
+        ]
+    if slug == "healthbyte":
+        # a folded newspaper (health articles) with a red heart on it
+        return [
+            box("paper", (0.14, 0.1, 0.014), (0, 0, 0.007)),
+            box("paper", (0.14, 0.1, 0.014), (0.01, 0.006, 0.021), deg(0, 0, 6)),
+            box("ink", (0.08, 0.012, 0.003), (-0.015, 0.03, 0.03), deg(0, 0, 6)),
+            box("ink", (0.1, 0.006, 0.003), (-0.005, 0.012, 0.03), deg(0, 0, 6)),
+            box("ink", (0.1, 0.006, 0.003), (-0.003, -0.004, 0.03), deg(0, 0, 6)),
+            sphere("tee_red", 0.02, (0.04, -0.02, 0.038), seg=8, rings=5),
+            sphere("tee_red", 0.02, (0.062, -0.012, 0.038), seg=8, rings=5),
+            box("tee_red", (0.045, 0.03, 0.018), (0.051, -0.03, 0.036), deg(0, 0, 45)),
+        ]
+    if slug == "network-sim":
+        # a little network: coloured nodes on a board, joined by rods
+        nodes = [(-0.05, -0.03, 0.03, "water_jug"), (0.0, 0.035, 0.05, "yolk"), (0.05, -0.025, 0.035, "lupine_pink"), (0.015, -0.045, 0.07, "grass_light"), (-0.03, 0.04, 0.085, "collar")]
+        p = [box("pine_dark", (0.15, 0.12, 0.01), (0, 0, 0.005))]
+        for (x, y, z, tone) in nodes:
+            p.append(sphere(tone, 0.018, (x, y, z), seg=10, rings=6))
+        for a_, b_ in ((0, 1), (1, 2), (0, 3), (3, 2), (1, 4), (4, 0)):
+            ax, ay, az, _ = nodes[a_]
+            bx, by, bz, _ = nodes[b_]
+            dx, dy, dz = bx - ax, by - ay, bz - az
+            ln = math.sqrt(dx * dx + dy * dy + dz * dz)
+            # a cylinder along Z turned to point from a to b
+            tilt = math.acos(dz / ln)
+            turn = math.atan2(dy, dx)
+            p.append(cyl("steel", 0.004, ln, ((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2), (0, tilt, turn), seg=5))
+        return p
+    if slug == "cargrep":
+        # a toy car
+        p = [
+            box("tee_red", (0.15, 0.08, 0.04), (0, 0, 0.045)),
+            box("tee_red", (0.085, 0.07, 0.035), (-0.01, 0, 0.08)),
+            box("glass", (0.06, 0.072, 0.025), (-0.01, 0, 0.085)),
+            box("yolk", (0.008, 0.02, 0.012), (0.075, 0.025, 0.05)),
+            box("yolk", (0.008, 0.02, 0.012), (0.075, -0.025, 0.05)),
+        ]
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                p.append(cyl("char", 0.02, 0.018, (sx * 0.05, sy * 0.045, 0.02), deg(90, 0, 0), seg=10))
+                p.append(cyl("steel", 0.01, 0.02, (sx * 0.05, sy * 0.045, 0.02), deg(90, 0, 0), seg=8))
+        return p
+    if slug == "second-brain":
+        # a brain (pink, two halves, a few folds)
+        p = []
+        for sx in (-1, 1):
+            p.append(sphere("lupine_pink", 0.05, (sx * 0.036, 0, 0.05), scale=(0.75, 1.15, 0.9), seg=12, rings=8))
+            for k, (y, z) in enumerate(((0.03, 0.08), (-0.025, 0.085), (0.0, 0.055), (-0.04, 0.045))):
+                p.append(sphere("rug_red", 0.016, (sx * (0.045 + 0.01 * (k % 2)), y, z), scale=(1, 1.6, 1), seg=8, rings=5))
+        p.append(cyl("lip", 0.012, 0.03, (0, -0.01, 0.012), seg=8))
+        return p
+    # exosky: a small telescope on a tripod
+    p = [cyl("blue_sink", 0.016, 0.14, (0.0, 0.0, 0.09), deg(0, 50, 0), seg=10)]
+    p.append(cyl("steel", 0.02, 0.025, (0.052, 0.0, 0.133), deg(0, 50, 0), seg=10))
+    p.append(cyl("metal_dark", 0.011, 0.025, (-0.058, 0.0, 0.043), deg(0, 50, 0), seg=8))
+    p.append(sphere("metal_dark", 0.016, (0, 0, 0.075), seg=8, rings=5))
+    for k in range(3):
+        a_ = math.radians(90 + k * 120)
+        p.append(cyl("metal_dark", 0.005, 0.1, (math.cos(a_) * 0.03, math.sin(a_) * 0.03, 0.038), (math.radians(-34) * math.sin(a_), math.radians(34) * math.cos(a_), 0), seg=5))
+    return p
 
 
 def solar_panels():
@@ -1224,6 +1377,8 @@ def forest():
     # a few young spruce and blue spruce in the grass field, not fully grown
     # (Eduard; photos 01 and 05 show one)
     for k, (x, y, h, kind) in enumerate(SAPLINGS):
+        if (x, y) in REMOVED_SAPLINGS:
+            continue
         tones = ("blue_spruce", "blue_spruce_light") if kind == "blue" else ("spruce_light", "spruce")
         compound(f"SpruceSapling{k}", spruce_parts(h, tones), location=(x, y, 0), rot=(0, 0, k * 1.3))
     collection("Set")
@@ -1342,51 +1497,9 @@ def eyes(color, z=0.27, spread=0.09):
 
 
 def eduard():
-    # black hair: a cap over the top and back, with a short fringe
-    hair = [
-        sphere("hair", 0.26, (0, 0.035, 0.31), scale=(1.0, 0.95, 0.78), seg=16, rings=10),
-        sphere("hair", 0.2, (0, -0.1, 0.42), scale=(1.1, 0.7, 0.45), seg=12, rings=6),
-        box("hair", (0.09, 0.02, 0.025), (0.09, -0.225, 0.33)),  # eyebrows
-        box("hair", (0.09, 0.02, 0.025), (-0.09, -0.225, 0.33)),
-    ] + eyes("eye_brown")
-
-    def hammer(arm):
-        compound(
-            "Eduard_Hammer",
-            [box("weathered", (0.04, 0.3, 0.04), (0, -0.14, 0)), box("hammer_head", (0.06, 0.07, 0.16), (0, -0.29, 0.0))],
-            location=(0, -0.02, -0.31),
-            parent=arm,
-            bevel=0.008,
-        )
-
-    root = person("Eduard", "skin", "tee_red", "denim", "boot", hair, arm_extra={"R": hammer})
-    head = bpy.data.objects["Eduard_Head"]
-    # A54: two options for Eduard to pick from. The website shows one at a time.
-    compound(
-        "Eduard_Beard",
-        [
-            # short, close beard: only shows along the jaw and chin, below the nose
-            sphere("hair", 1.0, (0, -0.035, 0.1), scale=(0.232, 0.18, 0.1), seg=16, rings=10),
-            box("hair", (0.15, 0.04, 0.035), (0, -0.232, 0.175)),
-            box("hair", (0.035, 0.035, 0.07), (0.07, -0.218, 0.14)),
-            box("hair", (0.035, 0.035, 0.07), (-0.07, -0.218, 0.14)),
-            box("lip", (0.07, 0.02, 0.02), (0, -0.222, 0.128)),
-        ],
-        parent=head,
-    )
-    compound(
-        "Eduard_Mustache",
-        [
-            # chunky on purpose: anything thinner disappears at pixel size
-            box("hair", (0.22, 0.05, 0.06), (0, -0.232, 0.168)),
-            box("hair", (0.055, 0.05, 0.09), (0.095, -0.218, 0.135)),
-            box("hair", (0.055, 0.05, 0.09), (-0.095, -0.218, 0.135)),
-            box("lip", (0.07, 0.02, 0.02), (0, -0.212, 0.115)),
-        ],
-        parent=head,
-    )
-    bpy.data.objects["Eduard_Mustache"].hide_render = True
-    bpy.data.objects["Eduard_Mustache"].hide_viewport = True
+    """Eduard, remodelled (A107): see eduard_model.py. The board he carries and
+    his kneeling rest pose are set up here as before."""
+    root, head = eduard_model.build()
     # a deck board he fetches from the lumber pile and carries in his left hand
     # (the website shows it only while he carries it)
     compound(
@@ -1406,7 +1519,41 @@ def eduard():
     return root
 
 
+def hiker_pack():
+    return [
+        box("pack", (0.34, 0.2, 0.4), (0, 0.2, 0.2)),
+        box("pack", (0.28, 0.07, 0.16), (0, 0.32, 0.12)),
+        cyl("cabin", 0.08, 0.4, (0, 0.2, 0.45), deg(0, 90, 0), seg=8),
+        box("hair", (0.04, 0.03, 0.34), (0.12, -0.15, 0.2)),
+        box("hair", (0.04, 0.03, 0.34), (-0.12, -0.15, 0.2)),
+    ]
+
+
+def hiker_axe(name):
+    """The splitting axe in the guest's right hand (hidden until they pick it
+    up at the chopping block). The handle runs forward from the hand; the
+    website turns the whole axe as well as the arm during a swing."""
+
+    def axe(arm):
+        ob = compound(
+            f"{name}_Axe",
+            [
+                box("weathered", (0.035, 0.62, 0.035), (0, -0.27, 0)),
+                box("hammer_head", (0.05, 0.09, 0.15), (0, -0.56, -0.035)),
+                box("steel", (0.045, 0.1, 0.03), (0, -0.56, -0.12)),
+            ],
+            location=(0, -0.02, -0.31),
+            parent=arm,
+            bevel=0.006,
+        )
+        ob.hide_render = True
+        ob.hide_viewport = True
+
+    return {"R": axe}
+
+
 def hiker():
+    """The guest (A36): a hiker with a backpack. Character 1 of the two the guest can pick from (A99)."""
     hat = [
         sphere("beanie", 0.265, (0, 0.01, 0.33), scale=(1.0, 0.98, 0.72), seg=16, rings=10),
         cyl("beanie", 0.262, 0.07, (0, 0.0, 0.32), seg=16),
@@ -1415,15 +1562,37 @@ def hiker():
         sphere("lupine_pink", 0.03, (0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
         sphere("lupine_pink", 0.03, (-0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
     ] + eyes("hair", z=0.26)
-    pack = [
-        box("pack", (0.34, 0.2, 0.4), (0, 0.2, 0.2)),
-        box("pack", (0.28, 0.07, 0.16), (0, 0.32, 0.12)),
-        cyl("cabin", 0.08, 0.4, (0, 0.2, 0.45), deg(0, 90, 0), seg=8),
-        box("hair", (0.04, 0.03, 0.34), (0.12, -0.15, 0.2)),
-        box("hair", (0.04, 0.03, 0.34), (-0.12, -0.15, 0.2)),
-    ]
-    root = person("Hiker", "skin_guest", "jacket", "khaki", "boot", hat, torso_extra=pack)
+    root = person("Hiker", "skin_guest", "jacket", "khaki", "boot", hat, arm_extra=hiker_axe("Hiker"), torso_extra=hiker_pack())
     for ob in ("Hiker_Torso",):
+        for mod in bpy.data.objects[ob].modifiers:
+            mod.width = 0.03
+    return root
+
+
+def hiker_2():
+    """Character 2 of the two the guest can pick from (A99): the same hiker
+    with longer hair in a ponytail under a lupine-coloured beanie. Same parts
+    and names (with the Hiker2 prefix), so the website animates both the same way."""
+    hat = [
+        sphere("lupine", 0.265, (0, 0.01, 0.33), scale=(1.0, 0.98, 0.72), seg=16, rings=10),
+        cyl("lupine", 0.262, 0.07, (0, 0.0, 0.32), seg=16),
+        sphere("trim", 0.07, (0, 0, 0.53), seg=8, rings=6),
+        # longer hair: down round the sides and back of the head
+        sphere("hair_brown", 0.255, (0, 0.07, 0.2), scale=(1.02, 0.92, 0.95), seg=14, rings=8),
+        # a fringe under the rim of the beanie
+        sphere("hair_brown", 0.11, (0, -0.19, 0.3), scale=(1.7, 0.5, 0.45), seg=10, rings=5),
+        # the ponytail, tied at the back and hanging down
+        sphere("hair_brown", 0.07, (0, 0.28, 0.2), seg=10, rings=6),
+        cyl("hair_brown", 0.05, 0.24, (0, 0.31, 0.05), deg(-8, 0, 0), r2=0.028, seg=8),
+        sphere("hair_brown", 0.034, (0, 0.33, -0.08), seg=8, rings=5),
+        sphere("lupine_pink", 0.03, (0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
+        sphere("lupine_pink", 0.03, (-0.15, -0.215, 0.2), scale=(1, 0.4, 0.7), seg=6, rings=4),
+        # lashes: a dark line over each eye
+        box("hair", (0.07, 0.02, 0.014), (0.09, -0.222, 0.305)),
+        box("hair", (0.07, 0.02, 0.014), (-0.09, -0.222, 0.305)),
+    ] + eyes("hair", z=0.26)
+    root = person("Hiker2", "skin_guest", "jacket", "khaki", "boot", hat, arm_extra=hiker_axe("Hiker2"), torso_extra=hiker_pack())
+    for ob in ("Hiker2_Torso",):
         for mod in bpy.data.objects[ob].modifiers:
             mod.width = 0.03
     return root
@@ -1431,56 +1600,10 @@ def hiker():
 
 # ---------------------------------------------------------------- Rusty and the cow
 def rusty():
+    """Rusty, the yellow Lab, remodelled from photo 05 (A105): see rusty_model.py."""
     collection("Rusty")
     root = empty("Rusty")
-    compound(
-        "Rusty_Body",
-        [
-            sphere("rusty", 0.19, (0, 0.02, 0.0), scale=(0.95, 1.75, 0.95), seg=14, rings=8),
-            sphere("rusty", 0.19, (0, -0.2, 0.04), scale=(1.0, 1.0, 1.05), seg=12, rings=8),
-            sphere("rusty_muzzle", 0.13, (0, -0.3, -0.05), scale=(0.9, 0.6, 1.0), seg=10, rings=6),
-            # his paler belly (a yellow lab's), which shows when he rolls over for a rub
-            sphere("rusty_muzzle", 0.17, (0, 0.0, -0.06), scale=(1.0, 1.76, 0.76), seg=14, rings=8),
-        ],
-        location=(0, 0, 0.42),
-        parent=root,
-    )
-    for name, x, y in (("FL", 0.1, -0.24), ("FR", -0.1, -0.24), ("BL", 0.1, 0.24), ("BR", -0.1, 0.24)):
-        compound(
-            f"Rusty_Leg{name}",
-            [cyl("rusty", 0.06, 0.28, (0, 0, -0.13), seg=8), sphere("rusty_muzzle", 0.07, (0, -0.03, -0.27), scale=(1, 1.3, 0.6), seg=8, rings=4)],
-            location=(x, y, 0.31),
-            parent=root,
-        )
-    head = compound(
-        "Rusty_Head",
-        [
-            sphere("rusty", 0.165, (0, -0.06, 0.08), scale=(1.0, 1.0, 0.95), seg=14, rings=8),
-            sphere("rusty_muzzle", 0.11, (0, -0.21, 0.03), scale=(0.85, 1.05, 0.75), seg=12, rings=6),
-            sphere("nose", 0.045, (0, -0.32, 0.07), scale=(1.2, 0.8, 0.8), seg=8, rings=4),
-            sphere("nose", 0.025, (0.07, -0.19, 0.15), seg=6, rings=4),
-            sphere("nose", 0.025, (-0.07, -0.19, 0.15), seg=6, rings=4),
-            sphere("rusty_dark", 0.1, (0.155, -0.02, 0.05), scale=(0.35, 0.75, 1.15), rot=deg(0, -12, 0), seg=8, rings=6),
-            sphere("rusty_dark", 0.1, (-0.155, -0.02, 0.05), scale=(0.35, 0.75, 1.15), rot=deg(0, 12, 0), seg=8, rings=6),
-            cyl("collar", 0.135, 0.06, (0, 0.06, -0.08), rot=deg(-25, 0, 0), seg=12),
-            # his tags (photo 05): the round silver one and a red bone with his name (A68)
-            sphere("steel", 0.026, (-0.028, -0.06, -0.15), seg=6, rings=4),
-            sphere("tee_red", 0.03, (0.03, -0.075, -0.155), scale=(1.5, 0.45, 0.85), seg=8, rings=4),
-        ],
-        location=(0, -0.36, 0.58),
-        parent=root,
-    )
-    empty("Rusty_Mouth", location=(0, -0.3, -0.04), parent=head)
-    # where his tags hang (the website hangs the name-tag close-up here)
-    empty("Rusty_Tag", location=(0.03, -0.08, -0.17), parent=head)
-    compound(
-        "Rusty_Tail",
-        [cyl("rusty", 0.045, 0.3, (0, 0, 0.14), r2=0.025, seg=6)],
-        location=(0, 0.33, 0.5),
-        parent=root,
-        rot=deg(-50, 0, 0),
-    )
-    return root
+    return rusty_model.build(root)
 
 
 def cow():
@@ -1558,6 +1681,7 @@ EDUARD_SPOT = ((3.15, -1.3, DECK_TOP - 0.13), (0, 0, 0))
 SPOTS = {
     "Eduard": EDUARD_SPOT,
     "Hiker": ((0.4, -10.0, 0.0), (0, 0, math.pi)),
+    "Hiker2": ((-0.9, -10.6, 0.0), (0, 0, math.pi)),
     "Rusty": ((1.2, -8.4, 0.0), deg(0, 0, 160)),
     "Cow": ((1.6, -9.4, 0.0), (0, 0, 0.4)),
     "Hugo": ((1.3, -9.6, 0.8), (0, 0, math.pi)),
@@ -1623,17 +1747,21 @@ def export(name, filename):
 def main():
     reset_scene()
     build_set()
-    roots = {"Eduard": eduard(), "Hiker": hiker(), "Rusty": rusty(), "Cow": cow(), "Hugo": hugo()}
+    roots = {"Eduard": eduard(), "Hiker": hiker(), "Hiker2": hiker_2(), "Rusty": rusty(), "Cow": cow(), "Hugo": hugo()}
     for name, root in roots.items():
         loc, rot = SPOTS[name]
         root.location = loc
         root.rotation_euler = rot
     preview_rig()
     os.makedirs(MODEL_DIR, exist_ok=True)
-    for name in ("Set", "CabinParts", "SeeThrough", "Eduard", "Hiker", "Rusty", "Cow", "Hugo"):
-        files = {"CabinParts": "cabin-parts.glb", "SeeThrough": "see-through.glb"}
+    for name in ("Set", "CabinParts", "SeeThrough", "Props", "Eduard", "Hiker", "Hiker2", "Rusty", "Cow", "Hugo"):
+        files = {"CabinParts": "cabin-parts.glb", "SeeThrough": "see-through.glb", "Hiker2": "hiker-2.glb"}
         export(name, files.get(name, f"{name.lower()}.glb"))
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
+    # where things are, in the website's coordinates (x, -y), for world.ts
+    for i in range(6):
+        ob = bpy.data.objects[f"Crate_{i}"]
+        print("CRATE", i, round(ob.location.x, 3), round(ob.location.z, 3), round(-ob.location.y, 3), "yaw", round(math.degrees(ob.rotation_euler.z), 1))
     print("BUILD_OK", BLEND_PATH)
 
 

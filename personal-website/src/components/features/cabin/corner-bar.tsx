@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { resumePdfPath } from '@/content/profile'
 import styles from './cabin.module.css'
@@ -29,8 +30,31 @@ export function CornerBar({
   controlsOpen,
   onToggleControls,
 }: Props) {
+  // On a phone the bar sits along the bottom and wraps onto two rows on a
+  // narrow one. The cards and HUDs that sit above it read its height from
+  // --bar-clear on the stage, so they never cover its buttons.
+  const nav = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const el = nav.current
+    const stage = el?.parentElement
+    if (!el || !stage) return
+    const measure = () =>
+      stage.style.setProperty(
+        '--bar-clear',
+        `${Math.round(window.innerHeight - el.getBoundingClientRect().top + 8)}px`,
+      )
+    measure()
+    const watch = new ResizeObserver(measure)
+    watch.observe(el)
+    window.addEventListener('resize', measure)
+    return () => {
+      watch.disconnect()
+      window.removeEventListener('resize', measure)
+      stage.style.removeProperty('--bar-clear')
+    }
+  }, [])
   return (
-    <nav className={`${styles.bar} ${styles.pixel}`} aria-label="Quick links">
+    <nav ref={nav} className={`${styles.bar} ${styles.pixel}`} aria-label="Quick links">
       <Link className={styles.barItem} href="/projects">
         Work
       </Link>

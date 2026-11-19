@@ -9,11 +9,15 @@
 import { useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { waterUniforms } from './brook-water'
 import { GROUND_MASK, GROUND_RECT, type Look } from './world'
 
 let currentLook: Look = 'pixel'
 /** Shared by the ground and foliage shaders: 1 = soft edges, and how strong the speckles are. */
 const lookUniforms = { uSoft: { value: 0 }, uSpeck: { value: 1 } }
+
+/** Whether the smooth look is on (soft edges instead of pixel steps). */
+export const isSmoothLook = () => currentLook === 'smooth'
 
 /** Call once, before the models load. */
 export function configureLook(look: Look) {
@@ -172,7 +176,17 @@ const GROUND_COLORS = {
   uGravel: '#c2b49b',
   uGravelLight: '#d5c8ae',
   uGravelDark: '#9a8c77',
-  uBank: '#8a7358',
+  // the brook (photo 03): earth banks, and red-brown cobbles on the bed
+  uBank: '#7c5e42',
+  uBankDark: '#5f4632',
+  uBed: '#8c5a3d',
+  uBedLight: '#a97c56',
+  uBedDark: '#66432f',
+  // what the water does to the bed: clear tea in the shallows, green-dark in
+  // the deep; and the pale line where it laps the bank
+  uShallow: '#8f8552',
+  uDeep: '#24493f',
+  uLap: '#e9efe2',
 }
 
 /**
@@ -197,7 +211,7 @@ export function makeGroundMaterial() {
     uniforms[k] = { value: new THREE.Color(hex) }
 
   mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms, lookUniforms)
+    Object.assign(shader.uniforms, uniforms, lookUniforms, { uTime: waterUniforms.uTime })
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vGroundPos;')
       .replace(
@@ -214,6 +228,7 @@ export function makeGroundMaterial() {
 varying vec3 vGroundPos;
 uniform sampler2D uMask;
 uniform vec3 uMaskRect;
+uniform float uTime;
 ${colorUniforms}
 ${NOISE_GLSL}`,
       )
@@ -244,8 +259,30 @@ ${NOISE_GLSL}`,
   gravel = mix(gravel, uGravelDark, step(0.86, speck) * uSpeck);
   c = mix(c, gravel, edge(0.5, m.r + wob * 0.3));
 
-  // the brook's banks: bare, stony ground where the channel drops away
-  c = mix(c, uBank, edge(0.5, smoothstep(-0.1, -0.3, vGroundPos.y) + wob * 0.5));
+  // the brook's banks: bare earth where the channel drops away, in layers
+  float gy = vGroundPos.y;
+  vec3 earth = mix(uBank, uBankDark, edge(0.55, gNoise(vec2(w.x * 2.5 + w.y * 0.8, gy * 11.0)) + fine * 0.3));
+  c = mix(c, earth, edge(0.5, smoothstep(-0.05, -0.2, gy) + wob * 0.45));
+  // the bed, under the water: rounded red-brown cobbles, darker in the deep
+  // (the fishing hole); the water itself is drawn over it (brook-water.ts)
+  vec2 q = w / 0.17 + vec2(gNoise(w * 1.7), gNoise(w * 1.7 + 9.0)) * 0.8;
+  float stone = gHash(floor(q));
+  vec3 bed = mix(uBed, uBedLight, step(0.62, stone));
+  bed = mix(bed, uBedDark, step(stone, 0.22));
+  vec2 f = abs(fract(q) - 0.5) * 2.0;
+  bed *= mix(1.0, 0.78, step(0.8, max(f.x, f.y)) * uSpeck);
+  // the water over it (its surface is at -0.5): the deeper the bed, the more
+  // the cobbles sink into the water's own colour, tea in the shallows and
+  // green-dark in the fishing hole
+  float deep = smoothstep(0.03, 0.5, -0.5 - gy);
+  bed = mix(bed, mix(uShallow, uDeep, deep), 0.3 + 0.62 * deep);
+  // the bank is dark and wet just above the water, and the water laps it in
+  // a pale line that comes and goes
+  float lapAt = -0.5 + 0.02 * sin(uTime * 1.1 + w.y * 2.3 + gNoise(w * 1.3) * 5.0);
+  c *= mix(1.0, 0.72, smoothstep(-0.3, -0.42, gy));
+  c = mix(c, bed, edge(0.5, smoothstep(lapAt + 0.02, lapAt - 0.02, gy) + wob * 0.05));
+  float lap = step(lapAt - 0.012, gy) * step(gy, lapAt + 0.034);
+  c = mix(c, uLap, lap * step(0.28, gNoise(vec2(w.x * 5.0, w.y * 1.6 + uTime * 0.25))));
   diffuseColor.rgb *= c;
 `,
       )

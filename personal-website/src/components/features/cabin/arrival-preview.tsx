@@ -23,6 +23,8 @@ import { BoxCard, WorkbenchIndex } from './box-card'
 import { ChecklistCard, GoalToast } from './checklist-card'
 import { ControlsCard } from './controls-card'
 import { SplitHud, type SplitHudHandle } from './split-hud'
+import { FishingHud, type FishingHudHandle, type FishingHudState } from './fishing-hud'
+import { HUGO_BROOK_LEAD_LINE } from './brook'
 import {
   GOALS,
   countDone,
@@ -33,9 +35,12 @@ import {
   type Progress,
 } from './checklist'
 import { LOOK_ROWS, parseLook, type Guest, type Look, type PanelId } from './world'
+import { useHugoAsk } from './use-hugo-ask'
 
 // three.js loads only on this page, after hydration.
 const ArrivalScene = dynamic(() => import('./arrival-scene'), { ssr: false })
+// HUGO's card and the ask box (A48): loaded the first time the guest asks him.
+const HugoAsk = dynamic(() => import('./hugo-ask').then((m) => m.HugoAsk), { ssr: false })
 
 // HUGO's opening lines are Eduard's wording (A77); the others are still placeholders.
 const LINES = {
@@ -124,6 +129,8 @@ export function ArrivalPreview({
   const toastKey = useRef(0)
   const api = useRef<SceneApi | null>(null)
   const splitHud = useRef<SplitHudHandle | null>(null)
+  const [fishing, setFishing] = useState(false)
+  const fishingHud = useRef<FishingHudHandle | null>(null)
   const [touch] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches,
   )
@@ -188,11 +195,14 @@ export function ArrivalPreview({
     return () => window.clearTimeout(id)
   }, [toast])
 
+  const closeAsk = useRef(() => {})
   const onRead = useCallback((id: PanelId) => {
+    closeAsk.current()
     setWantBox(null)
     setPanel(id)
   }, [])
   const onOpenBox = useCallback((index: number) => {
+    closeAsk.current()
     setPanel(null)
     setWantBox(index)
   }, [])
@@ -290,6 +300,24 @@ export function ArrivalPreview({
     setBubble({ speaker: 'HUGO', text: HUGO_LEAD_LINE })
     later(6000, () => setBubble((b) => (b?.text === HUGO_LEAD_LINE ? null : b)))
   }, [later])
+  // After the woodshed, HUGO leads the guest on to the brook (A48, Eduard's
+  // line). The scene says when (brook.ts, readyForBrook); if a reading panel
+  // is open then, he waits until it's closed.
+  const [brookLead, setBrookLead] = useState(false)
+  const brookWaiting = useRef(false)
+  const startBrookLead = useCallback(() => {
+    if (panelOpen.current) {
+      brookWaiting.current = true
+      return
+    }
+    setBrookLead(true)
+    setBubble({ speaker: 'HUGO', text: HUGO_BROOK_LEAD_LINE })
+    later(6000, () => setBubble((b) => (b?.text === HUGO_BROOK_LEAD_LINE ? null : b)))
+  }, [later])
+  const onReachBrook = useCallback(() => {
+    brookWaiting.current = false
+  }, [])
+
   const closePanel = useCallback(() => {
     setPanel(null)
     panelOpen.current = false
@@ -297,7 +325,11 @@ export function ArrivalPreview({
       lead.current.waiting = false
       startLead()
     }
-  }, [startLead])
+    if (brookWaiting.current) {
+      brookWaiting.current = false
+      startBrookLead()
+    }
+  }, [startLead, startBrookLead])
 
   const onEnterCabin = useCallback(() => {
     setBubble({ speaker: 'HUGO', text: HUGO_CABIN_LINE })
@@ -343,6 +375,31 @@ export function ArrivalPreview({
     [later],
   )
 
+  // Casting a line at the fishing hole (fishing.ts): the HUD while it's on.
+  const onFishing = useCallback((active: boolean) => setFishing(active), [])
+  const onFishingFrame = useCallback((s: FishingHudState) => fishingHud.current?.set(s), [])
+
+  // HUGO's questions (A48): tap HUGO or press Q. Opening his card puts away
+  // a reading panel or a box; opening one of those puts his card away.
+  const ask = useHugoAsk({
+    blocked: splitting || fishing,
+    onOpen: () => {
+      if (panelOpen.current) closePanel()
+      setWantBox(null)
+    },
+  })
+  useEffect(() => {
+    closeAsk.current = ask.close
+  }, [ask.close])
+  const askMarker =
+    ready &&
+    ask.unasked &&
+    !ask.open &&
+    !splitting &&
+    !fishing &&
+    panel === null &&
+    wantBox === null
+
   const found = { done: countDone(progress), all: GOALS.length }
   const controlsOpen = controlsHidden !== 'yes'
 
@@ -379,6 +436,16 @@ export function ArrivalPreview({
         onGoal={onGoal}
         onSplit={onSplit}
         onSplitFrame={onSplitFrame}
+        brookLead={brookLead}
+        onBrookReady={startBrookLead}
+        onReachBrook={onReachBrook}
+        onFishing={onFishing}
+        onFishingFrame={onFishingFrame}
+        onStop={ask.onStop}
+        onTapHugo={ask.toggle}
+        hugoAskMarker={askMarker}
+        hugoTalking={ask.talking}
+        hugoAskOpen={ask.open}
       />
       {panel === 'resume' && <ResumePanel resume={resume} onClose={closePanel} />}
       {panel === 'todo' && <TodoPanel items={TODO_DRAFT} onClose={closePanel} />}
@@ -396,8 +463,25 @@ export function ArrivalPreview({
           onDone={() => api.current?.stopSplit()}
         />
       )}
+      {fishing && (
+        <FishingHud
+          touch={touch}
+          handleRef={fishingHud}
+          onPress={() => api.current?.fish()}
+          onDone={() => api.current?.stopFishing()}
+        />
+      )}
       {checklistOpen && (
         <ChecklistCard progress={progress} onClose={() => setChecklistOpen(false)} />
+      )}
+      {ask.ever && (
+        <HugoAsk
+          stop={ask.stop}
+          open={ask.open}
+          touch={touch}
+          onClose={ask.close}
+          onTalking={ask.setTalking}
+        />
       )}
       {toast && <GoalToast key={toast.key} text={toast.text} />}
       <p className={`${styles.title} ${styles.pixel}`}>Eduard Kakosyan</p>
@@ -412,7 +496,7 @@ export function ArrivalPreview({
         controlsOpen={controlsOpen}
         onToggleControls={() => setControlsHidden(controlsOpen ? 'yes' : 'no')}
       />
-      {ready && controlsOpen && !splitting && wantBox === null && (
+      {ready && controlsOpen && !splitting && !fishing && wantBox === null && !ask.open && (
         <ControlsCard
           touch={touch}
           guest={guest}

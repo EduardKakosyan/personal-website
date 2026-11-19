@@ -21,6 +21,7 @@ import {
   turnTowards,
   type Vec2,
 } from './world'
+import { belowBank } from './brook'
 
 type DogState =
   | 'home'
@@ -126,7 +127,8 @@ function steer(r: Rusty, goal: Vec2, maxSpeed: number, dt: number) {
     for (const off of [0, 0.45, -0.45, 0.9, -0.9, 1.4, -1.4]) {
       const a = r.yaw + off
       const next = { x: r.pos.x + Math.sin(a) * stepLen, z: r.pos.z + Math.cos(a) * stepLen }
-      if (!blocked(next, 0.22)) {
+      // (not down the brook's stairs: he'd float over the steps)
+      if (!blocked(next, 0.22) && !belowBank(next)) {
         r.pos = next
         if (off !== 0) r.yaw = turnTowards(r.yaw, a, 4 * dt)
         r.stuck = 0

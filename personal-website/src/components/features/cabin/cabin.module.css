@@ -1393,7 +1393,7 @@ button.todoItem:focus-visible {
   .controls {
     left: 0.5rem;
     right: 0.5rem;
-    bottom: 5.4rem;
+    bottom: var(--bar-clear, 5.4rem);
     width: auto;
   }
 
@@ -1408,7 +1408,7 @@ button.todoItem:focus-visible {
   .boxCard {
     right: 8px;
     left: 8px;
-    bottom: 5.4rem;
+    bottom: var(--bar-clear, 5.4rem);
     width: auto;
     max-height: 50vh;
   }
@@ -1419,7 +1419,7 @@ button.todoItem:focus-visible {
   }
 
   .splitHud {
-    bottom: 5.4rem;
+    bottom: var(--bar-clear, 5.4rem);
   }
 
   .toast {

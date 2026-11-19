@@ -45,6 +45,7 @@ from lib import (  # noqa: E402
 import eduard_model  # noqa: E402  (Eduard, A107)
 import rusty_model  # noqa: E402  (Rusty, A105)
 import guest_model  # noqa: E402  (the guests, A111)
+import brook_model  # noqa: E402  (the brook, scene 6)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))  # personal-website/
@@ -132,13 +133,11 @@ FIRE = (6.0, -2.6)
 GROUND = (-110.0, -80.0, 200.0)  # x0, y0, size of the ground square and its mask
 
 
-def brook_x(y):
-    """The brook winds north-south along the east edge. The grass field between
-    the driveway and the brook is about twice as wide as first built (Eduard)."""
-    return 26.0 + 1.3 * math.sin(y * 0.1 + 0.6) + 0.6 * math.sin(y * 0.29 + 2.0)
-
-
-BROOK_HALF = 1.3  # half the water's width
+# The brook winds north-south along the east edge. The grass field between the
+# driveway and the brook is about twice as wide as first built (Eduard). Its
+# channel, banks and everything in it are in brook_model.py.
+brook_x = brook_model.brook_x
+BROOK_HALF = 1.3  # (the first pass's half-width; the forest and plants still measure from it)
 
 
 # ---------------------------------------------------------------- small geometry helpers
@@ -176,11 +175,7 @@ def polyline_dist(px, py, line):
 
 def ground_height(x, y):
     """Flat where people walk; the brook cuts a channel along the east edge."""
-    d = abs(x - brook_x(y))
-    if d < BROOK_HALF + 1.4:
-        k = max(0.0, min(1.0, (d - BROOK_HALF) / 1.4))
-        return -0.75 * (1 - k * k * (3 - 2 * k))
-    return 0.0
+    return brook_model.height(x, y)
 
 
 # ---------------------------------------------------------------- ground and its paint mask
@@ -200,7 +195,12 @@ def ground():
         verts.append(row)
     for j in range(n):
         for i in range(n):
+            # (along the brook a finer strip of its own takes over: brook_model.channel)
+            if brook_model.coarse_cut(x0 + size * (i + 0.5) / n, y0 + size * (j + 0.5) / n):
+                continue
             bm.faces.new((verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i]))
+    loose = [v for v in bm.verts if not v.link_faces]
+    bmesh.ops.delete(bm, geom=loose, context="VERTS")
     uv = bm.loops.layers.uv.new("UVMap")
     for f in bm.faces:
         for loop in f.loops:
@@ -1223,51 +1223,16 @@ def solar_panels():
 
 
 def brook():
-    import bmesh
-
-    me = bpy.data.meshes.new("Brook")
-    bm = bmesh.new()
-    rows = []
-    y = GROUND[1]
-    while y <= GROUND[1] + GROUND[2]:
-        bx = brook_x(y)
-        rows.append((bm.verts.new((bx - BROOK_HALF - 0.25, y, -0.42)), bm.verts.new((bx + BROOK_HALF + 0.25, y, -0.42))))
-        y += 1.0
-    for a, b in zip(rows[:-1], rows[1:]):
-        bm.faces.new((a[0], a[1], b[1], b[0]))
-    bm.to_mesh(me)
-    bm.free()
-    me.materials.append(lib.mat("water"))
-    ob = bpy.data.objects.new("Brook", me)
-    bpy.data.collections["Set"].objects.link(ob)
-
-    # mossy stones in and along the water, and a few ripples
-    stones, ripples = [], []
+    """The brook (scene 6), rebuilt from photo 03: see brook_model.py."""
+    # The first pass drew its stones and ripples from the shared random
+    # sequence. Draw the same numbers (and throw them away), so the forest and
+    # the plants, which come after, stay exactly where they were.
     for _ in range(140):
-        yy = rng.uniform(-75, 70)
-        side = rng.choice((-1, 1))
-        off = rng.uniform(0.2, BROOK_HALF + 0.9) * side
-        s = rng.uniform(0.15, 0.4)
-        tone = rng.choice(["stone", "stone", "moss", "bank"])
-        x = brook_x(yy) + off
-        stones.append(ico(tone, s, (x, yy, ground_height(x, yy) - 0.05 + s * 0.3), scale=(1.3, 1, 0.6), rot=deg(0, 0, rng.uniform(0, 90))))
+        rng.uniform(-75, 70), rng.choice((-1, 1)), rng.uniform(0.2, BROOK_HALF + 0.9)
+        rng.uniform(0.15, 0.4), rng.choice(["stone", "stone", "moss", "bank"]), rng.uniform(0, 90)
     for _ in range(70):
-        yy = rng.uniform(-75, 70)
-        x = brook_x(yy) + rng.uniform(-0.8, 0.8)
-        ripples.append(box("water_light", (rng.uniform(0.3, 0.7), 0.06, 0.01), (x, yy, -0.41), deg(0, 0, rng.uniform(-15, 15))))
-    compound("BrookStones", stones)
-    compound("BrookRipples", ripples)
-
-    # wooden stairs down the bank at the end of the path (A21)
-    sx = brook_x(0.2) - BROOK_HALF - 1.45
-    st = []
-    for k in range(4):
-        x = sx + k * 0.38
-        z = ground_height(x, 0.2)
-        st.append(box("deck", (0.36, 1.1, 0.08), (x, 0.2, z + 0.04)))
-        st.append(box("weathered", (0.08, 0.08, 0.5), (x, 0.8, z + 0.1)))
-    st.append(box("weathered", (1.6, 0.06, 0.06), (sx + 0.6, 0.8, 0.4), deg(0, 22, 0)))
-    compound("BrookStairs", st)
+        rng.uniform(-75, 70), rng.uniform(-0.8, 0.8), rng.uniform(0.3, 0.7), rng.uniform(-15, 15)
+    brook_model.build(bpy.data.materials["GroundPaint"], GROUND[1], GROUND[1] + GROUND[2])
 
 
 # ---------------------------------------------------------------- trees and plants
@@ -1356,6 +1321,9 @@ def forest():
             place(x, y, h, kind)
 
     # Merge all trees of a kind into one object each (cheap to draw).
+    # (the brook's banks and water are the brush's: brook_model)
+    for kind in trees:
+        trees[kind] = [(x, y, h) for x, y, h in trees[kind] if not brook_model.near_brook(x, y, 0.4)]
     sp = []
     for x, y, h in trees["spruce"]:
         far = math.hypot(x - 2.0, (y + 8.0) * 0.8) > 42
@@ -1405,6 +1373,7 @@ def plants():
         h = rng.uniform(0.15, 0.32)
         tone = rng.choice(["grass_light", "grass_dark", "grass_light", "moss"])
         tufts.append(cyl(tone, 0.08, h, (x, y, h / 2), r2=0.0, seg=4, rot=deg(0, 0, rng.uniform(0, 90))))
+    tufts = [t for t in tufts if not brook_model.near_brook(t.center[0], t.center[1], 0.15)]
     compound("GrassTufts", tufts)
 
     # lupines along the driveway edges and the road (photo 06), daisies in the meadow
@@ -1438,6 +1407,7 @@ def plants():
             continue
         flowers.append(cyl(rng.choice(["daisy", "daisy", "yolk"]), 0.05, 0.05, (x, y, 0.2), seg=5))
         flowers.append(cyl("grass_dark", 0.015, 0.2, (x, y, 0.1), seg=3))
+    flowers = [f for f in flowers if not brook_model.near_brook(f.center[0], f.center[1], 0.2)]
     compound("Flowers", flowers)
 
 

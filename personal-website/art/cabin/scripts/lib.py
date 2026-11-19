@@ -116,7 +116,7 @@ PALETTE = {
     "road": "#a99c86",
     "solar": "#26385e",
     "solar_frame": "#b9bec4",
-    "water": "#3f7f8f",
+    "water": "#8a6a45",  # tea-coloured (photo 03); the website draws its own water
     "water_light": "#8cc7c9",
     "bank": "#8a7358",
     "alder": "#5c8a3a",
@@ -143,6 +143,21 @@ PALETTE = {
     "split_wood": "#cfa56b",
     # the outdoor shower's corrugated sheets (photo 05): white with grey ribs
     "panel_rib": "#b9c0c6",
+    # the brook, rebuilt from photo 03: red-brown stones under clear, tea-coloured
+    # water, dark rocks capped with bright moss, alder brush, a fallen birch,
+    # the stairs' tap and its pipe
+    "stone_red": "#8f5a3e",
+    "stone_brown": "#6f5240",
+    "stone_tan": "#a98a68",
+    "rock_dark": "#5e5a52",
+    "moss_bright": "#9fc23a",
+    "alder_light": "#8fbf4e",
+    "alder_dark": "#45722f",
+    "alder_bark": "#7b776b",
+    "foam": "#e8f0ea",
+    "pipe": "#24272a",
+    "brass": "#c9a24a",
+    "root": "#4d3828",
 }
 
 # Faces meeting at less than this angle are shaded smoothly (spheres, 7-sided cones).

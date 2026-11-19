@@ -15,6 +15,7 @@ export type GoalId =
   | 'shower'
   | 'split'
   | 'boxes'
+  | 'fish'
 
 export type Goal = {
   id: GoalId
@@ -36,6 +37,9 @@ export const GOALS: Goal[] = [
   { id: 'shower', label: 'Find the outdoor shower' },
   { id: 'split', label: 'Split five logs' },
   { id: 'boxes', label: 'Look in every box on the workbench', parts: 6 },
+  // DRAFT label (the agent's): the brook's fishing hole (scene 6). No species
+  // is named until Eduard says what he catches there (fishing.ts, FISHING_CATCH).
+  { id: 'fish', label: 'Catch something at the fishing hole' },
 ]
 
 /** What's been done: for most goals `true`; for the boxes, which ones. */

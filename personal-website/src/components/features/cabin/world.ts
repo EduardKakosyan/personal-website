@@ -5,6 +5,8 @@
 // +Z, down the driveway (Eduard's sketch, A55).
 // No three.js imports here: the overlay uses this file too.
 
+import { brookBlocked, brookHeight } from './brook'
+
 export type Vec2 = { x: number; z: number }
 
 export const MODELS = {
@@ -247,6 +249,9 @@ export function clampInsideCabin(p: Vec2): Vec2 {
 /** How high the ground is: the cabin floor and the deck sit above the yard. */
 export function groundHeight(p: Vec2) {
   if (insideCabin(p)) return CABIN_FLOOR_Y
+  // the stairs down to the brook and the landing at the foot of them (brook.ts)
+  const brook = brookHeight(p)
+  if (brook !== null) return brook
   if (p.x > DECK.x0 && p.x < DECK.x1 && p.z > DECK.z0 && p.z < DECK.z1) return DECK.y
   return 0
 }
@@ -255,8 +260,12 @@ export function groundHeight(p: Vec2) {
 export const WELCOME_DISTANCE = 7.5
 export const WELCOME_POINT: Vec2 = { x: 2.7, z: 2.6 }
 
-/** Walkable area: the clearing and grass field, between the tree strip (west) and the brook (east). */
-export const BOUNDS = { x0: -8, x1: 23.5, z0: -6, z1: 30 }
+/**
+ * Walkable area: the clearing and grass field, between the tree strip (west)
+ * and the brook (east). The east edge takes in the stairs and the landing at
+ * the water; the bank and the water are blocked (brook.ts).
+ */
+export const BOUNDS = { x0: -8, x1: 26.3, z0: -6, z1: 30 }
 
 type Box = { x0: number; x1: number; z0: number; z1: number }
 type Circle = { x: number; z: number; r: number }
@@ -331,7 +340,9 @@ export function blockedStatic(p: Vec2, pad = 0.28) {
   return (
     BOXES.some(
       (o) => p.x > o.x0 - pad && p.x < o.x1 + pad && p.z > o.z0 - pad && p.z < o.z1 + pad,
-    ) || CIRCLES.some((c) => Math.hypot(p.x - c.x, p.z - c.z) < c.r + pad)
+    ) ||
+    CIRCLES.some((c) => Math.hypot(p.x - c.x, p.z - c.z) < c.r + pad) ||
+    brookBlocked(p, pad)
   )
 }
 

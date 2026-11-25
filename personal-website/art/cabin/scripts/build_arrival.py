@@ -128,9 +128,28 @@ SAPLINGS = [
     (-6.5, -14.0, 2.2, "spruce"),
     (6.5, -24.0, 1.8, "blue"),
 ]
-SEATS = [(5.6, 0.8, -20), (6.7, 1.1, 0), (7.7, 0.6, 20)]  # x, y, turn (they face the fire)
 FIRE = (6.0, -2.6)
+# The camp chairs, pulled up round the fire for the night (scene 7): each is a
+# bearing from the fire (degrees clockwise from north) and sits SEAT_RING out
+# from it, facing it. A half ring on the fire's north-west side, between it
+# and the deck: Eduard's west of the fire, the guest's north of it, and a
+# third between them, which HUGO floats over (FIRE_SEATS in
+# src/components/features/cabin/fire.ts mirrors these). The night camera
+# looks at them from the south-east, across the flames, with the cabin behind.
+SEAT_RING = 1.85
+SEAT_BEARINGS = (-78, 2, -38)
+SEATS = [
+    (FIRE[0] + SEAT_RING * math.sin(math.radians(b)), FIRE[1] + SEAT_RING * math.cos(math.radians(b)), -b)
+    for b in SEAT_BEARINGS
+]  # x, y, turn (they face the fire)
+# Camp Yahtzee, out on the picnic table (A51): where on the table top, in the table's own frame
+PICNIC = (3.8, -4.8, 84)
+YAHTZEE_LOCAL = (0.4, 0.0)
 GROUND = (-110.0, -80.0, 200.0)  # x0, y0, size of the ground square and its mask
+# Photo 02's night lights: lanterns (x, y, z), and the little lights along the
+# deck's outer (east) edge (x, from y, to y). The deck is x 1.8..3.65, y 0.45..-2.35.
+LANTERNS = [(3.47, 0.27, 0.3), (3.63, -5.44, 0.745)]
+DECK_LIGHTS = (3.69, 0.4, -2.3)
 
 
 # The brook winds north-south along the east edge. The grass field between the
@@ -578,7 +597,7 @@ def cabin_interior():
     # in props.glb (the Props collection isn't merged, see optimize_models.sh).
     collection("Props")
     mushroom_basket((ex - 0.25, 1.03, f + 0.92))
-    striper_rod(CABIN_D / 2 - 0.16)
+    striper_rod(-(CABIN_D / 2 - 0.16), side=-1)
 
     # the résumé on the bistro table, and the to-do list pinned to the north wall
     compound(
@@ -631,10 +650,14 @@ def mushroom_basket(at):
     compound("MushroomBasket", p, location=(x, y, z))
 
 
-def striper_rod(wx):
-    """Eduard's surf rod for stripers (A72), on two hooks along the east wall
-    above the door (a 9 ft rod doesn't stand up in here), and the tackle box on
-    the floor by the door."""
+def striper_rod(wx, side=1):
+    """Eduard's surf rod for stripers (A72), on two hooks along a wall, up high
+    (a 9 ft rod doesn't stand up in here), and the tackle box on the floor
+    under the shelves. They're on the west wall (`side` -1), across the room
+    from the door and the counter: Eduard, "all the interactions are on the
+    right side of the cabin … put the fishing rod and the tackle box on the
+    other side of the room". `wx` is the rod's x; `side` is which wall it
+    hangs on (+1 east, -1 west), so the hooks reach back to it."""
     z = WALL_BASE + 1.9
     along = deg(-90, 0, 0)  # cylinders run along +Y (north)
     p = [
@@ -643,18 +666,18 @@ def striper_rod(wx):
         cyl("metal_dark", 0.013, 2.2, (wx, -0.6, z), along, r2=0.005, seg=6),
     ]
     for gy in (-1.35, -0.85, -0.35, 0.15):
-        p.append(sphere("steel", 0.012, (wx - 0.012, gy, z - 0.016), seg=6, rings=4))
+        p.append(sphere("steel", 0.012, (wx - side * 0.012, gy, z - 0.016), seg=6, rings=4))
     # a spinning reel hanging under the grip
     p.append(box("metal_dark", (0.016, 0.03, 0.05), (wx, -1.65, z - 0.035)))
     p.append(cyl("steel", 0.045, 0.045, (wx, -1.65, z - 0.08), deg(0, 90, 0), seg=10))
     p.append(cyl("metal_dark", 0.03, 0.05, (wx, -1.65, z - 0.08), deg(0, 90, 0), seg=10))
     # the two hooks it rests on
     for hy in (-1.85, -0.4):
-        p.append(box("weathered", (0.09, 0.025, 0.025), (wx + 0.04, hy, z - 0.02)))
-        p.append(box("weathered", (0.02, 0.025, 0.05), (wx - 0.005, hy, z + 0.0)))
+        p.append(box("weathered", (0.09, 0.025, 0.025), (wx + side * 0.04, hy, z - 0.02)))
+        p.append(box("weathered", (0.02, 0.025, 0.05), (wx - side * 0.005, hy, z + 0.0)))
     compound("StriperRod", p)
 
-    # the tackle box on the floor by the door, north of it
+    # the tackle box on the floor against the same wall, under the open shelves
     f = FLOOR_Z
     t = [
         box("tote_green", (0.24, 0.42, 0.16), (0, 0, 0.08)),
@@ -662,7 +685,7 @@ def striper_rod(wx):
         box("metal_dark", (0.03, 0.16, 0.025), (0, 0, 0.215)),
         box("steel", (0.012, 0.05, 0.04), (-0.125, 0, 0.15)),
     ]
-    compound("TackleBox", t, location=(wx - 0.09, -0.12, f), rot=deg(0, 0, 4))
+    compound("TackleBox", t, location=(wx - side * 0.19, 0.75 if side < 0 else -0.12, f), rot=deg(0, 0, 184 if side < 0 else 4))
 
 
 def deck():
@@ -739,7 +762,15 @@ def yard():
             p.append(box("weathered", (0.08, 0.08, 0.9), (sx * 0.62, sy * 0.36, 0.38), deg(sy * 30, 0, 0)))
         p.append(box("weathered", (0.08, 1.55, 0.08), (sx * 0.62, 0, 0.38)))
     # south of the deck (photo 05)
-    compound("PicnicTable", p, location=(3.8, -4.8, 0.0), rot=deg(0, 0, 84), bevel=0.01)
+    compound("PicnicTable", p, location=(PICNIC[0], PICNIC[1], 0.0), rot=deg(0, 0, PICNIC[2]), bevel=0.01)
+    # Camp Yahtzee on the table (A51): its own object in props.glb, so it can glow
+    collection("Props")
+    a = math.radians(PICNIC[2])
+    yx = PICNIC[0] + YAHTZEE_LOCAL[0] * math.cos(a) - YAHTZEE_LOCAL[1] * math.sin(a)
+    yy = PICNIC[1] + YAHTZEE_LOCAL[0] * math.sin(a) + YAHTZEE_LOCAL[1] * math.cos(a)
+    compound("CampYahtzee", camp_yahtzee(), location=(yx, yy, 0.745), rot=deg(0, 0, PICNIC[2] + 8))
+    print("YAHTZEE", round(yx, 3), round(-yy, 3))
+    collection("Set")
 
     # white utility sink with a green tote on top, under the window (photo 05)
     s = [
@@ -774,6 +805,74 @@ def yard():
     compound("FireRing", f, location=(*FIRE, 0.0))
     for k, (x, y, r) in enumerate(SEATS):
         compound(f"CampChair{k}", camp_chair(), location=(x, y, 0.0), rot=deg(0, 0, r))
+        print("SEAT", k, round(x, 3), round(-y, 3), "turn", r)
+    # two lanterns (photo 02): one on the north-east corner of the deck, one on
+    # the south end of the picnic table
+    for k, (x, y, z) in enumerate(LANTERNS):
+        compound(f"Lantern{k}", lantern(), location=(x, y, z), rot=deg(0, 0, 12 + 30 * k), bevel=0.004)
+    # the little lights along the deck's outer edge (photo 02)
+    edge = []
+    n = 13
+    for i in range(n):
+        y = DECK_LIGHTS[1] + (DECK_LIGHTS[2] - DECK_LIGHTS[1]) * i / (n - 1)
+        edge.append(ico("string_light@1.4", 0.028, (DECK_LIGHTS[0], y, 0.1 + 0.015 * math.sin(i * 2.4))))
+    edge.append(box("wire", (0.012, abs(DECK_LIGHTS[2] - DECK_LIGHTS[1]), 0.012), (DECK_LIGHTS[0] - 0.01, (DECK_LIGHTS[1] + DECK_LIGHTS[2]) / 2, 0.11)))
+    compound("StringLightsDeck", edge)
+
+
+def lantern():
+    """A black metal lantern with a candle in it (photo 02): a base, four corner
+    posts, a stepped cap with a carrying ring, and the warm light inside."""
+    p = [
+        box("metal_dark", (0.17, 0.17, 0.03), (0, 0, 0.015)),
+        box("metal_dark", (0.19, 0.19, 0.025), (0, 0, 0.3)),
+        box("metal_dark", (0.12, 0.12, 0.04), (0, 0, 0.33)),
+        box("metal_dark", (0.05, 0.05, 0.03), (0, 0, 0.365)),
+        # the candle and its light
+        box("trim", (0.06, 0.06, 0.09), (0, 0, 0.075)),
+        box("string_light@2.2", (0.075, 0.075, 0.12), (0, 0, 0.17)),
+    ]
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p.append(box("metal_dark", (0.02, 0.02, 0.27), (sx * 0.075, sy * 0.075, 0.165)))
+    # the carrying ring
+    for k in range(7):
+        a = math.pi * k / 6
+        p.append(box("metal_dark", (0.012, 0.03, 0.012), (0, -0.05 * math.cos(a), 0.385 + 0.05 * math.sin(a)), (-(a - math.pi / 2), 0, 0)))
+    return p
+
+
+def camp_yahtzee():
+    """Camp Yahtzee laid out on the picnic table (A51): the score pad with a
+    pencil, the cup, and the five dice (a bit bigger than life, so they read)."""
+    p = [
+        # the score pad: a blue header, ruled lines, a column of boxes
+        box("paper", (0.17, 0.25, 0.014), (0, 0, 0.007)),
+        box("blue_sink", (0.17, 0.045, 0.004), (0, 0.1, 0.015)),
+        box("pencil", (0.012, 0.15, 0.012), (0.115, -0.02, 0.006), deg(0, 0, 14)),
+        box("ink", (0.012, 0.022, 0.012), (0.096, -0.092, 0.006), deg(0, 0, 14)),
+        # the cup, on its side, with the dice spilled out of it
+        cyl("bistro_red", 0.05, 0.11, (-0.2, 0.07, 0.05), deg(0, 90, 30), r2=0.058, seg=12, caps="door"),
+    ]
+    for k in range(6):
+        p.append(box("ink", (0.13, 0.006, 0.003), (-0.005, 0.055 - k * 0.03, 0.0155)))
+    p.append(box("ink", (0.004, 0.19, 0.003), (0.03, -0.03, 0.0155)))
+    d = 0.055
+    dice = [(-0.2, -0.1, 12, (1,)), (-0.12, -0.03, -25, (5,)), (-0.27, -0.17, 40, (3,)), (-0.11, -0.16, 8, (6,)), (-0.19, -0.2, -15, (2,))]
+    pips = {
+        1: [(0, 0)],
+        2: [(-1, -1), (1, 1)],
+        3: [(-1, -1), (0, 0), (1, 1)],
+        5: [(-1, -1), (1, 1), (-1, 1), (1, -1), (0, 0)],
+        6: [(-1, -1), (-1, 0), (-1, 1), (1, -1), (1, 0), (1, 1)],
+    }
+    for dx, dy, turn, (face,) in dice:
+        a = math.radians(turn)
+        p.append(box("trim", (d, d, d), (dx, dy, d / 2), deg(0, 0, turn)))
+        for px, py in pips[face]:
+            ox, oy = px * 0.015, py * 0.015
+            p.append(box("ink", (0.011, 0.011, 0.004), (dx + ox * math.cos(a) - oy * math.sin(a), dy + ox * math.sin(a) + oy * math.cos(a), d + 0.001), deg(0, 0, turn)))
+    return p
 
 
 def camp_chair():
@@ -1084,7 +1183,7 @@ def workbench():
 
 
 CRATE_W, CRATE_D, CRATE_H = 0.26, 0.2, 0.15
-# the archive projects in the boxes, in the website's order (src/app/preview/arrival/page.tsx)
+# the archive projects in the boxes, in the website's order (src/app/page.tsx)
 CRATE_ITEMS = ("dev-template", "healthbyte", "network-sim", "cargrep", "second-brain", "exosky")
 
 

@@ -1,6 +1,7 @@
 // Time passes during the visit (A39): a sunny summer afternoon on arrival, the
-// light turning golden on the way round (golden by the woodshed), and sunset
-// at the brook. Night by the fire is scene 7 and isn't here yet.
+// light turning golden on the way round (golden by the woodshed), sunset at
+// the brook, and then night for the fire (scene 7, A27): the blue hour first,
+// then dark, "lit only by the string lights and the flames".
 //
 // It follows where the guest is, eastwards across the property (the cabin is
 // west, the woodshed in the middle, the brook on the east edge), so it's
@@ -63,6 +64,38 @@ const SUNSET: Light = {
   sheen: '#f4dcc4',
 }
 
+/**
+ * The blue hour, on the way back from the brook (photo 02): the sun's gone,
+ * the sky is a deep evening blue and everything is cool and even.
+ */
+const DUSK: Light = {
+  sky: '#55698f',
+  sun: '#b9a6c4',
+  sunIntensity: 0.0,
+  sunFrom: { x: -13, y: 6, z: 2.5 },
+  hemiSky: '#8e9cc4',
+  hemiGround: '#4d5a52',
+  hemiIntensity: 1.0,
+  glint: '#c9d3ea',
+  sheen: '#7f8fb2',
+}
+/**
+ * Night by the fire: a dark blue sky, a little cool moonlight from high in
+ * the south-east so shapes still read, and the rest left to the flames and
+ * the string lights (fire-fx.ts).
+ */
+const NIGHT: Light = {
+  sky: '#131c33',
+  sun: '#9db4e6',
+  sunIntensity: 0.5,
+  sunFrom: { x: 7, y: 13, z: 6 },
+  hemiSky: '#3d4d7c',
+  hemiGround: '#1f2a33',
+  hemiIntensity: 0.72,
+  glint: '#8fa3d8',
+  sheen: '#2c3a5c',
+}
+
 const smooth = (a: number, b: number, x: number) => {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)))
   return k * k * (3 - 2 * k)
@@ -82,10 +115,24 @@ function mixColor(out: THREE.Color, a: string, b: string, k: number) {
   return out.copy(ca.set(a)).lerp(cb.set(b), k)
 }
 
-/** The light for an evening value (eveningAt), blended between the three. */
-function lightAt(e: number) {
-  const [a, b, k] = e <= 1 ? [AFTERNOON, GOLDEN, e] : [GOLDEN, SUNSET, e - 1]
-  return { a, b, k }
+/** The evening value for sunset (the brook) and for full night (the fire). */
+export const EVENING_SUNSET = 2
+export const EVENING_NIGHT = 3
+
+/**
+ * The light for an evening value, blended between its neighbours: 0
+ * afternoon, 1 golden, 2 sunset, 2.5 the blue hour, 3 night.
+ */
+function lightAt(e: number): { a: Light; b: Light; k: number } {
+  if (e <= 1) return { a: AFTERNOON, b: GOLDEN, k: Math.max(0, e) }
+  if (e <= 2) return { a: GOLDEN, b: SUNSET, k: e - 1 }
+  if (e <= 2.5) return { a: SUNSET, b: DUSK, k: (e - 2) * 2 }
+  return { a: DUSK, b: NIGHT, k: Math.min(1, (e - 2.5) * 2) }
+}
+
+/** How much of the night is on, 0 (sunset or earlier) .. 1 (night): for the stars, the lamps and the fire's glow. */
+export function nightAmount(e: number) {
+  return smooth(2.15, 2.95, e)
 }
 
 export type DaylightTargets = {
@@ -95,9 +142,18 @@ export type DaylightTargets = {
   fog: THREE.Fog | null
   glint: THREE.Color
   sheen: THREE.Color
-  /** The sky the water reflects. */
+  /** The sky the water reflects, and the sky straight overhead (what it shows looking down). */
   waterSky: THREE.Color
+  waterOverhead: THREE.Color
+  /** The leaves the water reflects. */
+  waterLeaves: THREE.Color
 }
+
+/** The sky overhead by day (cool, even at sunset) and at night. */
+const OVERHEAD_DAY = new THREE.Color().setRGB(0.5, 0.74, 0.88)
+const OVERHEAD_NIGHT = new THREE.Color().setRGB(0.05, 0.08, 0.17)
+const LEAVES_DAY = new THREE.Color().setRGB(0.13, 0.27, 0.2)
+const LEAVES_NIGHT = new THREE.Color().setRGB(0.012, 0.03, 0.03)
 
 /**
  * Set the lights for the evening value `e`, around the guest at `at`. The
@@ -108,13 +164,21 @@ export function applyDaylight(t: DaylightTargets, e: number, at: Vec2) {
   mixColor(t.background, a.sky, b.sky, k)
   if (t.fog) t.fog.color.copy(t.background)
   t.waterSky.copy(t.background)
-  mixColor(t.sun.color, a.sun, b.sun, k)
+  t.waterOverhead.copy(OVERHEAD_DAY).lerp(OVERHEAD_NIGHT, nightAmount(e))
+  t.waterLeaves.copy(LEAVES_DAY).lerp(LEAVES_NIGHT, nightAmount(e))
+  // (The sun is out at the blue hour, so the moon can come up somewhere else
+  // without its shadows sweeping across the yard: it doesn't slide there.)
+  const moon = b === NIGHT
+  if (moon) t.sun.color.set(b.sun)
+  else mixColor(t.sun.color, a.sun, b.sun, k)
   t.sun.intensity = a.sunIntensity + (b.sunIntensity - a.sunIntensity) * k
-  const f = {
-    x: a.sunFrom.x + (b.sunFrom.x - a.sunFrom.x) * k,
-    y: a.sunFrom.y + (b.sunFrom.y - a.sunFrom.y) * k,
-    z: a.sunFrom.z + (b.sunFrom.z - a.sunFrom.z) * k,
-  }
+  const f = moon
+    ? b.sunFrom
+    : {
+        x: a.sunFrom.x + (b.sunFrom.x - a.sunFrom.x) * k,
+        y: a.sunFrom.y + (b.sunFrom.y - a.sunFrom.y) * k,
+        z: a.sunFrom.z + (b.sunFrom.z - a.sunFrom.z) * k,
+      }
   t.sun.position.set(at.x + f.x, f.y, at.z + f.z)
   t.sun.target.position.set(at.x, 0, at.z - 3)
   t.sun.target.updateMatrixWorld()

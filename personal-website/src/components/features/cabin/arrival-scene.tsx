@@ -4,11 +4,12 @@ import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject }
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
-import { SpeechBubble, type Speaker } from './speech-bubble'
+import { SpeechBubble, type BubbleLink, type Speaker } from './speech-bubble'
 import {
   PixelPass,
   configureLook,
   cutaway,
+  makeArrowTexture,
   makeGroundMaterial,
   makeSparkleTexture,
   isSmoothLook,
@@ -19,7 +20,14 @@ import {
   unregisterHighlight,
 } from './pixel-look'
 import { InteractPrompt, type PromptInput } from './interact-prompt'
-import { createEduard, eduardPose, updateEduard, type Greeting } from './eduard'
+import {
+  createEduard,
+  eduardPose,
+  marshmallow,
+  seatAtFire,
+  updateEduard,
+  type Greeting,
+} from './eduard'
 import { NameTag } from './name-tag'
 import { HugoAskMarker } from './hugo-ask-marker'
 import { hugoStopAt, type HugoStop } from './hugo-stops'
@@ -58,7 +66,27 @@ import {
   readyForBrook,
 } from './brook'
 import { createTapStream, makeWaterMaterial, waterUniforms } from './brook-water'
-import { applyDaylight, eveningAt } from './daylight'
+import { applyDaylight, eveningAt, EVENING_NIGHT, EVENING_SUNSET, nightAmount } from './daylight'
+import {
+  FIRE,
+  FIRE_LEAD_PATH,
+  FIRE_REACHED,
+  FIRE_SEATS,
+  HUGO_FIRE_SPOT,
+  NIGHT_START,
+  RUSTY_FIRE_BED,
+  SEAT_Y,
+  YAHTZEE,
+  YAHTZEE_SPOT,
+  backFromStairs,
+  fireLeadIndex,
+  nightfall,
+  readyForFire,
+  seatStand,
+} from './fire'
+import { RESUME_SPOTS, type CheckpointAt } from './checkpoint'
+import { createNightFx, createToastingStick } from './fire-fx'
+import { createTeleportFx } from './hugo-teleport'
 import {
   arriveAtHole,
   castPose,
@@ -79,12 +107,14 @@ import {
   canRubBelly,
   canSeeTag,
   canPet,
+  callToBed,
   canThrow,
   createRusty,
   holdsStill,
   lookUp,
   petRusty,
   rubBelly,
+  settleInBed,
   startApproach,
   throwCow,
   updateRusty,
@@ -155,6 +185,8 @@ export type SceneApi = {
   /** Cast, strike or reel (the fishing HUD's button), and stop fishing. */
   fish: () => void
   stopFishing: () => void
+  /** Get the guest up out of their seat ("Get up", by the fire). */
+  getUp: () => void
 }
 
 export type ArrivalSceneProps = {
@@ -189,8 +221,8 @@ export type ArrivalSceneProps = {
   onReachWoodshed: () => void
   /** The guest picked up the résumé, looked at the to-do list, or wants the workbench index. */
   onRead: (id: PanelId) => void
-  /** The guest looked at one of the easter eggs in the cabin. */
-  onLook: (id: 'basket' | 'rod' | 'tackle') => void
+  /** The guest looked at one of the easter eggs (in the cabin, or the Yahtzee set on the picnic table). */
+  onLook: (id: 'basket' | 'rod' | 'tackle' | 'yahtzee') => void
   /** The names on the project boxes, in BOX_TAGS order. */
   boxTags: { slug: string; tag: string }[]
   /** A box's tag was tapped, or the guest wants a different box: look in that one. */
@@ -230,6 +262,66 @@ export type ArrivalSceneProps = {
   hugoTalking?: boolean
   /** HUGO's card is open (on a portrait phone the view lifts so the guest and HUGO stay above it). */
   hugoAskOpen?: boolean
+  /** HUGO's answer to the guest's question: said in a bubble over his head, not on the card. */
+  hugoSaying?: { key: number; text: string; status: string | null; links?: BubbleLink[] } | null
+  /**
+   * HUGO floats over to something and points it out while he talks about it:
+   * the project boxes on the workbench, or the résumé on the table in the cabin.
+   */
+  hugoPointsAt?: 'bench' | 'resume' | null
+  /**
+   * HUGO was left behind somewhere and has just teleported back to the guest:
+   * time to say where the tour goes next.
+   */
+  onHugoCatchUp?: () => void
+  // The fire (scene 7; fire.ts)
+  /** ?night=1: start by the fire, at night (for looking at scene 7 without the walk round). */
+  startAtNight?: boolean
+  /**
+   * Coming back to the visit's last checkpoint (checkpoint.ts): start there,
+   * with the tour up to it done. The fire's is a night start.
+   */
+  resumeAt?: CheckpointAt | null
+  /** A link under something said was clicked: true if it opened a note instead of the page. */
+  onLink?: (link: BubbleLink) => boolean
+  /** HUGO has called the guest back to the fire: night falls, Eduard lights it and sits down. */
+  fireLead?: boolean
+  /** The guest's done at the brook: time for HUGO to call them back. */
+  onFireReady?: () => void
+  /** The guest comes up to the fire, at night. */
+  onReachFire?: () => void
+  /** The guest sat down in the chair by the fire, or got up again. */
+  onFireSeat?: (seated: boolean) => void
+  /**
+   * The talk by the fire (fire-talk.tsx): what's being said right now, over
+   * the head of whoever's saying it. The guest's question first, then
+   * Eduard's answer a paragraph at a time.
+   */
+  fireSpeech?: FireSpeech | null
+  /** The choices for what to ask are up (a portrait phone aims lower, so they sit above them). */
+  fireChoosing?: boolean
+  /** Eduard's in the middle of an answer (he turns to the guest and talks with his free hand). */
+  eduardTalking?: boolean
+  /**
+   * HUGO has just called the guest back: the camera cuts away to the fire
+   * for a few seconds (Eduard by it, toasting a marshmallow), then back.
+   */
+  onFireCut?: (showing: boolean) => void
+}
+
+/** A line of the talk by the fire, for the speech bubble over the speaker. */
+export type FireSpeech = {
+  who: 'guest' | 'eduard'
+  /** Changes with every new line (the bubble types it out afresh). */
+  key: number
+  text: string
+  /** Show all of it at once (the guest pressed on while it was typing). */
+  instant?: boolean
+  /** Not Eduard's own words yet: the bubble carries a "Draft" stamp. */
+  draft?: boolean
+  /** There's more to come: the bubble shows a little "go on" mark. */
+  more?: boolean
+  links?: BubbleLink[]
 }
 
 /** What the prompt over the nearest usable thing does. */
@@ -246,6 +338,8 @@ type PromptId =
   | 'getup'
   | 'fish'
   | 'tap'
+  | 'sit-fire'
+  | 'yahtzee'
   | ReadableId
 /** The guests' build (guest_model.py): hip height, hip to shoulder, shoulder out from the middle, shoulder to palm. */
 const HIP_Y = 0.4
@@ -259,6 +353,15 @@ const PET_BOW_MAX = 0.3
 
 /** How fast HUGO glides between pieces and to the woodshed (m/s). */
 const HUGO_GLIDE = 2.6
+/** ... and the fastest he floats along with the guest or ahead of them (they walk at 3.1). */
+const HUGO_FLOAT = 5
+/** Leading the way, he keeps this far ahead of the guest, never further. */
+const LEAD_AHEAD = 3
+/** Left further behind than this, he teleports to the guest instead of floating all the way. */
+const TELEPORT_FROM = 7.5
+/** How long he takes to vanish, and to appear again. */
+const TELEPORT_OUT = 0.3
+const TELEPORT_IN = 0.45
 /** How many joints HUGO's hose has. */
 const HOSE_POINTS = 13
 
@@ -295,6 +398,8 @@ const PROMPT_LABELS: Record<PromptId, string> = {
   getup: 'Get up',
   fish: 'Cast',
   tap: 'Get water',
+  'sit-fire': 'Sit',
+  yahtzee: 'Look',
 }
 /** Where the guest stands to use each thing inside (a step back from it, into the room). */
 /** While splitting, ground clicks this close to the block swing; further off, they walk away. */
@@ -307,11 +412,20 @@ const READABLE_SPOTS: Record<ReadableId, Vec2> = {
   resume: { x: -0.18, z: -1.0 },
   todo: { x: 0.85, z: -1.6 },
   basket: { x: 0.85, z: -1.03 },
-  rod: { x: 1.05, z: 0.75 },
-  tackle: { x: 0.95, z: 0.12 },
+  rod: { x: -0.9, z: 0.8 },
+  tackle: { x: -0.85, z: -0.75 },
 }
 /** The easter eggs: they sparkle until they're found. */
-const EGGS: ('basket' | 'rod' | 'tackle')[] = ['basket', 'rod', 'tackle']
+const EGGS: {
+  id: 'basket' | 'rod' | 'tackle' | 'yahtzee'
+  at: { x: number; y: number; z: number }
+}[] = [
+  { id: 'basket', at: READABLES.basket },
+  { id: 'rod', at: READABLES.rod },
+  { id: 'tackle', at: READABLES.tackle },
+  // (out on the picnic table)
+  { id: 'yahtzee', at: YAHTZEE },
+]
 /** The roof, south wall and string lights fade when the guest is inside. */
 const CUTAWAY_PARTS = ['Cabin_Roof', 'Cabin_SouthWall', 'StringLights']
 /** How long Rusty's name tag stays up, in seconds. */
@@ -503,6 +617,8 @@ type Props3D = {
   /** The brook's tap, and the rod leaning on the handrail at the foot of the stairs. */
   tap: THREE.Object3D
   rod: THREE.Object3D
+  /** Camp Yahtzee on the picnic table (A51). */
+  yahtzee: THREE.Object3D
   /** The log on the block, and its two halves (templates for the flung chunks): pivot at the base. */
   log: THREE.Group
   halves: [THREE.Group, THREE.Group]
@@ -566,9 +682,51 @@ const easeOutBack = (k: number) => {
 const easeInCubic = (k: number) => k * k * k
 const easeInOut = (k: number) => k * k * (3 - 2 * k)
 
+/** How long the camera stays on the fire when HUGO calls the guest back to it. */
+const FIRE_CUT_SECONDS = 5.2
+/** Eduard in his chair with the fire lit, and Rusty lying by it (the night start). */
+function eduardAtFire() {
+  const e = createEduard()
+  seatAtFire(e)
+  return e
+}
+function rustyAtFire() {
+  const r = createRusty(RUSTY_FIRE_BED, RUSTY_FIRE_BED.yaw)
+  settleInBed(r, RUSTY_FIRE_BED)
+  return r
+}
+/**
+ * Rusty for a visit picked up again by day (checkpoint.ts). Back at the cabin
+ * he comes running with the cow again (as he did when the guest first came
+ * up the driveway); further round, the guest has been in the cabin, so he's
+ * lying at his spot by the deck with it, the way he settles once they go in.
+ */
+function rustyResumed(at: CheckpointAt) {
+  const r = createRusty(RUSTY_START, Math.PI * 0.85)
+  if (at === 'cabin') startApproach(r)
+  else settleInBed(r, { ...RUSTY_START, yaw: 0 })
+  return r
+}
+/** Where the guest sits: the end of the picnic bench (A110), or their camp chair by the fire. */
+type SeatAt = 'bench' | 'fire'
+const GUEST_FIRE_STAND = seatStand(FIRE_SEATS.guest)
+function sitSpots(at: SeatAt) {
+  return at === 'fire'
+    ? { stand: GUEST_FIRE_STAND, seat: FIRE_SEATS.guest as Vec2, y: SEAT_Y }
+    : { stand: BENCH_STAND, seat: BENCH_SEAT as Vec2, y: BENCH_SEAT.y }
+}
+
 // ------------------------------------------------------------------ the world
 function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const { look, lofi, face, guest, bubble, eduardGreeting, startNearCabin } = props
+  // (the fire's checkpoint is a night start, by the fire; the others are by day)
+  const startAtNight = Boolean(props.startAtNight) || props.resumeAt === 'fire'
+  const [resumeAt] = useState(() =>
+    props.resumeAt && props.resumeAt !== 'fire' ? props.resumeAt : null,
+  )
+  const resumeSpot = resumeAt ? RESUME_SPOTS[resumeAt] : null
+  /** Past the woodshed: the guest has been round the cabin and the workbench already. */
+  const pastShed = resumeAt === 'brook'
   const callbacks = useRef(props)
   useEffect(() => {
     callbacks.current = props
@@ -669,6 +827,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     loose: THREE.Object3D | undefined
   } | null>(null)
   const sparkle = useMemo(() => makeSparkleTexture(), [])
+  // the arrow that bobs over the résumé until the guest has read it
+  const arrowTexture = useMemo(() => makeArrowTexture(), [])
+  const resumeArrow = useRef<THREE.Sprite>(null)
+  const tpFx = useMemo(() => createTeleportFx(), [])
 
   const rig = useRef<Rig | null>(null)
   useEffect(() => {
@@ -715,6 +877,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       blockAxe: find('BlockAxe'),
       tap: find('BrookTap'),
       rod: find('BrookRod'),
+      yahtzee: find('CampYahtzee'),
       log,
       halves,
       crates,
@@ -723,7 +886,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
   // Mutable simulation state (kept out of React so the frame loop stays cheap).
   const sim = useRef({
-    guest: { ...(startNearCabin ? GUEST_SKIP : GUEST_START) } as Vec2,
+    guest: {
+      ...(startAtNight
+        ? NIGHT_START
+        : resumeSpot
+          ? resumeSpot.at
+          : startNearCabin
+            ? GUEST_SKIP
+            : GUEST_START),
+    } as Vec2,
     target: null as Waypoint | null,
     /** Waypoints still to walk after the current target (the planned way, and through the door). */
     route: [] as Waypoint[],
@@ -734,8 +905,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     replans: 0,
     guestY: 0,
     inside: false,
-    enteredCabin: false,
-    reachedWoodshed: false,
+    // (coming back to the woodshed or further, the cabin's been seen; coming
+    // back to the woodshed itself, getting there again plays its line again)
+    enteredCabin: resumeAt === 'woodshed' || pastShed,
+    reachedWoodshed: pastShed,
     showerFound: false,
     /** Whether the guest has stepped to the end of the workbench this visit. */
     benchStepped: false,
@@ -767,33 +940,47 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     petK: 0,
     bow: 0,
     petSide: 1,
-    guestYaw: Math.PI,
+    guestYaw: startAtNight
+      ? facing(NIGHT_START, FIRE)
+      : resumeSpot
+        ? facing(resumeSpot.at, resumeSpot.facing)
+        : Math.PI,
     walkPhase: 0,
     moved: false,
     guestStuck: 0,
     keysWalking: false,
     idleSince: 0,
-    welcomed: false,
+    welcomed: startAtNight || resumeAt !== null,
     // Rusty first (A76): unless starting by the cabin, he's already running
     // down the driveway with the cow when the site opens.
     // (He waits there, sitting, until HUGO introduces him.)
-    dog: startNearCabin
-      ? createRusty(RUSTY_START, Math.PI * 0.85)
-      : { ...createRusty(RUSTY_RUN_START, 0), homeSit: true },
-    rustySent: false,
+    dog: startAtNight
+      ? rustyAtFire()
+      : resumeAt
+        ? rustyResumed(resumeAt)
+        : startNearCabin
+          ? createRusty(RUSTY_START, Math.PI * 0.85)
+          : { ...createRusty(RUSTY_RUN_START, 0), homeSit: true },
+    rustySent: startAtNight || resumeAt !== null,
     /** Eduard on the deck (eduard.ts). */
-    ed: createEduard(),
+    ed: startAtNight ? eduardAtFire() : createEduard(),
     edLean: 0,
     edY: EDUARD_SPOT.y,
     /** Where the mouse points on the ground (for aiming a throw). */
     aim: null as Vec2 | null,
-    hugo: new THREE.Vector3(GUEST_START.x + 0.9, 1.0, GUEST_START.z - 0.2),
-    zoom: startNearCabin ? 1 : 0.72,
+    hugo: startAtNight
+      ? new THREE.Vector3(HUGO_FIRE_SPOT.x, HUGO_FIRE_SPOT.y, HUGO_FIRE_SPOT.z)
+      : resumeSpot
+        ? new THREE.Vector3(resumeSpot.at.x + 0.9, 1.0, resumeSpot.at.z - 0.2)
+        : new THREE.Vector3(GUEST_START.x + 0.9, 1.0, GUEST_START.z - 0.2),
+    zoom: startNearCabin || startAtNight || resumeAt !== null ? 1 : 0.72,
     hugoYaw: Math.PI,
     /** Tidying up: how fast he's gliding, how far he leans into it, his head down over a piece. */
     hugoSpeed: 0,
     hugoLean: 0,
     hugoNod: 0,
+    /** His teleport back to the guest: vanishing where he was, then appearing beside them. */
+    tp: { phase: 'none' as 'none' | 'out' | 'in', t: 0, rest: 0, from: new THREE.Vector3() },
     marker: { x: 0, z: 0, life: 0 },
     /** The project boxes: which is wanted, which is open, and how far each lid and thing has moved. */
     box: {
@@ -822,22 +1009,56 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     /** One of the moments with a camera of its own (they take over from the visitor's). */
     setMoment: false,
     /** Sitting on the bench to watch Eduard finish the deck (A110); k is 0 standing .. 1 seated. */
-    sit: { phase: 'off' as 'off' | 'walking' | 'sitting' | 'seated' | 'rising', t: 0, k: 0 },
+    sit: {
+      phase: 'off' as 'off' | 'walking' | 'sitting' | 'seated' | 'rising',
+      t: 0,
+      k: 0,
+      /** ... or in their camp chair by the fire (scene 7). */
+      at: 'bench' as SeatAt,
+    },
     splitWas: false,
     /** Casting a line at the fishing hole (fishing.ts). */
     fish: createFishing(),
     fishWas: false,
     /** The brook (scene 6): reached yet, HUGO asked to lead there, his point on the way, time free at the woodshed. */
-    brook: { reached: false, asked: false, didShed: false, leadIndex: 0, freeFor: 0 },
+    brook: { reached: false, asked: pastShed, didShed: pastShed, leadIndex: 0, freeFor: 0 },
     /** How far the camera has come round to the brook's view (brook.ts, brookView). */
     brookK: 0,
     /** The tap: seconds since the guest turned it on (-1: off). */
     tapRun: -1,
-    /** How far into the evening the light is (daylight.ts): 0 afternoon, 1 golden, 2 sunset. */
-    evening: 0,
+    /** How far into the evening the light is (daylight.ts): 0 afternoon, 1 golden, 2 sunset, 3 night. */
+    evening: startAtNight ? EVENING_NIGHT : 0,
+    /** The fire (scene 7, fire.ts). */
+    fire: {
+      /** HUGO has been asked to call the guest back; Eduard and Rusty have been sent to it. */
+      asked: startAtNight,
+      called: startAtNight,
+      /** The guest has come up to it, and is sitting by it now. */
+      reached: false,
+      seated: false,
+      /** Night falling, 0 sunset .. 1 night (it never lifts), and the fire catching, 0..1. */
+      night: startAtNight ? 1 : 0,
+      lit: startAtNight ? 1 : 0,
+      /** HUGO's point on the way back, and what the guest has done at the brook. */
+      leadIndex: 0,
+      didBrook: false,
+      atBrookFor: 0,
+      freeFor: 0,
+      /** The cut to the fire when HUGO calls: seconds into it (-1: not showing), and "snap back now". */
+      cut: -1,
+      // (picking a visit up again, the camera starts where it belongs, by the
+      // guest, rather than flying in from the road)
+      cutOver: resumeAt !== null || props.resumeAt === 'fire',
+    },
     clock: 0,
   })
   const gear = useMemo(() => createFishingGear(), [])
+  // the fire, the night's lamps and the stars (fire-fx.ts)
+  const nightFx = useMemo(() => {
+    const fx = createNightFx(look === 'smooth')
+    fx.adopt(set, cabinParts)
+    return fx
+  }, [look, set, cabinParts])
   const tapStream = useMemo(() => createTapStream(TAP, JUG_TOP_Y), [])
   const hemi = useRef<THREE.HemisphereLight>(null)
 
@@ -853,6 +1074,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const sparkles = useRef<(THREE.Sprite | null)[]>([])
   const [prompt, setPrompt] = useState<PromptId | null>(null)
   const [tagOpen, setTagOpen] = useState(false)
+  /** The camera's away at the fire (the cut when HUGO calls): the prompt and the bubbles wait. */
+  const [cutting, setCutting] = useState(false)
+  const guestAnchor = useRef<THREE.Group>(null)
+  // Eduard's toasting stick (it goes in his right hand, where the hammer was)
+  const toastStick = useMemo(() => createToastingStick(), [])
   const tagAnchor = useRef<THREE.Group>(null)
   // Computers get a right-click prompt; touch screens get a button to tap.
   const [input] = useState<PromptInput>(() =>
@@ -911,6 +1137,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       p3.blockAxe,
       p3.tap,
       p3.rod,
+      p3.yahtzee,
       ...p3.crates.map((c) => c.root),
     ]
     const door = cabinParts.getObjectByName('Cabin_Door')
@@ -935,6 +1162,14 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       },
       stopFishing: () => {
         stopFishing(sim.current.fish)
+      },
+      getUp: () => {
+        const st = sim.current.sit
+        if (st.phase === 'walking') st.phase = 'off'
+        if (st.phase === 'sitting' || st.phase === 'seated') {
+          st.phase = 'rising'
+          st.t = 0
+        }
       },
     }
     props.api.current = api
@@ -1017,18 +1252,46 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
   }
 
+  /** While splitting: does a click's ray pass by the chopping block, the log on it or the guest? */
+  const clickAtBlock = (ray: THREE.Ray) => {
+    const s = sim.current
+    return (
+      ray.distanceToPoint(tmp.set(CHOPPING_BLOCK.x, 0.6, CHOPPING_BLOCK.z)) < SPLIT_CLICK_REACH ||
+      ray.distanceToPoint(tmp.set(s.guest.x, 0.8, s.guest.z)) < 1
+    )
+  }
+
+  /** Casting a line: the rod's in hand (not on the way to the landing, not being put back). */
+  const rodInHand = () => {
+    const f = sim.current.fish
+    return holdsRod(f) && f.phase !== 'putaway'
+  }
+  /** ... and does a click's ray pass by the fishing hole, the landing or the guest? */
+  const clickAtHole = (ray: THREE.Ray) => {
+    const s = sim.current
+    return (
+      ray.distanceToPoint(tmp.set(FISHING_HOLE.x, -0.4, FISHING_HOLE.z)) < FISHING_HOLE.r + 1.1 ||
+      ray.distanceToPoint(tmp.set(CAST_SPOT.x, 0.3, CAST_SPOT.z)) < 1.3 ||
+      ray.distanceToPoint(tmp.set(s.guest.x, s.guestY + 0.8, s.guest.z)) < 1
+    )
+  }
+
   const onGroundDown = (e: ThreeEvent<PointerEvent>) => {
     // Only the main button (or a tap) walks; right-click uses the prompt.
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
     e.stopPropagation()
     const s = sim.current
+    // (the camera's away at the fire: a click isn't a walk to wherever it's looking)
+    if (s.fire.cut >= 0) return
     // While splitting, a click at the block is a swing; a click further off
     // puts the axe back and walks there (clicking towards the woodshed used
     // to swing instead of leaving).
-    if (
-      splitActive(s.split) &&
-      Math.hypot(e.point.x - CHOPPING_BLOCK.x, e.point.z - CHOPPING_BLOCK.z) < SPLIT_CLICK_REACH
-    ) {
+    // (Eduard: "Click doesn't work for splitting the wood". The splitting
+    // camera is low and side-on, so a click on the log, the axe or the guest
+    // lands on the ground metres behind them and counted as walking away:
+    // what matters is how close the click passes to the block and the guest,
+    // not where its ray ends up on the ground.)
+    if (splitActive(s.split) && clickAtBlock(e.ray)) {
       // (the swing is a timing game: it goes the moment the button does)
       if (s.split.phase === 'ready') swingAxe(s.split)
       return
@@ -1039,8 +1302,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // when not fishing walks to the landing and casts; a tap on the landing
     // or the stairs walks there (they're below the field, under the ground
     // that takes the taps).
+    // (Eduard: "click to cast the fishing rod doesn't work either". Only a
+    // click whose ray met the water inside the little circle of the hole
+    // counted; the casting camera is low and side-on, so a click on the
+    // guest, the rod, the bobber or the landing fell outside it, and put the
+    // rod away. Like the axe, it goes by how close the click passes.)
     const onBrook = brookTap(e.ray.origin, e.ray.direction)
-    if (holdsRod(s.fish) && s.fish.phase !== 'putaway' && onBrook?.hole) {
+    if (rodInHand() && (onBrook?.hole || clickAtHole(e.ray))) {
       pressFishing(s.fish)
       return
     }
@@ -1251,6 +1519,19 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         walkTo(BENCH_STAND, true)
         s.marker.life = 0
         s.sit.phase = 'walking'
+        s.sit.at = 'bench'
+        break
+      case 'sit-fire':
+        // round to the front of the camp chair, then sit back into it, facing the fire
+        walkTo(GUEST_FIRE_STAND, true)
+        s.marker.life = 0
+        s.sit.phase = 'walking'
+        s.sit.at = 'fire'
+        break
+      case 'yahtzee':
+        s.guestYaw = facing(s.guest, YAHTZEE)
+        callbacks.current.onLook('yahtzee')
+        callbacks.current.onGoal('yahtzee')
         break
       case 'getup':
         standUp()
@@ -1267,6 +1548,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         // turn the tap on: the water runs into the jug for a moment
         s.guestYaw = facing(s.guest, TAP)
         s.tapRun = 0
+        s.fire.didBrook = true
         break
       case 'split':
         if (!splitActive(s.split)) {
@@ -1297,6 +1579,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const s = sim.current
     // from inside the cabin the tap is just a tap (it stays inside)
     if (insideCabin(s.guest)) return
+    // (splitting wood, a click near the block is a swing even with Rusty in
+    // the way; and casting a line, a click by the hole is a cast)
+    if (splitActive(s.split) && clickAtBlock(e.ray)) return
+    if (rodInHand() && clickAtHole(e.ray)) return
     // the cow at his feet gets the tap when it can be thrown
     const onCow = e.intersections.some((i) => {
       let o: THREE.Object3D | null = i.object
@@ -1317,6 +1603,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const onCowDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
     const s = sim.current
+    if (splitActive(s.split) && clickAtBlock(e.ray)) return
+    if (rodInHand() && clickAtHole(e.ray)) return
     if (canThrow(s.dog, s.guest)) {
       e.stopPropagation()
       tap.current = () => {
@@ -1332,6 +1620,20 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       const s = sim.current
       // inside, the readables; outside, the door and the block (the door from either side)
       const inside = insideCabin(s.guest)
+      // In the middle of the splitting game a click on the block is a swing
+      // (it used to put the axe back and start the game again).
+      // ... and with the rod in hand, a click on the rail where it leant (or
+      // on the tap beside the stairs) is a cast, a strike or a turn of the reel.
+      if ((id === 'fish' || id === 'tap') && rodInHand() && clickAtHole(e.ray)) {
+        e.stopPropagation()
+        pressFishing(s.fish)
+        return
+      }
+      if (id === 'split' && splitActive(s.split) && s.split.phase !== 'walking') {
+        e.stopPropagation()
+        if (s.split.phase === 'ready') swingAxe(s.split)
+        return
+      }
       if (id !== 'door-in' && id !== 'door-out' && inside !== id in READABLES) return
       e.stopPropagation()
       tap.current = () => {
@@ -1345,6 +1647,22 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
   }
 
+  // The fire, at night: a tap on the guest's chair (or on Eduard in his) walks
+  // the guest round and sits them down; once they're sitting, a tap on Eduard
+  // brings his questions up. By day the chairs are just chairs.
+  const onFireSeatDown = (e: ThreeEvent<PointerEvent>) => {
+    if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
+    const s = sim.current
+    if (s.fire.night < 0.5 || insideCabin(s.guest)) return
+    e.stopPropagation()
+    tap.current = () => {
+      // (already sitting: the choices are up; a click on the chairs does nothing more)
+      if (s.sit.at === 'fire' && (s.sit.phase === 'sitting' || s.sit.phase === 'seated')) return
+      leaveActivities()
+      act('sit-fire')
+    }
+  }
+
   // Tapping HUGO opens his questions (A48). Like every tap it runs when the
   // pointer comes up, and only if it didn't drag (A109); it never walks.
   const hugoStop = useRef<HugoStop | null>(null)
@@ -1352,6 +1670,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
     // (while splitting, a click is a swing; HUGO isn't asked then)
     if (splitActive(sim.current.split) || !callbacks.current.onTapHugo) return
+    // (nor with the rod in hand: he floats right by the fishing hole, and a click there is a cast)
+    if (rodInHand() && clickAtHole(e.ray)) return
     e.stopPropagation()
     tap.current = () => callbacks.current.onTapHugo?.()
   }
@@ -1482,6 +1802,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
     // ---------------------------------------------------------- keys
     const k = keys.current
+    // (during the cut to the fire, E, Esc or a walking key just ends it)
+    const inCut = s.fire.cut >= 0
+    const skipCut = inCut && (k.escape || k.use)
+    if (inCut) {
+      k.escape = false
+      k.use = false
+    }
     if (k.escape) {
       k.escape = false
       leaveActivities()
@@ -1608,8 +1935,9 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
     // ---------------------------------------------------------- sitting on the bench (A110)
     const st = s.sit
+    const seatSpots = sitSpots(st.at)
     if (st.phase === 'walking' && !s.target) {
-      if (dist(BENCH_STAND) < 0.35) {
+      if (dist(seatSpots.stand) < 0.35) {
         st.phase = 'sitting'
         st.t = 0
       } else st.phase = 'off'
@@ -1623,14 +1951,25 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         st.k = Math.max(0, 1 - st.t / 0.55)
         if (st.k <= 0) st.phase = 'off'
       }
-      // back onto the end of the bench, facing the deck (and Eduard)
+      // back onto the end of the bench, facing the deck (and Eduard); or back
+      // into the camp chair, facing the fire
       const kk = st.k * st.k * (3 - 2 * st.k)
       s.guest = {
-        x: BENCH_STAND.x + (BENCH_SEAT.x - BENCH_STAND.x) * kk,
-        z: BENCH_STAND.z + (BENCH_SEAT.z - BENCH_STAND.z) * kk,
+        x: seatSpots.stand.x + (seatSpots.seat.x - seatSpots.stand.x) * kk,
+        z: seatSpots.stand.z + (seatSpots.seat.z - seatSpots.stand.z) * kk,
       }
-      s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, s.ed.pos), 6 * dt)
+      s.guestYaw = turnTowards(
+        s.guestYaw,
+        st.at === 'fire' ? FIRE_SEATS.guest.yaw : facing(s.guest, s.ed.pos),
+        6 * dt,
+      )
     } else st.k = 0
+    // by the fire: the overlay puts the questions for Eduard up while they sit
+    const fireSeated = st.at === 'fire' && st.phase === 'seated'
+    if (fireSeated !== s.fire.seated) {
+      s.fire.seated = fireSeated
+      callbacks.current.onFireSeat?.(fireSeated)
+    }
 
     // reached the thing they tapped: use it
     if (s.pendingUse && !s.target) {
@@ -1729,6 +2068,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     if (fi.event === 'caught') callbacks.current.onGoal('fish')
     if (fishing !== s.fishWas) {
       s.fishWas = fishing
+      // (a go at the fishing hole, caught or not, counts as having done something at the brook)
+      if (!fishing) s.fire.didBrook = true
       callbacks.current.onFishing(fishing)
     }
     if (fishing)
@@ -1737,6 +2078,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         reel: fi.reel,
         caught: fi.caught,
         event: fi.event,
+        gold: fi.gold,
       })
     const rodHeld = holdsRod(fi)
     p3.rod.visible = !rodHeld
@@ -2210,6 +2552,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       lerpRot(j.axe, 'x', 0)
       lerpRot(j.head, 'x', hold * 0.3 - s.reach * 0.05 + s.petK * 0.12)
     }
+    // by the fire, the guest looks over at Eduard while he's talking to them
+    let toEduard = 0
+    if (s.sit.at === 'fire' && seat > 0.5 && (props.eduardTalking || eduardGreeting === 'guest')) {
+      toEduard = facing(s.guest, s.ed.pos) - s.guestYaw
+      while (toEduard > Math.PI) toEduard -= Math.PI * 2
+      while (toEduard < -Math.PI) toEduard += Math.PI * 2
+      toEduard = Math.max(-1.1, Math.min(1.1, toEduard))
+    }
+    lerpRot(j.head, 'y', toEduard, damp(dt, 5))
     // (bending forward turns the whole model about its feet; the legs are
     // swung back upright above, so shift it to keep the feet where they were)
     const hipBack = HIP_Y * Math.sin(bow)
@@ -2219,7 +2570,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         (walking ? Math.abs(Math.sin(s.walkPhase)) * 0.05 : Math.sin(t * 2) * 0.006) -
         crouch * 0.24 +
         HIP_Y * (1 - Math.cos(bow)) +
-        seat * (BENCH_SEAT.y - 0.4 + 0.03),
+        seat * (seatSpots.y - 0.4 + 0.03),
       s.guest.z - Math.cos(s.guestYaw) * hipBack,
     )
     G.hiker.rotation.set(bow, s.guestYaw, 0, 'YXZ')
@@ -2243,7 +2594,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
     s.inside = inside
     // HUGO's questions (A48): which stop of the tour the guest is at
-    const stopNow = hugoStopAt(s.guest, inside, hugoStop.current)
+    const stopNow = hugoStopAt(s.guest, inside, hugoStop.current, { night: s.fire.night > 0.5 })
     if (stopNow !== hugoStop.current) {
       hugoStop.current = stopNow
       callbacks.current.onStop?.(stopNow)
@@ -2315,6 +2666,62 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     ) {
       bk.asked = true
       callbacks.current.onBrookReady()
+    }
+
+    // ---------------------------------------------------------- the fire (scene 7, fire.ts)
+    // Once the guest has done something at the brook (or been there a while,
+    // or started back), HUGO calls them back: "Looks like the fire's going."
+    const fr = s.fire
+    if (bk.reached) fr.atBrookFor += dt
+    const brookBusy = fishing || s.tapRun >= 0 || Boolean(props.hugoAskOpen)
+    fr.freeFor = brookBusy || s.target || s.keysWalking ? 0 : fr.freeFor + dt
+    if (
+      !fr.asked &&
+      readyForFire({
+        reachedBrook: bk.reached,
+        busy: brookBusy,
+        didSomethingAtBrook: fr.didBrook,
+        freeFor: fr.freeFor,
+        atBrookFor: fr.atBrookFor,
+        backFromStairs: backFromStairs(s.guest),
+      })
+    ) {
+      fr.asked = true
+      callbacks.current.onFireReady?.()
+    }
+    // From then on night falls (it never lifts), Eduard leaves the deck to
+    // light the fire and sit by it, and Rusty takes the cow over to lie there.
+    const nightOn = startAtNight || Boolean(callbacks.current.fireLead)
+    if (nightOn) {
+      fr.night = startAtNight ? 1 : nightfall(fr.night, s.guest, dt)
+      if (!fr.called) {
+        fr.called = true
+        // Eduard's in his chair with the fire going, a marshmallow over it;
+        // the camera cuts there for a few seconds so the guest sees what
+        // HUGO means (Eduard: "the camera doesn't actually show the fire").
+        seatAtFire(s.ed)
+        callToBed(dog, RUSTY_FIRE_BED)
+        fr.cut = 0
+        setCutting(true)
+        callbacks.current.onFireCut?.(true)
+      }
+      if (!fr.reached && fr.night > 0.5 && !inside && dist(FIRE) < FIRE_REACHED) {
+        fr.reached = true
+        callbacks.current.onReachFire?.()
+      }
+    }
+    // (it's burning already when the camera cuts to it)
+    fr.lit =
+      fr.cut >= 0 && fr.cut < 0.2 ? 1 : fr.lit + ((s.ed.lit ? 1 : 0) - fr.lit) * damp(dt, 1.3)
+    if (fr.cut >= 0) {
+      fr.cut += dt
+      // (any key gets on with it)
+      if (fr.cut > FIRE_CUT_SECONDS || (fr.cut > 0.6 && (k.moving() || skipCut))) {
+        fr.cut = -1
+        fr.cutOver = true
+        setCutting(false)
+        callbacks.current.onFireCut?.(false)
+      }
     }
 
     // ---------------------------------------------------------- the welcome trigger
@@ -2440,7 +2847,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       dr.state === 'opening' ||
       routeUsesDoor ||
       s.pendingUse !== null
-    if (s.sit.phase === 'sitting' || s.sit.phase === 'seated') {
+    if (s.sit.at === 'fire' && (s.sit.phase === 'sitting' || s.sit.phase === 'seated')) {
+      // by the fire: the things to ask Eduard are up on the screen (fire-talk.tsx);
+      // "Get up" there, walking off, or Esc gets them up
+    } else if (s.sit.phase === 'sitting' || s.sit.phase === 'seated') {
       next = 'getup'
       at = { x: BENCH_SEAT.x, y: 1.45, z: BENCH_SEAT.z }
     } else if (busy || s.sit.phase === 'rising') {
@@ -2455,7 +2865,9 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           at = READABLES[id]
         }
       }
-      if (!next && dist(DOOR.inside) < 1.4) {
+      // (the door is one more thing to use: standing at it, "Go out" wins
+      // over something to look at further off across the room)
+      if (dist(DOOR.inside) < 1.4 && dist(DOOR.inside) < best) {
         next = 'door-out'
         at = DOOR.prompt
       }
@@ -2481,6 +2893,14 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       // the end of the picnic table's bench: sit and watch Eduard finish the deck
       next = 'sit'
       at = { x: BENCH_SEAT.x, y: 1.05, z: BENCH_SEAT.z }
+    } else if (nightOn && dist(FIRE_SEATS.guest) < 1.7) {
+      // the camp chair by the fire (scene 7): sit down with Eduard
+      next = 'sit-fire'
+      at = { x: FIRE_SEATS.guest.x, y: 1.15, z: FIRE_SEATS.guest.z }
+    } else if (dist(YAHTZEE) < 1.5) {
+      // Camp Yahtzee, out on the picnic table (A51)
+      next = 'yahtzee'
+      at = { x: YAHTZEE.x, y: YAHTZEE.y + 0.4, z: YAHTZEE.z }
     } else if (s.welcomed && dist(DOOR.outside) < 1.3) {
       // at the door, going in wins over Rusty and the cow (his spot is right by the deck)
       next = 'door-in'
@@ -2541,9 +2961,20 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       o.userData.glow = amount
     }
     const promptOn = (id: PromptId) => (s.prompt === id ? 1 : 0.7)
+    const found = callbacks.current.found
     for (const id of Object.keys(READABLES) as ReadableId[]) {
       const on = inside && !busy ? nearness(dist(READABLES[id]), 2.2, 4.5) : 0
       glow(p3.readables[id], on * pulse * promptOn(id))
+    }
+    // The résumé is what the visit is for (Eduard: "its the whole point of the
+    // website"): until it's been read it glows from anywhere in the cabin
+    // and a little arrow bobs over it.
+    const resumeWaiting = !found.resume && (inside || s.cut > 0.3)
+    if (resumeWaiting && inside && !busy) glow(p3.readables.resume, Math.max(0.55, pulse))
+    if (resumeArrow.current) {
+      resumeArrow.current.visible = resumeWaiting && s.prompt !== 'resume'
+      resumeArrow.current.position.y =
+        READABLES.resume.y + 0.42 + Math.abs(Math.sin(t * 3.2)) * 0.12
     }
     const doorGlow =
       dr.state === 'closed' && !busy
@@ -2561,19 +2992,26 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     glow(p3.tap, tapGlow * pulse * promptOn('tap'))
     const rodGlow = !inside && !busy && !rodHeld ? nearness(dist(CAST_SPOT), 1.25, 6) : 0
     glow(p3.rod, rodGlow * pulse * promptOn('fish'))
-    const benchGlow = !inside && bx.want < 0 && !busy ? nearness(dist(WORKBENCH), 1.8, 5) : 0
+    // (while HUGO points them out, the boxes glow from wherever the guest is)
+    const pointing = props.hugoPointsAt === 'bench' && !inside && bx.want < 0
+    const benchGlow = pointing
+      ? 1
+      : !inside && bx.want < 0 && !busy
+        ? nearness(dist(WORKBENCH), 1.8, 5)
+        : 0
     p3.crates.forEach((cr, i) => glow(cr.root, bx.open === i ? 0 : benchGlow * pulse * 0.85))
+    const yahtzeeGlow = !inside && !busy ? nearness(dist(YAHTZEE), 1.5, 4.5) : 0
+    glow(p3.yahtzee, yahtzeeGlow * pulse * promptOn('yahtzee'))
     glow(G.cow, s.prompt === 'throw' ? pulse : 0)
     const rustyOn = s.prompt === 'pet' || s.prompt === 'rub' || s.prompt === 'tag'
     glow(
       G.rusty,
       rustyOn && dog.rubbing <= 0 && dog.petting <= 0 && s.tagShow <= 0 ? pulse * 0.8 : 0,
     )
-    const found = callbacks.current.found
-    EGGS.forEach((id, i) => {
+    EGGS.forEach(({ id, at }, i) => {
       const sprite = sparkles.current[i]
       if (!sprite) return
-      const show = !found[id] && (inside || s.cut > 0.3)
+      const show = !found[id] && (id === 'yahtzee' ? !inside : inside || s.cut > 0.3)
       sprite.visible = show
       if (!show) return
       const tw = 0.5 + 0.5 * Math.sin(t * 5.2 + i * 2.1)
@@ -2581,17 +3019,18 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       sprite.scale.set(sz, sz, 1)
       sprite.material.opacity = 0.55 + 0.45 * tw
       sprite.material.rotation = Math.floor(t * 3 + i) % 2 ? Math.PI / 4 : 0
-      sprite.position.y = READABLES[id].y + 0.18 + Math.sin(t * 1.7 + i) * 0.03
+      sprite.position.y = at.y + 0.18 + Math.sin(t * 1.7 + i) * 0.03
     })
 
     // ---------------------------------------------------------- Eduard (eduard.ts)
     const ed = s.ed
     updateEduard(ed, dt, {
-      watching: s.sit.phase === 'seated',
+      watching: s.sit.phase === 'seated' && s.sit.at === 'bench',
       guest: s.guest,
       dog: dog.pos,
       hugo: { x: s.hugo.x, z: s.hugo.z },
       greeting: eduardGreeting,
+      talking: Boolean(props.eduardTalking) || (ed.fire && eduardGreeting === 'guest'),
     })
     const ep = eduardPose(ed, t, eduardGreeting)
     const e = joints.eduard
@@ -2615,6 +3054,22 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     follow(e.shinL, 'x', ep.shinL, 12)
     follow(e.shinR, 'x', ep.shinR, 12)
     e.board.obj.visible = ed.carrying
+    // (he's put the hammer down for the night, and has a marshmallow on a stick instead)
+    e.hammer.obj.visible = !ed.fire
+    const fist = e.hammer.obj
+    if (toastStick.group.parent !== fist.parent && fist.parent) {
+      fist.parent.add(toastStick.group)
+      toastStick.group.position.copy(fist.position)
+    }
+    toastStick.group.visible = ed.fire
+    if (ed.fire) {
+      const m = marshmallow(ed)
+      toastStick.update(m)
+      // out over the flames, tipped down a little, turning; up on end in
+      // front of his face when it's done (whatever the arm's doing)
+      const pitch = 0.22 - 1.5 * m.out
+      toastStick.group.rotation.set(pitch - e.armR.obj.rotation.x, 0, m.out > 0.1 ? 0 : t * 1.4)
+    }
     e.torso.obj.rotation.x = e.torso.base.x + Math.sin(t * 1.4) * 0.015
     s.edLean += (ep.lean - s.edLean) * damp(dt, 6)
     s.edY += (ep.y - s.edY) * damp(dt, 10)
@@ -2659,24 +3114,43 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       )
         s.leadIndex++
     }
+    // (He used to wait at the next point of the way, which could be a long
+    // way off and out of sight: Eduard, "its hard to get it". Now he keeps
+    // just ahead of the guest, towards it, wherever they are.)
+    const ahead = (wp: Vec2): Vec2 => {
+      const dx = wp.x - s.guest.x
+      const dz = wp.z - s.guest.z
+      const d = Math.hypot(dx, dz)
+      return d <= LEAD_AHEAD
+        ? wp
+        : { x: s.guest.x + (dx / d) * LEAD_AHEAD, z: s.guest.z + (dz / d) * LEAD_AHEAD }
+    }
     const leadShed = !leading
       ? null
       : inside
         ? // (back inside during the walk: he waits on the deck, north of Eduard)
           { x: DOOR.out.x + 0.2, z: DOOR.out.z - 0.4 }
-        : LEAD_PATH[s.leadIndex]
+        : ahead(LEAD_PATH[s.leadIndex])
     // ... and on from the woodshed to the brook, the same way (A48)
     const leadingBrook = !leading && callbacks.current.brookLead && !s.brook.reached
     if (leadingBrook && !inside) s.brook.leadIndex = brookLeadIndex(s.brook.leadIndex, s.guest)
+    // ... and back from the brook to the fire as night falls (A50)
+    const leadingFire = nightOn && !fr.reached && !startAtNight && !inside
+    if (leadingFire) fr.leadIndex = fireLeadIndex(fr.leadIndex, s.guest)
+    // At the fire he floats over the third chair, while the guest is there.
+    const hugoAtFire = nightOn && !leadingFire && stopNow === 'fire'
     const leadTo =
       leadShed ??
-      (!leadingBrook
-        ? null
-        : inside
-          ? { x: DOOR.out.x + 0.2, z: DOOR.out.z - 0.4 }
-          : BROOK_LEAD_PATH[s.brook.leadIndex])
+      (leadingFire
+        ? ahead(FIRE_LEAD_PATH[fr.leadIndex])
+        : !leadingBrook
+          ? null
+          : inside
+            ? { x: DOOR.out.x + 0.2, z: DOOR.out.z - 0.4 }
+            : ahead(BROOK_LEAD_PATH[s.brook.leadIndex]))
     // Beside the guest, on whichever side is clear of walls, things and Eduard.
     const hugoSpot = (): Vec2 => {
+      if (hugoAtFire) return HUGO_FIRE_SPOT
       // watching the deck: beside the bench, on the guest's left, out of the view
       if (s.sit.phase !== 'off' && s.sit.phase !== 'walking')
         return { x: BENCH_SEAT.x - 1.25, z: BENCH_SEAT.z + 0.45 }
@@ -2698,21 +3172,81 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       }
       return { x: s.guest.x + side.x, z: s.guest.z + side.z }
     }
-    const hugoAt = vacGoal ?? leadTo ?? hugoSpot()
+    // Pointing the workbench out (Eduard: "make HUGO point out the workbench
+    // where they can see my past projects"): he floats over above the boxes
+    // and looks down at them while he says so.
+    const benchPoint =
+      pointing && !vacGoal
+        ? {
+            x: BOXES_CENTRE.x + BENCH_FRONT.x * 0.55,
+            z: BOXES_CENTRE.z + BENCH_FRONT.z * 0.55,
+          }
+        : null
+    // ... and the résumé on the table in the cabin, the same way (Eduard:
+    // "let's make my resume easier to find, its the whole point of the website")
+    const resumePoint =
+      props.hugoPointsAt === 'resume' && inside
+        ? { x: READABLES.resume.x + 0.42, z: READABLES.resume.z + 0.3 }
+        : null
+    const pointAt = benchPoint ? BOXES_CENTRE : resumePoint ? READABLES.resume : null
+    const hugoAt = vacGoal ?? benchPoint ?? resumePoint ?? leadTo ?? hugoSpot()
     const hugoGoal = vacGoal
       ? tmp.set(vacGoal.x, vacGoal.y, vacGoal.z)
-      : tmp.set(hugoAt.x, (leadTo ? 1.1 : s.guestY + 0.8) + Math.sin(t * 2.1) * 0.07, hugoAt.z)
-    if (vacGoal) {
-      // Tidying up, he glides: picks up speed, then eases in over the spot
-      // (he used to dart from piece to piece).
+      : tmp.set(
+          hugoAt.x,
+          (benchPoint
+            ? 1.85
+            : resumePoint
+              ? 1.72
+              : leadTo
+                ? 1.1
+                : hugoAtFire
+                  ? HUGO_FIRE_SPOT.y
+                  : s.guestY + 0.8) +
+            Math.sin(t * 2.1) * 0.07,
+          hugoAt.z,
+        )
+    // He glides everywhere: picks up speed, then eases in over the spot. (He
+    // used to jump most of the way to wherever he was going in one frame or
+    // two: Eduard, "looks like he is just teleporting from place to place".)
+    // And when he really is left a long way behind (the guest walked off
+    // while he was tidying the wood or pointing something out), he teleports
+    // to them, properly: he spins up into a streak of light and a ring where
+    // he was, and pops out of another beside the guest.
+    const tp = s.tp
+    tp.rest = Math.max(0, tp.rest - dt)
+    {
       const to = tmp2.copy(hugoGoal).sub(s.hugo)
       const dist = to.length()
-      const wanted = Math.min(HUGO_GLIDE, dist * 3.4)
-      s.hugoSpeed += Math.max(-12 * dt, Math.min(5 * dt, wanted - s.hugoSpeed))
-      if (dist > 1e-4) s.hugo.addScaledVector(to, Math.min(1, (s.hugoSpeed * dt) / dist))
-    } else {
-      s.hugoSpeed = 0
-      s.hugo.lerp(hugoGoal, damp(dt, 2.6))
+      const busyElsewhere = Boolean(vacGoal) || pointAt !== null
+      if (tp.phase === 'none' && !busyElsewhere && tp.rest <= 0 && dist > TELEPORT_FROM) {
+        tp.phase = 'out'
+        tp.t = 0
+        tp.from.copy(s.hugo)
+      }
+      if (tp.phase === 'out') {
+        tp.t += dt
+        if (tp.t >= TELEPORT_OUT) {
+          // (gone: now he's beside the guest)
+          s.hugo.copy(hugoGoal)
+          s.hugoSpeed = 0
+          tp.phase = 'in'
+          tp.t = 0
+        }
+      } else if (tp.phase === 'in') {
+        tp.t += dt
+        s.hugo.lerp(hugoGoal, damp(dt, 8))
+        if (tp.t >= TELEPORT_IN) {
+          tp.phase = 'none'
+          tp.rest = 5
+          callbacks.current.onHugoCatchUp?.()
+        }
+      } else {
+        const top = vacGoal ? HUGO_GLIDE : HUGO_FLOAT
+        const wanted = Math.min(top, dist * 3.4)
+        s.hugoSpeed += Math.max(-14 * dt, Math.min((vacGoal ? 5 : 9) * dt, wanted - s.hugoSpeed))
+        if (dist > 1e-4) s.hugo.addScaledVector(to, Math.min(1, (s.hugoSpeed * dt) / dist))
+      }
     }
     // never inside Eduard, even on the way past him
     const fromEd = Math.hypot(s.hugo.x - ed.pos.x, s.hugo.z - ed.pos.z)
@@ -2726,7 +3260,19 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // and a little hop. Pulling at one, he's drawn down a touch.
     const gulped = 1 - vac.gulp
     const squash = vac.gulp > 0 ? Math.sin(gulped * Math.PI * 2) * vac.gulp * 0.2 : 0
-    G.hugo.scale.set(1 + squash * 0.7, 1 - squash, 1 + squash * 0.7)
+    // Teleporting: he draws up into a thin streak and is gone; then out of a
+    // streak again, with a little bounce.
+    const tpOut = tp.phase === 'out' ? easeInCubic(clamp01(tp.t / TELEPORT_OUT)) : 0
+    const tpIn = tp.phase === 'in' ? 1 - easeOutBack(clamp01(tp.t / TELEPORT_IN)) : 0
+    const thin = Math.max(0.02, 1 - tpOut - tpIn)
+    const tall = 1 + (tpOut + Math.max(0, tpIn)) * 1.4
+    G.hugo.scale.set((1 + squash * 0.7) * thin, (1 - squash) * tall, (1 + squash * 0.7) * thin)
+    tpFx.update(
+      tp.phase,
+      tp.phase === 'out' ? tp.t / TELEPORT_OUT : tp.t / TELEPORT_IN,
+      tp.from,
+      s.hugo,
+    )
     G.hugo.position.y +=
       (vac.gulp > 0 ? Math.sin(gulped * Math.PI) * 0.05 : 0) -
       0.03 * vac.suction * (vac.chunk?.suck ?? 0)
@@ -2741,25 +3287,36 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           : vacGoal
             ? // (over a piece: he stays as he is)
               { x: s.hugo.x + Math.sin(s.hugoYaw), z: s.hugo.z + Math.cos(s.hugoYaw) }
-            : leading || leadingBrook
-              ? { x: s.guest.x, z: s.guest.z }
-              : walking
-                ? {
-                    x: s.guest.x + Math.sin(s.guestYaw) * 4,
-                    z: s.guest.z + Math.cos(s.guestYaw) * 4,
-                  }
-                : { x: s.guest.x, z: s.guest.z }
-    s.hugoYaw = turnTowards(s.hugoYaw, facing({ x: s.hugo.x, z: s.hugo.z }, lookTarget), 4 * dt)
+            : hugoAtFire && props.eduardTalking
+              ? // (he listens too)
+                { x: ed.pos.x, z: ed.pos.z }
+              : leading || leadingBrook || leadingFire
+                ? { x: s.guest.x, z: s.guest.z }
+                : walking
+                  ? {
+                      x: s.guest.x + Math.sin(s.guestYaw) * 4,
+                      z: s.guest.z + Math.cos(s.guestYaw) * 4,
+                    }
+                  : { x: s.guest.x, z: s.guest.z }
+    s.hugoYaw = turnTowards(
+      s.hugoYaw,
+      // (pointing the boxes out, he faces them)
+      facing({ x: s.hugo.x, z: s.hugo.z }, pointAt ?? lookTarget),
+      4 * dt,
+    )
     // He leans the way he's gliding; and when the last piece is stacked, a
     // quick spin on the spot.
     const glide = vacGoal ? Math.min(1, s.hugoSpeed / HUGO_GLIDE) : 0
     s.hugoLean += (glide * 0.3 - s.hugoLean) * damp(dt, 5)
-    const spin = vac.proud > 0 ? easeInOut(clamp01((1.4 - vac.proud) / 0.8)) * Math.PI * 2 : 0
+    const spin =
+      (vac.proud > 0 ? easeInOut(clamp01((1.4 - vac.proud) / 0.8)) * Math.PI * 2 : 0) +
+      // (teleporting: a fast spin as he goes and as he comes)
+      (tpOut + Math.max(0, tpIn)) * Math.PI * 3
     G.hugo.rotation.set(s.hugoLean, s.hugoYaw + spin, 0, 'YXZ')
     const h = joints.hugo
     h.head.obj.rotation.z = h.head.base.z + Math.sin(t * 0.8) * (talking ? 0.18 : 0.1)
     // (he looks down at the piece he's picking up)
-    s.hugoNod += ((vac.phase === 'suck' ? 0.4 : 0) - s.hugoNod) * damp(dt, 6)
+    s.hugoNod += ((vac.phase === 'suck' || pointAt ? 0.4 : 0) - s.hugoNod) * damp(dt, 6)
     h.head.obj.rotation.x = h.head.base.x + Math.sin(t * 1.3) * 0.06 + s.hugoNod
     const lively = talking || vac.gulp > 0 || vac.proud > 0
     const wiggle = lively ? 0.32 : hosing ? 0.16 : 0.08
@@ -2771,7 +3328,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
 
     // ---------------------------------------------------------- bubble anchors
     hugoAnchor.current?.position.set(s.hugo.x, s.hugo.y + 0.95, s.hugo.z)
-    eduardAnchor.current?.position.set(ed.pos.x, 1.6 + 0.13 * ed.stand, ed.pos.z)
+    guestAnchor.current?.position.set(s.guest.x, G.hiker.position.y + 1.42, s.guest.z)
+    eduardAnchor.current?.position.set(ed.pos.x, 1.6 + 0.13 * ed.stand + 0.05 * ed.sit, ed.pos.z)
 
     // ---------------------------------------------------------- camera and sun follow the guest
     // Looking down from above and behind, like a little diorama. Tall phone
@@ -2782,7 +3340,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // reading his tag, rubbing his belly or petting him: ease in on Rusty
     const withRusty = !inside && (s.tagShow > 0 || dog.rubbing > 0 || dog.petting > 0)
     // the opening: a little closer while Rusty runs down the driveway to the guest
-    const rustyRunning = !startNearCabin && !dog.firstDropDone
+    const rustyRunning = !startNearCabin && !resumeAt && !dog.firstDropDone
     // standing at the workbench (the camera looks at its front, below), or looking in a box
     const atBench = s.prompt === 'workbench' && !s.target
     const atBox = bx.open >= 0 && bx.phase !== 'walking'
@@ -2793,8 +3351,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       Math.hypot(s.guest.x - CAMERA_SPOTS[i].at.x, s.guest.z - CAMERA_SPOTS[i].at.z)
     // (splitting and the boxes have their own cameras; the woodshed spot is right beside both)
     // sitting on the bench: from behind the guest, over their shoulder to the deck
-    const watchingDeck = s.sit.phase === 'sitting' || s.sit.phase === 'seated'
-    const ownCamera = inside || chopping || atBox || watchingDeck || castingCam
+    const sittingNow = s.sit.phase === 'sitting' || s.sit.phase === 'seated'
+    const watchingDeck = sittingNow && s.sit.at === 'bench'
+    // sitting by the fire: from the south-east (clear of the woodshed), over
+    // the guest's shoulder and across the flames to Eduard, with the cabin's
+    // lights behind him (photo 02)
+    const byFire = sittingNow && s.sit.at === 'fire'
+    // HUGO's call back to the fire: a cut to it for a few seconds
+    const fireCut = fr.cut >= 0
+    const ownCamera = inside || chopping || atBox || watchingDeck || castingCam || byFire || fireCut
     if (ownCamera || (s.viewSpot >= 0 && spotDist(s.viewSpot) > CAMERA_SPOTS[s.viewSpot].leave))
       s.viewSpot = -1
     if (s.viewSpot < 0 && !ownCamera)
@@ -2896,8 +3461,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
               x: CHOPPING_BLOCK.x + (far > 1 ? 0.3 : -0.25),
               z: CHOPPING_BLOCK.z + (far > 1 ? 1.5 : 0.1),
             }
-          : welcoming
-            ? { x: s.guest.x * 0.55 + ed.pos.x * 0.45, z: s.guest.z * 0.55 + ed.pos.z * 0.45 }
+          : welcoming && dist(ed.pos) < 9
+            ? // (only near him: with HUGO talking out at the brook this aimed
+              // the camera half-way back to the deck, and the guest was off the screen)
+              { x: s.guest.x * 0.55 + ed.pos.x * 0.45, z: s.guest.z * 0.55 + ed.pos.z * 0.45 }
             : {
                 x: s.guest.x + (aheadX * yc + aheadZ * ys) * kz * edgeK,
                 z: s.guest.z + (-aheadX * ys + aheadZ * yc) * kz * edgeK,
@@ -2936,31 +3503,54 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // guest and the box are side-on, with the thing they lift out between them)
     // casting: from the south-west of the landing, low, so the cast reads side-on
     const castFar = far > 1 ? 1.4 : 1
+    // (The card with Eduard's answers takes the right third of a computer
+    // screen, and the bottom half of a phone's: the camera stands far enough
+    // back that the cabin's lights, Eduard, the fire, the guest and HUGO all
+    // fit in what's left, and aims off to the side so they sit there.)
+    const fireFar = far > 1 ? 1.2 : Math.min(1.3, Math.max(1, 1.6 / (size.width / size.height)))
     const camGoal = castingCam
       ? tmp.set(CAST_SPOT.x - 1.9 * castFar, 2.9 * castFar, CAST_SPOT.z + 5.4 * castFar)
-      : watchingDeck
-        ? tmp.set(
-            BENCH_SEAT.x + 1.9 * (far > 1 ? 1.3 : 1),
-            3.3 * (far > 1 ? 1.35 : 1),
-            BENCH_SEAT.z + 2.9 * (far > 1 ? 1.3 : 1),
-          )
-        : boxC
+      : byFire
+        ? tmp.set(FIRE.x + 6.2 * fireFar, 0.9 + 3.4 * fireFar, FIRE.z + 8.0 * fireFar)
+        : watchingDeck
           ? tmp.set(
-              boxC.x + (BENCH_FRONT.x * 0.5 + boxSide.x * 3.0) * boxFar,
-              (boxC.shelf ? 1.9 : 2.3) * boxFar,
-              boxC.z + (BENCH_FRONT.z * 0.5 + boxSide.z * 3.0) * boxFar,
+              BENCH_SEAT.x + 1.9 * (far > 1 ? 1.3 : 1),
+              3.3 * (far > 1 ? 1.35 : 1),
+              BENCH_SEAT.z + 2.9 * (far > 1 ? 1.3 : 1),
             )
-          : atBench
+          : boxC
             ? tmp.set(
-                benchLook.x + BENCH_FRONT.x * 3.2 * benchDistance,
-                4.6 * benchDistance,
-                benchLook.z + BENCH_FRONT.z * 3.2 * benchDistance,
+                boxC.x + (BENCH_FRONT.x * 0.5 + boxSide.x * 3.0) * boxFar,
+                (boxC.shelf ? 1.9 : 2.3) * boxFar,
+                boxC.z + (BENCH_FRONT.z * 0.5 + boxSide.z * 3.0) * boxFar,
               )
-            : spot
-              ? // behind the guest, out along the spot's direction, looking back at it
-                tmp.set(s.guest.x + spot.from.x * 7 * kz, 6 * kz, s.guest.z + spot.from.z * 7 * kz)
-              : tmp.set(chopBase.x + camOff.x * kz, offY * kz, chopBase.z + camOff.z * kz)
-    camera.position.lerp(camGoal, damp(dt, 2.2))
+            : atBench
+              ? tmp.set(
+                  benchLook.x + BENCH_FRONT.x * 3.2 * benchDistance,
+                  4.6 * benchDistance,
+                  benchLook.z + BENCH_FRONT.z * 3.2 * benchDistance,
+                )
+              : spot
+                ? // behind the guest, out along the spot's direction, looking back at it
+                  tmp.set(
+                    s.guest.x + spot.from.x * 7 * kz,
+                    6 * kz,
+                    s.guest.z + spot.from.z * 7 * kz,
+                  )
+                : inside
+                  ? // Inside, the camera looks in through the missing south wall
+                    // from the room's middle, leaning to the side away from the
+                    // guest: standing by the west wall (the rod, the tackle box)
+                    // it looks at that wall's inside from the east, and the other
+                    // way round by the counter and the door. (It used to sit west
+                    // of the guest, so the west wall hid whatever was on it.)
+                    tmp.set(-s.guest.x * 0.45, offY * kz, s.guest.z + camOff.z * kz)
+                  : tmp.set(chopBase.x + camOff.x * kz, offY * kz, chopBase.z + camOff.z * kz)
+    // (coming back from the cut to the fire, the camera is put straight back
+    // where it belongs: it doesn't fly across the field)
+    const snapBack = fr.cutOver
+    fr.cutOver = false
+    camera.position.lerp(camGoal, snapBack ? 1 : damp(dt, 2.2))
     lookAt.current.lerp(
       castingCam
         ? tmp.set(
@@ -2968,26 +3558,50 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
             -0.15,
             CAST_SPOT.z * 0.45 + FISHING_HOLE.z * 0.55,
           )
-        : watchingDeck
-          ? tmp.set(2.95, 0.5, 1.6)
-          : boxC
-            ? // (on a portrait phone the card covers the bottom half, so aim lower to lift the box up the screen)
-              tmp.set(
-                s.guest.x + Math.sin(s.guestYaw) * 0.3,
-                (boxC.shelf ? 0.55 : 0.85) - (far > 1 ? 1.1 : 0),
-                s.guest.z + Math.cos(s.guestYaw) * 0.3,
-              )
-            : atBench
-              ? tmp.set(benchLook.x, 0.65 + 0.35 * tv, benchLook.z)
-              : spot
-                ? tmp.set(
-                    s.guest.x * 0.45 + spot.at.x * 0.55,
-                    0.8,
-                    s.guest.z * 0.45 + spot.at.z * 0.55,
-                  )
-                : tmp.set(aim.x, 0.5, aim.z),
-      damp(dt, 3),
+        : byFire
+          ? far > 1
+            ? // (a portrait phone: the things to ask cover the bottom of the screen
+              // while they're up, so aim low and the fire sits above them)
+              tmp.set(FIRE.x - 0.45, props.fireChoosing ? -1.5 : 0.2, FIRE.z - 1.0)
+            : // (room over their heads for what they say, and under the fire for the things to ask)
+              // (while the things to ask are up, along the bottom, the view
+              // lifts so the fire sits above them)
+              tmp.set(FIRE.x - 0.6, props.fireChoosing ? -0.75 : 1.15, FIRE.z - 0.9)
+          : watchingDeck
+            ? tmp.set(2.95, 0.5, 1.6)
+            : boxC
+              ? // (on a portrait phone the card covers the bottom half, so aim lower to lift the box up the screen)
+                tmp.set(
+                  s.guest.x + Math.sin(s.guestYaw) * 0.3,
+                  (boxC.shelf ? 0.55 : 0.85) - (far > 1 ? 1.1 : 0),
+                  s.guest.z + Math.cos(s.guestYaw) * 0.3,
+                )
+              : atBench
+                ? tmp.set(benchLook.x, 0.65 + 0.35 * tv, benchLook.z)
+                : spot
+                  ? tmp.set(
+                      s.guest.x * 0.45 + spot.at.x * 0.55,
+                      0.8,
+                      s.guest.z * 0.45 + spot.at.z * 0.55,
+                    )
+                  : tmp.set(aim.x, 0.5, aim.z),
+      snapBack ? 1 : damp(dt, 3),
     )
+    if (fireCut) {
+      // The cut to the fire: low, from the south-east, drifting in on Eduard
+      // in his chair with the marshmallow over the flames. It starts there
+      // (a cut, not a flight from the brook) and eases in from then on.
+      const k = easeInOut(clamp01(fr.cut / FIRE_CUT_SECONDS))
+      const wide = far > 1 ? 1.5 : 1
+      tmp.set(
+        FIRE.x + (3.3 - 1.0 * k) * wide,
+        (1.75 - 0.4 * k) * wide,
+        FIRE.z + (3.6 - 0.9 * k) * wide,
+      )
+      if (fr.cut < 0.05) camera.position.copy(tmp)
+      else camera.position.lerp(tmp, damp(dt, 6))
+      lookAt.current.set(FIRE.x - 0.85, 0.72, FIRE.z - 0.2)
+    }
     // HUGO's card covers the bottom half of a portrait phone: look lower, so
     // the guest and HUGO come up into the part of the screen that's left
     s.askLift += ((props.hugoAskOpen && far > 1 ? 1 : 0) - s.askLift) * damp(dt, 4)
@@ -3006,7 +3620,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       process.env.NODE_ENV !== 'production'
         ? (window as Window & { __cabinEvening?: number }).__cabinEvening
         : undefined
-    s.evening += ((devEvening ?? eveningAt(s.guest)) - s.evening) * damp(dt, 1.2)
+    // Once HUGO has called the guest back, it's sunset turning to night
+    // wherever they are, and it stays night (fire.ts, nightfall).
+    const eveningNow = nightOn ? EVENING_SUNSET + fr.night : eveningAt(s.guest)
+    s.evening += ((devEvening ?? eveningNow) - s.evening) * damp(dt, 1.2)
     if (sun.current && hemi.current && scene.background instanceof THREE.Color)
       applyDaylight(
         {
@@ -3017,11 +3634,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           glint: waterUniforms.uGlint.value,
           sheen: waterUniforms.uSheen.value,
           waterSky: waterUniforms.uSky.value,
+          waterOverhead: waterUniforms.uOverhead.value,
+          waterLeaves: waterUniforms.uLeaves.value,
         },
         s.evening,
         s.guest,
       )
     waterUniforms.uTime.value = t
+    // the fire, the lamps and the stars
+    nightFx.update({ t, dt, night: nightAmount(s.evening), lit: fr.lit, camera: camera.position })
     // the rod, the line and the catch, where the guest's hands are now
     G.hiker.updateMatrixWorld(true)
     const holdX = s.guest.x + Math.sin(s.guestYaw) * 0.45
@@ -3118,6 +3739,18 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       <primitive object={vacParts.stack} />
       <primitive object={gear.world} />
       <primitive object={tapStream} />
+      <primitive object={nightFx.world} />
+      <primitive object={tpFx.group} />
+      <sprite
+        ref={resumeArrow}
+        position={[READABLES.resume.x, READABLES.resume.y + 0.45, READABLES.resume.z]}
+        scale={[0.2, 0.18, 1]}
+        visible={false}
+        userData={{ noOutline: true }}
+      >
+        <spriteMaterial map={arrowTexture} transparent depthWrite={false} />
+      </sprite>
+      <primitive object={nightFx.sky} />
       <group ref={cowG} onPointerDown={onCowDown}>
         <primitive object={cow} />
       </group>
@@ -3160,18 +3793,37 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         onThingDown('tap', TAP_SPOT, TAP_SPOT, 0.5),
       )}
       {tapArea('rod', ROD_PROP, 0.3, onThingDown('fish', CAST_SPOT, CAST_SPOT, 0.5))}
+      {/* the fire (scene 7): the guest's camp chair, Eduard in his, and the Yahtzee set on the table */}
+      {tapArea(
+        'fire-seat',
+        { x: FIRE_SEATS.guest.x, y: 0.5, z: FIRE_SEATS.guest.z },
+        0.42,
+        onFireSeatDown,
+      )}
+      {tapArea(
+        'fire-eduard',
+        { x: FIRE_SEATS.eduard.x, y: 0.75, z: FIRE_SEATS.eduard.z },
+        0.5,
+        onFireSeatDown,
+      )}
+      {tapArea(
+        'yahtzee',
+        { x: YAHTZEE.x, y: YAHTZEE.y, z: YAHTZEE.z },
+        0.3,
+        onThingDown('yahtzee', YAHTZEE_SPOT, YAHTZEE, 1.5),
+      )}
       {CRATES.map((cr, i) =>
         tapArea(`crate-${i}`, { x: cr.x, y: cr.y + 0.08, z: cr.z }, 0.17, onCrateDown(i)),
       )}
 
       {/* the sparkles over the easter eggs */}
-      {EGGS.map((id, i) => (
+      {EGGS.map(({ id, at }, i) => (
         <sprite
           key={id}
           ref={(el) => {
             sparkles.current[i] = el
           }}
-          position={[READABLES[id].x, READABLES[id].y + 0.2, READABLES[id].z]}
+          position={[at.x, at.y + 0.2, at.z]}
           scale={[0.16, 0.16, 1]}
           visible={false}
           userData={{ noOutline: true }}
@@ -3226,7 +3878,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           </group>
         ))}
       <group ref={promptAnchor}>
-        {prompt && (
+        {prompt && !cutting && (
           // the wrapper ignores taps (it would cover Rusty); only the button takes them
           <Html zIndexRange={[30, 0]} style={{ pointerEvents: 'none' }}>
             <InteractPrompt
@@ -3248,10 +3900,24 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       </group>
 
       <group ref={hugoAnchor}>
-        {bubble?.speaker === 'HUGO' && (
-          <Html zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-            <SpeechBubble speaker="HUGO" text={bubble.text} />
+        {/* his answer to a question from his card wins over a line of the tour */}
+        {cutting ? null : props.hugoSaying ? (
+          <Html zIndexRange={[45, 30]} style={{ pointerEvents: 'none' }}>
+            <SpeechBubble
+              key={props.hugoSaying.key}
+              speaker="HUGO"
+              text={props.hugoSaying.text}
+              status={props.hugoSaying.status}
+              links={props.hugoSaying.links ?? []}
+              onLink={(l) => callbacks.current.onLink?.(l) ?? false}
+            />
           </Html>
+        ) : (
+          bubble?.speaker === 'HUGO' && (
+            <Html zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+              <SpeechBubble speaker="HUGO" text={bubble.text} />
+            </Html>
+          )
         )}
         {/* (one prompt at a time: it gives way to the door's, the résumé's and so on) */}
         {props.hugoAskMarker && !bubble && !prompt && (
@@ -3261,9 +3927,40 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         )}
       </group>
       <group ref={eduardAnchor}>
-        {bubble?.speaker === 'Eduard' && (
-          <Html zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-            <SpeechBubble speaker="Eduard" text={bubble.text} />
+        {/* by the fire his answers are said here, over his head, a paragraph at a time */}
+        {props.fireSpeech?.who === 'eduard' ? (
+          <Html zIndexRange={[45, 30]} style={{ pointerEvents: 'none' }}>
+            <SpeechBubble
+              key={props.fireSpeech.key}
+              speaker="Eduard"
+              text={props.fireSpeech.text}
+              instant={props.fireSpeech.instant}
+              stamp={props.fireSpeech.draft ? 'Draft' : undefined}
+              more={props.fireSpeech.more}
+              links={props.fireSpeech.links}
+              onLink={(l) => callbacks.current.onLink?.(l) ?? false}
+              wide
+            />
+          </Html>
+        ) : (
+          bubble?.speaker === 'Eduard' &&
+          !cutting && (
+            <Html zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+              <SpeechBubble speaker="Eduard" text={bubble.text} />
+            </Html>
+          )
+        )}
+      </group>
+      {/* ... and what the guest asks, over theirs */}
+      <group ref={guestAnchor}>
+        {props.fireSpeech?.who === 'guest' && (
+          <Html zIndexRange={[45, 30]} style={{ pointerEvents: 'none' }}>
+            <SpeechBubble
+              key={props.fireSpeech.key}
+              speaker="You"
+              text={props.fireSpeech.text}
+              instant={props.fireSpeech.instant}
+            />
           </Html>
         )}
       </group>

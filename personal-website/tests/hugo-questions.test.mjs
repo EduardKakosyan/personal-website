@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadTs } from './helpers/load-ts.mjs'
+import { findHiddenTerms, localHiddenTerms } from '../scripts/lib/hidden-terms.mts'
 
 // HUGO's suggested questions at each stop (A48): which stop the guest is at
 // (src/components/features/cabin/hugo-stops.ts) and what HUGO may say there
@@ -57,10 +58,9 @@ test('a stop holds until the guest is clearly somewhere else', () => {
   assert.equal(at({ x: 15.2, z: 0 }, 'brook'), 'arrival')
 })
 
-test('the fire only counts at night (scene 7 is not built)', () => {
+test('the fire only counts at night (scene 7)', () => {
   assert.equal(at(S.FIRE_RING), 'arrival')
   assert.equal(at(S.FIRE_RING, null, { night: true }), 'fire')
-  assert.equal(Q.HUGO_QUESTIONS.fire, null)
 })
 
 const stops = Object.entries(Q.HUGO_QUESTIONS).filter(([, v]) => v !== null)
@@ -69,7 +69,7 @@ const all = stops.flatMap(([stop, v]) => v.questions.map((q) => ({ stop, ...q })
 test('every built stop has two or three questions, each with an answer', () => {
   assert.deepEqual(
     stops.map(([s]) => s),
-    ['arrival', 'cabin', 'woodshed', 'brook'],
+    ['arrival', 'cabin', 'woodshed', 'brook', 'fire'],
   )
   for (const [stop, v] of stops) {
     assert.ok(v.name.trim() && v.about.trim(), stop)
@@ -80,7 +80,7 @@ test('every built stop has two or three questions, each with an answer', () => {
     assert.ok(q.q.trim().endsWith('?'), q.id)
     assert.ok(q.a.trim().length > 20, `${q.id}: empty answer`)
     assert.ok(q.sources.trim(), `${q.id}: no sources`)
-    assert.equal(q.draft, true, `${q.id}: answers are drafts until Eduard approves them`)
+    assert.equal(q.draft, false, `${q.id}: every answer is approved before it ships`)
   }
 })
 
@@ -121,15 +121,20 @@ test('links go to real project pages or the résumé', () => {
       assert.ok(l.label.trim(), q.id)
       if (l.href.startsWith('/projects/'))
         assert.ok(slugs.has(l.href.slice(10)), `${q.id}: ${l.href}`)
-      else if (l.href.startsWith('/')) assert.equal(l.href, resumePdfPath, q.id)
+      else if (l.href.startsWith('/'))
+        // (the pages the corner bar links to, and the résumé)
+        assert.ok(['/contact', '/projects', resumePdfPath].includes(l.href), `${q.id}: ${l.href}`)
       else assert.match(l.href, /^https:\/\//, q.id)
     }
 })
 
 test('no hidden ventures in anything HUGO says', () => {
   const text = [...all.flatMap((q) => [q.q, q.a]), ...Object.values(Q.HUGO_ASK_LINES)].join('\n')
-  for (const term of profile.hidden)
-    assert.ok(!text.toLowerCase().includes(term.toLowerCase()), term)
+  assert.equal(
+    findHiddenTerms(text, [...profile.hidden, ...localHiddenTerms()]).length,
+    0,
+    'a hidden term in what HUGO says',
+  )
 })
 
 test('the checks catch the unconfirmed facts in a model reply', () => {

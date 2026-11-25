@@ -5,7 +5,7 @@
 
 import * as THREE from 'three'
 import { toToon } from './pixel-look'
-import { FISHING_CATCH, bobberAt, holdsRod, type Fishing } from './fishing'
+import { FISHING_CATCH, GOLD_FISH, bobberAt, holdsRod, type Fishing } from './fishing'
 import { WATER_Y } from './brook'
 
 const ROD_LENGTH = 1.35
@@ -86,6 +86,14 @@ export function createFishingGear() {
   eye2.position.x = -L * 0.12
   fish.add(body, belly, tail, fin, eye, eye2)
   fish.visible = false
+  // the one in a hundred: the same fish in gold (its paint is swapped in when it's landed)
+  const plain = { back: body.material, belly: belly.material }
+  const gold = { back: toon(GOLD_FISH.back), belly: toon(GOLD_FISH.belly) }
+  const paint = (isGold: boolean) => {
+    const p = isGold ? gold : plain
+    body.material = tail.material = fin.material = p.back
+    belly.material = p.belly
+  }
 
   const ringGeo = new THREE.RingGeometry(0.85, 1, 20)
   ringGeo.rotateX(-Math.PI / 2)
@@ -113,6 +121,7 @@ export function createFishingGear() {
     line,
     linePos,
     bobber,
+    paint,
     fish,
     ripples,
     nextRipple: 0,
@@ -170,6 +179,7 @@ export function updateFishingGear(
   g.bobber.position.set(b.x, b.y, b.z)
   // the catch: wriggling on the end of the line as it's reeled in, then held up
   const showFish = f.phase === 'reel' || f.phase === 'landed'
+  g.paint(f.phase === 'landed' && f.gold)
   let end = g.bobber.position
   if (showFish) {
     g.fish.visible = true

@@ -2,9 +2,8 @@
 // three questions about the place, each with an answer written in advance,
 // plus a box to ask anything (that goes to the small model on the device).
 //
-// EVERY ANSWER HERE IS A DRAFT for Eduard to approve or rewrite. They're the
-// agent's wording, built only from src/content/profile.ts, projects.ts and
-// the design brief. HUGO talks about Eduard, never as him (A24), and doesn't
+// Eduard approved every answer here on 2026-11-25. They're built only from
+// src/content/profile.ts, projects.ts and the design brief. HUGO talks about Eduard, never as him (A24), and doesn't
 // state the obvious about the place (A49).
 //
 // No `@/` imports and no React: the Node tests load this file directly.
@@ -25,8 +24,8 @@ export type HugoQuestion = {
   links?: HugoLink[]
   /** Where each fact in the answer comes from. */
   sources: string
-  /** Every answer is a draft until Eduard approves it. */
-  draft: true
+  /** False once Eduard has approved the answer; a new one starts as a draft. */
+  draft: boolean
 }
 
 export type StopQuestions = {
@@ -38,9 +37,9 @@ export type StopQuestions = {
 }
 
 /**
- * The questions at each stop. The fire (scene 7) isn't built yet: it's null
- * until it is (its questions go to Eduard himself, A30; HUGO's here would be
- * for anything else).
+ * The questions at each stop. At the fire (scene 7) the questions about his
+ * work go to Eduard himself (A30, fire-questions.ts); HUGO's are for anything
+ * else: where to find the rest, and how to get in touch.
  */
 export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
   // Scene 1–3: the gravel road, the driveway and the yard (deck, Eduard, Rusty).
@@ -53,22 +52,20 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
         id: 'who-is-eduard',
         q: 'Who’s Eduard?',
         also: ['who is eduard', 'who is he', 'whos eduard', 'who is eduard kakosyan'],
-        // DRAFT
         a: 'He leads tech and AI at AI-First Solutions in Halifax, and he’s on the company’s leadership team. Out here there’s always a project on the go: the deck, the outdoor shower, the firewood.',
         sources:
           'profile.ts headline ("I lead tech and AI at AI-First Solutions") and the AI-First role’s scope ("leadership team"); brief Section 3 (deck, shower, splitting wood)',
-        draft: true,
+        draft: false,
       },
       {
         id: 'what-are-you',
         q: 'What are you?',
         also: ['who are you', 'what is hugo', 'who is hugo', 'are you a robot'],
-        // DRAFT
         a: 'I’m HUGO, your guide for the day. There’s a real HUGO too: a voice assistant Eduard is building into a little Reachy Mini robot. That one’s still a prototype, so go easy on us both.',
         links: [{ label: 'The real HUGO', href: '/projects/hugo' }],
         sources:
           'projects.ts hugo ("a voice assistant for a Reachy Mini robot", "a working prototype"); brief A42 (the narrator is called HUGO), A9 (HUGO only a small mention)',
-        draft: true,
+        draft: false,
       },
       {
         id: 'skip-ahead',
@@ -83,10 +80,9 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
           'how do i get in touch',
           'where is his resume',
         ],
-        // DRAFT
         a: 'Sure. Work, Résumé and Contact are in the little bar the whole time. Or stick with me and I’ll show you around.',
         sources: 'corner-bar.tsx (Work, Résumé, Contact); brief A43 (3), P2',
-        draft: true,
+        draft: false,
       },
     ],
   },
@@ -105,22 +101,20 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
           'whats his job',
           'what does eduard do for work',
         ],
-        // DRAFT
         a: 'He’s the Lead AI Developer at AI-First Solutions and sits on the leadership team. He works with local organizations from discovery through to rollout: 39 client projects across 31 organizations so far.',
         sources:
           'profile.ts identity.title, the AI-First role’s scope, headline ("I work with local organizations"), metric `projects` (site surface: "39 … across 31 organizations"); resume/content.ts summary ("from discovery and architecture through integration and rollout")',
-        draft: true,
+        draft: false,
       },
       {
         id: 'where-worked',
         q: 'Where has he worked?',
         also: ['where has eduard worked', 'where did he work', 'what is his experience'],
-        // DRAFT
         a: 'AI-First Solutions, since February 2025. Before that he co-founded CarGrep, a used-car search startup, and he also co-taught an agentic AI course at Dalhousie with ShiftKey Labs. The résumé on the table has the details.',
         links: [{ label: 'Résumé (PDF)', href: resumePdfPath }],
         sources:
           'profile.ts roles (AI-First from 2025-02; CarGrep co-founder 2024-10 to 2025-01; AI Instructor, ShiftKey Labs, Dalhousie, 2025-08 to 2026-04, "an agentic AI course for non-CS students"); projects.ts cargrep ("a used-car search app")',
-        draft: true,
+        draft: false,
       },
       {
         id: 'where-studied',
@@ -131,10 +125,9 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
           'where did he go to school',
           'education',
         ],
-        // DRAFT
         a: 'Dalhousie University in Halifax: a Bachelor of Computer Science (Co-op), finished in May 2025 with a 3.8 GPA. He picked up the Future Tech Leaders and Sexton Scholar awards along the way.',
         sources: 'profile.ts education (degree, end 2025-05, GPA 3.8, awards)',
-        draft: true,
+        draft: false,
       },
     ],
   },
@@ -154,32 +147,29 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
           'what is in the boxes',
           'whats in the boxes',
         ],
-        // DRAFT
         a: 'Six of them are in the boxes on the bench: three hackathon entries, a used-car search startup, a university research project and the starter kit his company uses for new projects. Open any box for the story.',
         sources:
           'page.tsx BENCH_SLUGS and projects.ts (HealthByte, Second Brain and Sky Painters are hackathon entries; CarGrep; the Q-Learning Network Simulator, a Dalhousie group research project; Dev Template, "for starting projects at AI-First Solutions")',
-        draft: true,
+        draft: false,
       },
       {
         id: 'any-wins',
         q: 'Did any of them win?',
         also: ['did he win anything', 'has he won anything', 'any awards', 'did any win'],
-        // DRAFT
         a: 'Two did. HealthByte took first place at the Atlantic AI Summit hackathon in 2025, and Second Brain took second at the Volta Agentic AI Hackathon in Halifax in 2024.',
         links: [{ label: 'HealthByte', href: '/projects/healthbyte' }],
         sources:
           'projects.ts healthbyte (first place, May 2025), second-brain (second place, November 2024)',
-        draft: true,
+        draft: false,
       },
       {
         id: 'who-splits',
         q: 'Who splits all this wood?',
         also: ['who splits the wood', 'who chops the wood', 'who cut all this wood'],
-        // DRAFT
         a: 'Eduard and his friends, mostly in the fall. It’s one of the jobs that comes round every year out here, like seeding the grass in spring and picking blueberries in August.',
         sources:
           'brief Section 3 ("With friends: … splitting wood"; "splitting wood (fall), spreading grass seed (spring), picking blueberries (August)")',
-        draft: true,
+        draft: false,
       },
     ],
   },
@@ -201,7 +191,6 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
           'is there fishing here',
           'can you fish here',
         ],
-        // DRAFT
         a: 'There’s a little fishing hole right by the stairs. For stripers, Eduard and his friends head to the beach. He also had his local coding agent build Shoreline, an app that rates the day for the beach and for fishing, with the tides.',
         links: [
           { label: 'Shoreline', href: '/projects/shoreline' },
@@ -209,23 +198,21 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
         ],
         sources:
           'brief A21 (the fishing hole by the stairs), Section 3 ("fishing for stripers on the beach" with friends); projects.ts shoreline (built by a local coding agent in dgx-autonomy at Eduard’s request; beach and fishing verdicts, tides)',
-        draft: true,
+        draft: false,
       },
       {
         id: 'why-here',
         q: 'Why does Eduard come here?',
         also: ['why does he come here', 'why this place', 'why does he like it here'],
-        // DRAFT
         a: 'To be outside with the people he loves, and to learn to do things without everyday appliances: fishing, foraging for mushrooms, getting his own water.',
         sources:
           'brief Section 3, Eduard’s own words ("being with people I love … learning how to do things without depending on everyday appliances … foraging for mushrooms or fishing … getting your water"); A21 (the tap)',
-        draft: true,
+        draft: false,
       },
       {
         id: 'beach-open',
         q: 'Is the beach open today?',
         also: ['is the beach open', 'can i swim at the beach', 'where can i swim'],
-        // DRAFT
         a: 'Depends on the beach. Eduard and a teammate built Is the Beach Open at a Claude hackathon in Halifax: a map of the 35 Nova Scotia beaches where a government tests the water, with the official notice behind each status.',
         links: [
           { label: 'Is the Beach Open', href: '/projects/volta-sep26' },
@@ -233,42 +220,88 @@ export const HUGO_QUESTIONS: Record<HugoStop, StopQuestions | null> = {
         ],
         sources:
           'projects.ts volta-sep26 (built with @Harshil-varia at the Halifax Claude Hackathon at Volta; "a map of the 35 Nova Scotia beaches where a government tests the water, with the official notice behind each status"; live at nsbeaches.ca)',
-        draft: true,
+        draft: false,
       },
     ],
   },
 
-  // Scene 7: the fire (not built yet).
-  fire: null,
+  // Scene 7: the fire, at night. (Eduard answers for himself there; these are HUGO's.)
+  fire: {
+    name: 'The fire',
+    about:
+      'the fire by the deck at night, where Eduard sits with the guest and answers their questions himself, with Rusty lying beside it',
+    questions: [
+      {
+        id: 'get-in-touch',
+        q: 'How do I get in touch with Eduard?',
+        also: [
+          'how do i contact him',
+          'how can i reach eduard',
+          'contact',
+          'can i hire him',
+          'email',
+        ],
+        a: 'Contact is in the little bar, and his résumé is right beside it.',
+        links: [
+          { label: 'Contact', href: '/contact' },
+          { label: 'Résumé (PDF)', href: resumePdfPath },
+        ],
+        sources:
+          'the corner bar (A43: Work, Résumé, Contact always visible); storyboard scene 7 (the ending points at Résumé and Contact)',
+        draft: false,
+      },
+      {
+        id: 'rest-of-work',
+        q: 'Where’s the rest of his work?',
+        also: ['where is his work', 'show me his projects', 'what else has he done', 'portfolio'],
+        a: 'Work, in the little bar, has every project written up. Keystone and Keeper are the main two, and Eduard’s the one to ask about those.',
+        links: [
+          { label: 'All his work', href: '/projects' },
+          { label: 'Keystone', href: '/projects/keystone' },
+          { label: 'Keeper', href: '/projects/keeper' },
+        ],
+        sources:
+          'the corner bar (A43); brief A9 (Keeper and Keystone are the main work stories), A30 (Eduard answers for himself at the fire)',
+        draft: false,
+      },
+      {
+        id: 'picnic-table',
+        q: 'What’s on the picnic table?',
+        also: ['what is on the table', 'yahtzee', 'what are the dice for', 'camp yahtzee'],
+        a: 'Camp Yahtzee. That’s one of Eduard’s favourite games. He had an app made that keeps score for it, for camp trips with no signal.',
+        links: [
+          { label: 'Camp Yahtzee', href: '/projects/yahtzee' },
+          { label: 'Play it', href: 'https://eduardkakosyan.github.io/yahtzee/' },
+        ],
+        sources:
+          'Eduard, 2026-11-24 ("that’s one of eduards favourite games"; he didn’t want "they roll real dice", it sounded like gambling); projects.ts yahtzee ("Eduard wanted Yahtzee for a camp trip with no signal"; the phone’s main job is to keep score; built by his local coding agent; live app link); brief A51',
+        draft: false,
+      },
+    ],
+  },
 }
 
-/**
- * HUGO's own lines around the ask-anything box. DRAFTS, the agent's wording,
- * in HUGO's voice.
- */
+/** HUGO's own lines around the ask-anything box, in HUGO's voice (approved 2026-11-25). */
 export const HUGO_ASK_LINES = {
-  // DRAFT
   placeholder: 'Ask HUGO anything…',
-  // DRAFT: the model can't run here (no WebGPU, not a secure page, or it failed to load)
+  // the model can't run here (no WebGPU, not a secure page, or it failed to load)
   unavailable:
     'My thinking cap doesn’t fit on this device, sorry. Try one of the questions above, or Work and Contact in the little bar.',
-  // DRAFT: the guardrails turned the question away (off topic)
+  // the guardrails turned the question away (off topic)
   offTopic:
     'I only really know about Eduard and his place. Ask me about his work, or try one of the questions above.',
-  // DRAFT: the guardrails turned the question away (prompt extraction, jailbreak)
+  // the guardrails turned the question away (prompt extraction, jailbreak)
   refuse:
     'I’ll stick to showing you around, if that’s alright. Ask me anything about Eduard’s work.',
-  // DRAFT: the model's reply touched something Eduard hasn't confirmed, or spoke as him
+  // the model's reply touched something Eduard hasn't confirmed, or spoke as him
   unsure: 'That’s one to ask Eduard himself. I’d rather not guess.',
-  // DRAFT: the model's reply didn't come back in shape, or timed out
+  // the model's reply didn't come back in shape, or timed out
   lost: 'I lost my train of thought there. Could you ask that another way?',
-  // DRAFT
   tooLong: 'That’s a lot for a little robot. Could you ask it in fewer words?',
-  // DRAFT: status while the model downloads (first time only)
+  // status while the model downloads (first time only)
   waking: 'Waking up my thinking cap',
-  // DRAFT
   thinking: 'Thinking…',
-  // DRAFT: under the box
+  // under the box
   privacy: 'Typed questions stay on your device.',
 } as const
 
@@ -426,11 +459,9 @@ export function questionById(id: string): HugoQuestion | null {
 
 /**
  * HUGO's own line for a project where the site's one-line description won't
- * do. DRAFT. Keystone's description says it was "built after interviewing the
- * team", and who the interviews covered isn't settled (handoff, fact conflicts).
+ * do (approved 2026-11-25).
  */
 export const HUGO_PROJECT_LINES: Record<string, string> = {
-  // DRAFT
   keystone:
     'Keystone is internal operations software at AI-First Solutions, where staff and Claude share one registry of operations. Eduard designed its architecture and leads its development.',
 }

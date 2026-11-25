@@ -6,6 +6,7 @@
 // No three.js imports here: the overlay uses this file too.
 
 import { brookBlocked, brookHeight } from './brook'
+import { DECK_LANTERN, FIRE, FIRE_RADIUS, FIRE_SEATS } from './fire'
 
 export type Vec2 = { x: number; z: number }
 
@@ -130,8 +131,9 @@ export const READABLES = {
   resume: { x: -0.18, y: 1.05, z: -1.68, label: 'Read' },
   todo: { x: 0.85, y: 1.95, z: -2.3, label: 'Read' },
   basket: { x: 1.45, y: 1.45, z: -1.03, label: 'Look' },
-  rod: { x: 1.62, y: 2.3, z: 1.0, label: 'Look' },
-  tackle: { x: 1.55, y: 0.65, z: 0.12, label: 'Look' },
+  // (the rod and the tackle box are on the west wall, across the room from the door)
+  rod: { x: -1.62, y: 2.3, z: 0.75, label: 'Look' },
+  tackle: { x: -1.45, y: 0.65, z: -0.75, label: 'Look' },
 } as const
 export type ReadableId = keyof typeof READABLES
 /** The two that open a reading panel; the others are easter eggs HUGO talks about. */
@@ -222,6 +224,8 @@ export const LEAD_PATH: Vec2[] = [
   { x: 3.6, z: 3.0 },
   { x: 4.9, z: 4.6 },
   { x: 6.6, z: 6.0 },
+  // (on round the front of the woodshed towards the workbench, where he's taking them)
+  { x: 8.4, z: 7.8 },
 ]
 
 /** Every reading panel: the two inside the cabin, and the workbench index. */
@@ -284,7 +288,7 @@ const BOXES: Box[] = [
   { x0: -1.7, x1: -1.25, z0: -0.05, z1: 0.6 }, // tote
   { x0: -1.7, x1: -1.25, z0: 1.3, z1: 2.3 }, // chainsaw
   { x0: 1.2, x1: 1.7, z0: -1.75, z1: -0.35 }, // counter under the window
-  { x0: 1.4, x1: 1.7, z0: -0.1, z1: 0.35 }, // tackle box, north of the door
+  { x0: -1.7, x1: -1.3, z0: -1.0, z1: -0.5 }, // tackle box, under the shelves on the west wall
   { x0: 4.2, x1: 4.85, z0: -2.9, z1: -0.9 }, // lumber pile
   { x0: 1.95, x1: 2.55, z0: -1.5, z1: -0.8 }, // sink
   { x0: 3.0, x1: 4.6, z0: 3.9, z1: 5.7 }, // picnic table
@@ -296,10 +300,12 @@ const CIRCLES: Circle[] = [
   { x: 3.0, z: -2.7, r: 0.35 }, // the stepladder by the shower
   { x: 2.45, z: -2.05, r: 0.35 }, // grill
   { x: 4.4, z: -3.5, r: 0.6 }, // sawhorse
-  { x: 6.0, z: 2.6, r: 0.8 }, // fire ring
-  { x: 5.6, z: -0.8, r: 0.35 }, // camp chairs
-  { x: 6.7, z: -1.1, r: 0.35 },
-  { x: 7.7, z: -0.6, r: 0.35 },
+  { ...FIRE, r: FIRE_RADIUS }, // fire ring
+  // the camp chairs round it (fire.ts)
+  { x: FIRE_SEATS.eduard.x, z: FIRE_SEATS.eduard.z, r: 0.3 },
+  { x: FIRE_SEATS.guest.x, z: FIRE_SEATS.guest.z, r: 0.3 },
+  { x: FIRE_SEATS.spare.x, z: FIRE_SEATS.spare.z, r: 0.3 },
+  { ...DECK_LANTERN, r: 0.1 }, // the lantern on the deck's corner
   { x: 5.8, z: 8.8, r: 1.6 }, // woodshed
   { x: 7.26, z: 10.28, r: 0.55 }, // workbench, off the woodshed's south end
   { x: 7.78, z: 11.02, r: 0.55 },

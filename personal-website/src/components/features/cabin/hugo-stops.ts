@@ -1,17 +1,18 @@
 // Which stop of the tour the guest is at, for HUGO's questions (A48). No
 // three.js here: the overlay and the Node tests use it too.
 import { CHOPPING_BLOCK, WOODSHED, WORKBENCH, insideCabin, type Vec2 } from './world'
+import { FIRE } from './fire'
 
 /**
  * The stops HUGO has questions for, in tour order. `arrival` is the gravel
  * road, the driveway and the yard with the deck, Eduard and Rusty. The fire
- * (scene 7) isn't built yet: it only counts at night (see `hugoStopAt`).
+ * (scene 7) only counts at night (see `hugoStopAt`).
  */
 export const HUGO_STOPS = ['arrival', 'cabin', 'woodshed', 'brook', 'fire'] as const
 export type HugoStop = (typeof HUGO_STOPS)[number]
 
-/** The fire ring south-east of the deck (the "fire ring" circle in world.ts). */
-export const FIRE_RING: Vec2 = { x: 6.0, z: 2.6 }
+/** The fire ring south-east of the deck (fire.ts). */
+export const FIRE_RING: Vec2 = FIRE
 
 /**
  * Coarse regions, in metres. The woodshed is the shed itself, the chopping
@@ -34,7 +35,7 @@ const near = (p: Vec2, c: Vec2, r: number) => Math.hypot(p.x - c.x, p.z - c.z) <
  * The stop the guest is at. `inside` is whether they're inside the cabin (the
  * scene knows; outside it's worked out from where they stand). Pass the
  * previous stop to keep it until the guest is clearly somewhere else. The
- * fire only counts once it's `night` (scene 7, not built yet).
+ * fire only counts once it's `night` (scene 7).
  */
 export function hugoStopAt(
   p: Vec2,

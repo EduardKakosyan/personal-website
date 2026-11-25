@@ -5,7 +5,13 @@
 // next nail. In between he wipes his brow, looks around (at the guest, Rusty or
 // the field), stretches, and now and then gets up, fetches a board from the
 // lumber pile and lays it down. Waving at the guest (the welcome) overrides it.
+//
+// At night (scene 7, A22) he's in his camp chair by the fire, toasting a
+// marshmallow, where the guest can ask him things (A26, A30). (When HUGO calls
+// the guest back from the brook the camera cuts to him there, so he doesn't
+// walk over: he's already sitting with the fire going.)
 
+import { FIRE_SEATS, SEAT_Y } from './fire'
 import {
   boardSpot,
   DECK_BOARDS,
@@ -29,6 +35,8 @@ type Activity =
   | 'place'
   /** The deck's done: up on his feet, both arms in the air (A110). */
   | 'cheer'
+  // the night (scene 7): in his chair by the fire
+  | 'fireside'
 
 /** What he does, over and over (a board trip is stand → toPile → … → place). */
 const ROUTINE: Activity[] = [
@@ -97,6 +105,19 @@ export function createEduard() {
     /** Go straight into another board trip after this (watched). */
     nextTrip: false,
     cheered: false,
+    /** The night: he's done with the deck and is sitting by the fire. */
+    fire: false,
+    /** The fire's lit (the scene starts the flames). */
+    lit: false,
+    /** 0 standing .. 1 sitting in his camp chair. */
+    sit: 0,
+    /** Answering the guest: he turns to them and talks with his hands. */
+    talking: false,
+    /**
+     * The marshmallow on his stick: seconds since it went over the fire. It
+     * browns, he takes it off and eats it, and a new one goes on.
+     */
+    toast: 0,
   }
 }
 
@@ -151,6 +172,70 @@ function nextActivity(e: Eduard) {
   begin(e, ROUTINE[e.step])
 }
 
+/** How long a marshmallow toasts, and how long he takes over eating it. */
+export const TOAST_TIME = 17
+const EAT_TIME = 4.2
+
+/**
+ * What the marshmallow is doing: `brown` 0 white .. 1 golden; `out` 0 held
+ * over the fire .. 1 brought up to his mouth; `gone` while there's none on
+ * the stick (he's just eaten it).
+ */
+export function marshmallow(e: Eduard) {
+  const t = e.toast
+  if (t < TOAST_TIME) return { brown: Math.min(1, t / (TOAST_TIME - 2)), out: 0, gone: false }
+  const k = (t - TOAST_TIME) / EAT_TIME
+  // up to look at it and blow on it, a bite, the stick back down
+  const out = k < 0.25 ? k / 0.25 : k < 0.7 ? 1 : Math.max(0, 1 - (k - 0.7) / 0.3)
+  return { brown: 1, out, gone: k > 0.55 }
+}
+
+/**
+ * Night's coming on (HUGO has called the guest back from the brook): he's in
+ * his camp chair with the fire going, a marshmallow on a stick over it.
+ */
+export function seatAtFire(e: Eduard) {
+  const seat = FIRE_SEATS.eduard
+  e.fire = true
+  e.trip = -1
+  e.nextTrip = false
+  e.carrying = false
+  e.rush = false
+  e.walking = false
+  e.lit = true
+  e.pos = { x: seat.x, z: seat.z }
+  e.yaw = seat.yaw
+  e.stand = 1
+  e.sit = 1
+  e.toast = 4
+  begin(e, 'fireside')
+}
+
+const ease = (k: number) => k * k * (3 - 2 * k)
+
+/** By the fire: he toasts his marshmallow, and turns to the guest when they talk. */
+function updateAtFire(e: Eduard, dt: number, ctx: { guest: Vec2; talking?: boolean }) {
+  const seat = FIRE_SEATS.eduard
+  e.timer += dt
+  e.talking = Boolean(ctx.talking)
+  e.walking = false
+  e.sit = 1
+  e.stand = 1
+  e.pos = { x: seat.x, z: seat.z }
+  e.yaw = seat.yaw
+  // (a marshmallow that's ready waits while he's talking: he doesn't eat mid-sentence)
+  if (!(e.talking && e.toast >= TOAST_TIME - 0.5 && e.toast < TOAST_TIME + 0.2)) e.toast += dt
+  if (e.toast > TOAST_TIME + EAT_TIME) e.toast = 0
+  // He watches the marshmallow; he looks over at the guest when they're
+  // talking, and now and then when they're near.
+  let turnGoal = 0
+  const near = Math.hypot(ctx.guest.x - e.pos.x, ctx.guest.z - e.pos.z) < 4.5
+  const glance = near && Math.sin(e.timer * 0.45) > 0.35
+  if (e.talking || glance)
+    turnGoal = Math.max(-1.25, Math.min(1.25, angleDiff(facing(e.pos, ctx.guest), e.yaw)))
+  e.headTurn += (turnGoal - e.headTurn) * damp(dt, 4)
+}
+
 /** How close he'll walk up to the guest before stopping to let them by. */
 const GIVE_WAY = 0.85
 
@@ -191,8 +276,17 @@ export type Greeting = false | 'guest' | 'hugo'
 export function updateEduard(
   e: Eduard,
   dt: number,
-  ctx: { guest: Vec2; dog: Vec2; hugo: Vec2; greeting: Greeting; watching?: boolean },
+  ctx: {
+    guest: Vec2
+    dog: Vec2
+    hugo: Vec2
+    greeting: Greeting
+    watching?: boolean
+    /** At the fire: he's answering the guest. */
+    talking?: boolean
+  },
 ) {
+  if (e.fire) return updateAtFire(e, dt, ctx)
   e.rush = Boolean(ctx.watching)
   // Someone sat down to watch in the middle of his routine: wrap it up and
   // go for the next board.
@@ -301,6 +395,7 @@ export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose
     snap: 10,
     y: groundHeight(e.pos) - 0.13 * (1 - e.stand),
   }
+  if (e.fire) return firePose(p, e, t, greeting)
   if (greeting === 'guest') {
     // standing, waving with the free hand (the right one holds the hammer)
     p.armR = 0.9
@@ -418,6 +513,45 @@ export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose
       p.head = 0.2
       break
     }
+  }
+  return p
+}
+
+/**
+ * By the fire: sitting in his camp chair, the stick with the marshmallow held
+ * out over the flames in his right hand (turning it; up to his mouth when
+ * it's done), his left hand on his knee, or talking with it when he answers,
+ * or waving the guest off when they go.
+ */
+function firePose(p: EduardPose, e: Eduard, t: number, greeting: Greeting): EduardPose {
+  const sit = ease(e.sit)
+  // sitting: thighs out along the seat, shins hanging, up on the chair
+  p.thighL = -1.5 * sit
+  p.thighR = -1.5 * sit
+  p.shinL += 1.5 * sit
+  p.shinR += 1.5 * sit
+  p.y += sit * (SEAT_Y - 0.4 + 0.03)
+  // (his arms hang at 0.8 and 0: the model's own pose has the hammer arm up)
+  const m = marshmallow(e)
+  // the stick arm: out towards the fire, a little lower while he's talking,
+  // and up to his face to eat
+  const reach = e.talking ? 0.5 : 0.95
+  p.armR = 0.8 - reach - 1.15 * m.out + Math.sin(t * 0.9) * 0.03
+  p.armRz = 0.12 * m.out
+  p.armL = -0.55
+  p.lean = 0.1 - 0.14 * m.out
+  p.head = 0.2 - 0.12 * m.out
+  if (greeting === 'guest') {
+    // "Come back anytime": a wave from his chair (the scene waggles the hand)
+    p.armL = -2.5
+    p.head = 0.05
+    p.lean = 0
+  } else if (e.talking) {
+    // talking with his free hand
+    p.armL = -1.0 + Math.sin(t * 2.6) * 0.22 + Math.sin(t * 4.3) * 0.08
+    p.armLz = 0.25 + Math.sin(t * 1.9) * 0.12
+    p.head = 0.08 + Math.sin(t * 3.1) * 0.04
+    p.lean = 0.02
   }
   return p
 }

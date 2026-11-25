@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { CabinResume, TodoItem } from './cabin-content'
+import type { BenchProject, CabinResume, TodoItem } from './cabin-content'
 import styles from './cabin.module.css'
 
 const WALK_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD'])
@@ -25,7 +25,7 @@ function Paper({
   children,
 }: {
   label: string
-  kind: 'resume' | 'todo'
+  kind: 'resume' | 'todo' | 'note'
   onClose: () => void
   /** Turn a page (-1 back, +1 on); absent when the paper has one page. */
   onTurn?: (by: -1 | 1) => void
@@ -85,7 +85,13 @@ function Paper({
       }}
     >
       <div
-        className={`${styles.sheetWrap} ${kind === 'resume' ? styles.sheetWrapResume : styles.sheetWrapTodo}`}
+        className={`${styles.sheetWrap} ${
+          kind === 'resume'
+            ? styles.sheetWrapResume
+            : kind === 'note'
+              ? styles.sheetWrapNote
+              : styles.sheetWrapTodo
+        }`}
       >
         {back && <div className={styles.sheetBack} aria-hidden="true" />}
         {pin && <PinIcon />}
@@ -251,6 +257,59 @@ export function TodoPanel({ items, onClose }: { items: TodoItem[]; onClose: () =
           </li>
         ))}
       </ul>
+    </Paper>
+  )
+}
+
+/**
+ * A note about one of Eduard's projects, brought up over the scene when the
+ * guest follows a link to it from something said (Eduard: HUGO's page "should
+ * be just a note that opens up on the page instead of going to like
+ * projects/Hugo"). What it is, when, and Eduard's part; the project's own
+ * page is there for the whole story.
+ */
+export function ProjectNote({
+  project: p,
+  onClose,
+}: {
+  project: BenchProject
+  onClose: () => void
+}) {
+  return (
+    <Paper
+      label={p.title}
+      kind="note"
+      onClose={onClose}
+      footer={
+        <>
+          <a className={styles.panelButton} href={`/projects/${p.slug}`}>
+            The full story
+          </a>
+          {p.links.length > 0 && (
+            <span className={styles.noteLinks}>
+              {p.links.map((l) => (
+                <a
+                  key={l.href}
+                  className={styles.panelButtonQuiet}
+                  href={l.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {l.label}
+                </a>
+              ))}
+            </span>
+          )}
+        </>
+      }
+    >
+      <h2 className={styles.sheetName}>{p.title}</h2>
+      <p className={styles.sheetSub}>{p.when}</p>
+      <p>{p.what}</p>
+      <p>{p.detail}</p>
+      <hr className={styles.sheetRule} />
+      <p className={styles.sheetItemTitle}>Eduard’s part</p>
+      <p>{p.role}</p>
     </Paper>
   )
 }

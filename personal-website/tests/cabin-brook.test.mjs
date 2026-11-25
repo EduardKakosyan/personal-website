@@ -14,6 +14,7 @@ const N = cabin('nav')
 const B = cabin('brook')
 const F = cabin('fishing')
 const D = cabin('daylight')
+const R = cabin('rusty')
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
 
@@ -196,4 +197,89 @@ test('the light: afternoon at the cabin, golden by the woodshed, sunset at the b
   assert.equal(D.eveningAt(B.STAIRS_TOP), 2)
   // and back again on the way back
   assert.equal(D.eveningAt({ x: 1, z: 2 }), 0)
+})
+
+test('Rusty brings the cow to a guest on the landing and drops it on solid ground, not past the bank', () => {
+  // (He stops at the top of the bank with his head out over it: the cow used
+  // to come down past the edge and hang in the air beside the landing.)
+  const guest = { x: 25.6, z: 0 }
+  const r = R.createRusty({ x: 21, z: 1.2 }, Math.PI / 2)
+  r.pets = 1
+  R.startApproach(r)
+  const dt = 1 / 60
+  for (let t = 0; t < 12; t += dt) {
+    // the model's mouth: ahead of him and up, the way he faces
+    const mouth = {
+      x: r.pos.x + Math.sin(r.yaw) * 0.7,
+      y: 0.38 - r.headDown * 0.25,
+      z: r.pos.z + Math.cos(r.yaw) * 0.7,
+    }
+    R.updateRusty(r, dt, guest, Math.PI / 2, false, mouth, () => {})
+  }
+  assert.equal(r.state, 'waiting')
+  assert.equal(r.cow.state, 'ground')
+  const cow = { x: r.cow.pos.x, z: r.cow.pos.z }
+  assert.ok(!B.belowBank(r.pos), 'Rusty stays up on the field')
+  assert.ok(
+    !W.blocked(cow, 0.15),
+    `the cow came to rest past the bank at (${cow.x.toFixed(2)}, ${cow.z.toFixed(2)})`,
+  )
+  assert.ok(R.canThrow(r, guest), 'the guest can still throw it from the landing')
+})
+
+test('a long throw is not walking off: Rusty brings the cow back to a guest who stayed put', () => {
+  // (Thrown from the landing the cow lands over 7 m away; he used to take
+  // that for the guest leaving and go to lie down after one fetch.)
+  const guest = { x: 25.6, z: 0 }
+  const r = R.createRusty({ x: 21, z: 1.2 }, Math.PI / 2)
+  r.pets = 1
+  R.startApproach(r)
+  const dt = 1 / 60
+  const run = (seconds) => {
+    for (let t = 0; t < seconds; t += dt) {
+      const mouth = {
+        x: r.pos.x + Math.sin(r.yaw) * 0.7,
+        y: 0.38 - r.headDown * 0.25,
+        z: r.pos.z + Math.cos(r.yaw) * 0.7,
+      }
+      R.updateRusty(r, dt, guest, Math.PI / 2, false, mouth, () => {})
+    }
+  }
+  run(12)
+  assert.ok(R.throwCow(r, guest, { x: 16, z: 3 }), 'thrown from the landing')
+  run(2.5)
+  const far = Math.hypot(r.cow.pos.x - guest.x, r.cow.pos.z - guest.z)
+  assert.ok(far > 7, `the throw was a long one (${far.toFixed(1)} m)`)
+  run(14)
+  assert.equal(r.state, 'waiting', 'he is back with it, not gone to lie down')
+  assert.equal(r.tired, false)
+  assert.ok(R.canThrow(r, guest), 'and it can be thrown again')
+})
+
+test('one catch in a hundred is a gold fish', () => {
+  // (the dice are passed in: whatever they say when the fish is landed decides it)
+  const land = (roll) => {
+    const f = F.createFishing()
+    F.startFishing(f)
+    F.arriveAtHole(f)
+    F.press(f, () => 0.5)
+    for (let k = 0; k < 90; k++) F.updateFishing(f, 1 / 60, () => 0.5)
+    for (let k = 0; k < 600 && f.phase === 'waiting'; k++) F.updateFishing(f, 1 / 60, () => 0.5)
+    F.press(f)
+    let caught = false
+    for (let k = 0; k < 200 && !caught; k++) {
+      F.press(f)
+      for (let i = 0; i < 9; i++) {
+        F.updateFishing(f, 1 / 60, () => roll)
+        if (f.event === 'caught') caught = true
+      }
+    }
+    assert.ok(caught, 'never landed it')
+    return f.gold
+  }
+  assert.equal(F.GOLD_CHANCE, 0.01)
+  assert.equal(land(0.5), false)
+  assert.equal(land(0.0101), false)
+  assert.equal(land(0.0099), true)
+  assert.equal(F.createFishing().gold, false)
 })

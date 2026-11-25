@@ -282,7 +282,8 @@ ${NOISE_GLSL}`,
   c *= mix(1.0, 0.72, smoothstep(-0.3, -0.42, gy));
   c = mix(c, bed, edge(0.5, smoothstep(lapAt + 0.02, lapAt - 0.02, gy) + wob * 0.05));
   float lap = step(lapAt - 0.012, gy) * step(gy, lapAt + 0.034);
-  c = mix(c, uLap, lap * step(0.28, gNoise(vec2(w.x * 5.0, w.y * 1.6 + uTime * 0.25))));
+  // (it drifts north with the current: w.y is north here)
+  c = mix(c, uLap, lap * step(0.28, gNoise(vec2(w.x * 5.0, w.y * 1.6 - uTime * 0.25))));
   diffuseColor.rgb *= c;
 `,
       )
@@ -367,6 +368,41 @@ export function makeSparkleTexture() {
   px(5, 3, '#ffe9a8')
   px(3, 5, '#ffe9a8')
   px(5, 5, '#ffe9a8')
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.magFilter = THREE.NearestFilter
+  tex.minFilter = THREE.NearestFilter
+  tex.generateMipmaps = false
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+/** A little pixel arrow pointing down, for "this one" (it bobs over the résumé until it's read). */
+export function makeArrowTexture() {
+  const w = 9
+  const h = 8
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  ctx.clearRect(0, 0, w, h)
+  // a dark outline with a warm fill: a stem, then a head narrowing to a point
+  const rows = [
+    '..ooooo..',
+    '..oyyyo..',
+    '..oyyyo..',
+    'oooyyyooo',
+    'oyyyyyyyo',
+    '.oyyyyyo.',
+    '..oyyyo..',
+    '...ooo...',
+  ]
+  rows.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c === '.') return
+      ctx.fillStyle = c === 'o' ? '#3b2a1e' : '#fec54f'
+      ctx.fillRect(x, y, 1, 1)
+    }),
+  )
   const tex = new THREE.CanvasTexture(canvas)
   tex.magFilter = THREE.NearestFilter
   tex.minFilter = THREE.NearestFilter

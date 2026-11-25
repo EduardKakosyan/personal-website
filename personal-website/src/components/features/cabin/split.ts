@@ -45,6 +45,8 @@ export type Chunk = {
   age: number
   /** 0..1 while HUGO sucks it up his hose (vacuum.ts). */
   suck?: number
+  /** Where it was thrown to (so the next pieces can land clear of it). */
+  to?: Vec2
 }
 
 const GRAVITY = 14
@@ -136,15 +138,85 @@ function newLog(s: Split) {
   s.logIn = 0
 }
 
-/** A half of the log, flung sideways off the block (left or right of the swing). */
-function fling(s: Split, kind: 0 | 1, side: number, power: number, guestYaw: number) {
+/** How far from the block the pieces land (a ring round it), and how far apart at least. */
+const LAND_NEAR = 0.75
+const LAND_FAR = 1.9
+const LAND_APART = 0.42
+/** Room left round the guest's feet. */
+const LAND_FROM_GUEST = 0.75
+
+/**
+ * Where the next piece comes down. The halves used to fly the same two ways
+ * every time and pile up on each other (Eduard: "they all seem to land in
+ * each other so it looks like hugo is just struggling"). Now each lands
+ * somewhere of its own, spread evenly over the ground all round the block:
+ * of a couple of dozen spots picked at random in the ring (evenly by area),
+ * it takes the one furthest from every piece already lying there. `side`
+ * keeps a half on its own side of the swing (-1 left, 1 right; 0 either).
+ */
+function landingSpot(s: Split, side: number, guestYaw: number, near = LAND_NEAR, far = LAND_FAR) {
   // sideways is across the guest's facing: the split runs along the swing
+  const sx = Math.cos(guestYaw)
+  const sz = -Math.sin(guestYaw)
+  const guest = splitStance().at
+  const taken = s.chunks.map((c) => c.to ?? { x: c.pos.x, z: c.pos.z })
+  let best: Vec2 | null = null
+  let bestGap = -1
+  for (let k = 0; k < 28; k++) {
+    const a = Math.random() * Math.PI * 2
+    const r = Math.sqrt(near * near + Math.random() * (far * far - near * near))
+    const p = { x: CHOPPING_BLOCK.x + Math.cos(a) * r, z: CHOPPING_BLOCK.z + Math.sin(a) * r }
+    const across = (p.x - CHOPPING_BLOCK.x) * sx + (p.z - CHOPPING_BLOCK.z) * sz
+    if (side !== 0 && across * side < 0.12) continue
+    // not at the guest's feet, and not behind them (it would fly through them)
+    if (Math.hypot(p.x - guest.x, p.z - guest.z) < LAND_FROM_GUEST) continue
+    const gx = guest.x - CHOPPING_BLOCK.x
+    const gz = guest.z - CHOPPING_BLOCK.z
+    const towards =
+      ((p.x - CHOPPING_BLOCK.x) * gx + (p.z - CHOPPING_BLOCK.z) * gz) / (r * Math.hypot(gx, gz))
+    if (towards > 0.8) continue
+    if (blocked(p, 0.3)) continue
+    let gap = Infinity
+    for (const q of taken) gap = Math.min(gap, Math.hypot(p.x - q.x, p.z - q.z))
+    if (gap > bestGap) {
+      bestGap = gap
+      best = p
+    }
+    // (far enough from everything: no need to look further, and it keeps the spread random)
+    if (gap > LAND_APART * 2.2) break
+  }
+  // nothing fits (it can't happen on open ground): straight out to the side, as before
+  return (
+    best ?? {
+      x: CHOPPING_BLOCK.x + sx * (side || 1) * 1.1,
+      z: CHOPPING_BLOCK.z + sz * (side || 1) * 1.1,
+    }
+  )
+}
+
+/**
+ * The push that lands a piece on a spot: it leaves the block going up at
+ * `up`, comes down, hops once and slides to a stop (see updateChunks), so the
+ * sideways speed is the distance over the time all that takes.
+ */
+function throwTo(from: Vec2, to: Vec2, up: number) {
+  const air = (up + Math.sqrt(up * up + 2 * GRAVITY * LOG_Y)) / GRAVITY
+  const k = 1 / (air + 0.2)
+  return { x: (to.x - from.x) * k, y: up, z: (to.z - from.z) * k }
+}
+
+/** A half of the log, flung off the block to its own side of the swing. */
+function fling(s: Split, kind: 0 | 1, side: number, power: number, guestYaw: number) {
   const sx = Math.cos(guestYaw) * side
   const sz = -Math.sin(guestYaw) * side
+  const from = { x: CHOPPING_BLOCK.x + sx * 0.08, z: CHOPPING_BLOCK.z + sz * 0.08 }
+  const to = landingSpot(s, side, guestYaw)
   s.chunks.push({
-    pos: { x: CHOPPING_BLOCK.x + sx * 0.08, y: LOG_Y, z: CHOPPING_BLOCK.z + sz * 0.08 },
-    vel: { x: sx * (1.1 + power * 0.9), y: 2.2 + power * 1.4, z: sz * (1.1 + power * 0.9) },
-    yaw: guestYaw,
+    pos: { x: from.x, y: LOG_Y, z: from.z },
+    vel: throwTo(from, to, 2.2 + power * 1.4),
+    to,
+    // (each lies its own way, not all in a row)
+    yaw: guestYaw + (Math.random() - 0.5) * 1.3,
     tip: 0,
     tipRate: 2.5 + Math.random() * 2,
     side,
@@ -156,13 +228,15 @@ function fling(s: Split, kind: 0 | 1, side: number, power: number, guestYaw: num
 
 /** The whole log, knocked off the block by a glancing blow. */
 function tipOff(s: Split, guestYaw: number) {
-  const side = Math.random() < 0.5 ? -1 : 1
-  const sx = Math.cos(guestYaw) * side + Math.sin(guestYaw) * 0.5
-  const sz = -Math.sin(guestYaw) * side + Math.cos(guestYaw) * 0.5
-  const d = Math.hypot(sx, sz) || 1
+  // it rolls off close by, wherever there's room
+  const to = landingSpot(s, 0, guestYaw, 0.55, 1.1)
+  const across =
+    (to.x - CHOPPING_BLOCK.x) * Math.cos(guestYaw) - (to.z - CHOPPING_BLOCK.z) * Math.sin(guestYaw)
+  const side = across < 0 ? -1 : 1
   s.chunks.push({
     pos: { x: CHOPPING_BLOCK.x, y: LOG_Y, z: CHOPPING_BLOCK.z },
-    vel: { x: (sx / d) * 0.9, y: 0.9, z: (sz / d) * 0.9 },
+    vel: throwTo(CHOPPING_BLOCK, to, 0.9),
+    to,
     yaw: guestYaw + side * 0.4,
     tip: 0,
     tipRate: 2.2,

@@ -211,9 +211,9 @@ def stones_and_rocks(rng):
     def riffle_rock(y, u, r):
         x = brook_x(y) + u
         _rock(rocks, x, y, r, rng, rng.uniform(0.08, 0.17))
-        # foam just downstream (south) of it
+        # foam just downstream of it: the brook runs north (Eduard: it was flowing the wrong way)
         for k in range(rng.randint(1, 2)):
-            foam.append(box("foam", (rng.uniform(0.12, 0.3), rng.uniform(0.04, 0.07), 0.012), (x + rng.uniform(-0.15, 0.15), y - r * 1.1 - k * 0.12, WATER_Y + 0.004), deg(0, 0, rng.uniform(-20, 20))))
+            foam.append(box("foam", (rng.uniform(0.12, 0.3), rng.uniform(0.04, 0.07), 0.012), (x + rng.uniform(-0.15, 0.15), y + r * 1.1 + k * 0.12, WATER_Y + 0.004), deg(0, 0, rng.uniform(-20, 20))))
 
     for _ in range(26):  # the foreground riffle, south of the landing
         y = rng.uniform(-8.5, -2.2)

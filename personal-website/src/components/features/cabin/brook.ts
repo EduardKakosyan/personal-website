@@ -138,7 +138,7 @@ const smooth = (a: number, b: number, x: number) => {
 }
 
 /**
- * The camera at the brook (Eduard's photo 03 looks along it, upstream, under
+ * The camera at the brook (Eduard's photo 03 looks along it, under
  * the alders): coming up to the stairs the follow camera comes down lower and
  * swings south-west, looking up the brook past the landing. `k` is how far
  * that has happened (0 out in the field, 1 at the stairs). The visitor's own
@@ -154,7 +154,7 @@ export function brookView(guest: Vec2, portrait = false) {
     k,
     /** The camera's offset from the guest (x east, y up, z south). */
     off: { x: -4.6, y: 4.4, z: 8.4 },
-    /** Where it aims, from the guest: over the water, a little upstream. */
+    /** Where it aims, from the guest: over the water, a little way along it (north, the way it runs). */
     ahead: portrait ? { x: 0.3, z: -0.6 } : { x: 2.2, z: -3.2 },
   }
 }

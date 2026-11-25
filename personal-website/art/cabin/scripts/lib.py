@@ -58,6 +58,7 @@ PALETTE = {
     "water_jug": "#7cc0e8",
     "panel": "#d9dde0",
     "string_light": "#fec54f",
+    "pencil": "#e8b62e",
     "wire": "#2a2a2a",
     "birch": "#ecebe4",
     "birch_leaf": "#86b44c",

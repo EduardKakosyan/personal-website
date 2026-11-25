@@ -76,6 +76,20 @@ type Said = {
   waiting?: boolean
 }
 
+/**
+ * What HUGO is saying right now, for the speech bubble over his head in the
+ * scene (his answers aren't written on the card: Eduard, "put the stuff he is
+ * saying above him instead of into a chatbot so its more realistic").
+ */
+export type HugoSaying = {
+  /** Changes with every new answer (the bubble types it out afresh). */
+  key: number
+  text: string
+  links?: HugoLink[]
+  /** In place of the answer while he's waking the model up or thinking. */
+  status: string | null
+}
+
 type Props = {
   stop: HugoStop
   open: boolean
@@ -84,14 +98,17 @@ type Props = {
   onClose: () => void
   /** HUGO is answering (his antennas go in the scene). */
   onTalking: (talking: boolean) => void
+  /** What he's saying (or null: nothing), for the bubble over him. */
+  onSay: (saying: HugoSaying | null) => void
 }
 
 /**
  * HUGO's card (A48): tap HUGO (or Q) and he offers two or three questions
  * about the stop the guest is at, each with an answer written in advance,
- * plus a box to ask anything. Typed questions go through the site guide's
+ * plus a box to ask anything. The card only holds the questions; what HUGO
+ * says back goes in a speech bubble over him in the scene (`onSay`). Typed questions go through the input
  * checks (lib/validation, lib/sanitizer, lib/guardrails) and, only once the
- * guest types, the guide's small on-device model (webllm-provider). Stays
+ * guest types, a small on-device model (webllm-provider). Stays
  * mounted once opened, so the model isn't loaded twice.
  */
 export function HugoAsk(props: Props) {
@@ -124,7 +141,7 @@ function useTyped(text: string, key: number) {
   return state.key === key ? state.shown : 0
 }
 
-function Card({ stop, open, touch, onClose, onTalking }: Props) {
+function Card({ stop, open, touch, onClose, onTalking, onSay }: Props) {
   const llm = useWebLLMContext()
   const { initialize, cancel, generateStructuredResponse, engine, isInitializing, isGenerating } =
     llm
@@ -347,14 +364,23 @@ function Card({ stop, open, touch, onClose, onTalking }: Props) {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [open, onClose, pick, questions])
 
-  if (!open) return null
-
+  // What he's saying goes up to the scene, for the bubble over his head.
   const status = shownSaid?.waiting
     ? isInitializing || (!engine && support !== 'unsupported')
       ? `${HUGO_ASK_LINES.waking}… ${llm.downloadProgress}%`
       : HUGO_ASK_LINES.thinking
     : null
-  const text = shownSaid?.text ?? ''
+  const sayingKey = open && shownSaid ? shownSaid.key : null
+  const sayingText = shownSaid?.text ?? ''
+  const sayingLinks = shownSaid?.links
+  useEffect(() => {
+    onSay(
+      sayingKey === null ? null : { key: sayingKey, text: sayingText, links: sayingLinks, status },
+    )
+  }, [sayingKey, sayingText, sayingLinks, status, onSay])
+  useEffect(() => () => onSay(null), [onSay])
+
+  if (!open) return null
 
   return (
     <div
@@ -382,45 +408,6 @@ function Card({ stop, open, touch, onClose, onTalking }: Props) {
               <p className={styles.you}>
                 <span>You asked</span> {shownSaid.q}
               </p>
-              <div className={styles.say}>
-                <span className={`${cabin.speaker} ${cabin.speakerHugo}`}>HUGO</span>
-                {status ? (
-                  <span className={styles.status}>{status}</span>
-                ) : (
-                  <>
-                    <span aria-hidden="true">
-                      {text.slice(0, shown)}
-                      <span className={cabin.untyped}>{text.slice(shown)}</span>
-                    </span>
-                    <span className="sr-only">{text}</span>
-                  </>
-                )}
-              </div>
-              {!status && shownSaid.links && shownSaid.links.length > 0 && (
-                <p className={styles.links}>
-                  {shownSaid.links.map((l, i) =>
-                    l.href.startsWith('/projects/') ? (
-                      <a
-                        key={l.href}
-                        className={i === 0 ? cabin.panelButton : cabin.panelButtonQuiet}
-                        href={l.href}
-                      >
-                        {l.label}
-                      </a>
-                    ) : (
-                      <a
-                        key={l.href}
-                        className={i === 0 ? cabin.panelButton : cabin.panelButtonQuiet}
-                        href={l.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {l.label}
-                      </a>
-                    ),
-                  )}
-                </p>
-              )}
             </div>
           )}
           <ol className={styles.questions} aria-label="Questions for HUGO">

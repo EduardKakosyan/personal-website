@@ -33,6 +33,13 @@ export const FISHING_CATCH = {
   belly: '#d9dfe0',
 } as const
 
+/**
+ * Once in a hundred catches it's a gold fish (Eduard: "make like 1 in 100
+ * chance to catch a gold fish").
+ */
+export const GOLD_CHANCE = 0.01
+export const GOLD_FISH = { back: '#f0a81e', belly: '#ffe28a' } as const
+
 export type FishPhase =
   | 'off'
   /** Walking to the landing. */
@@ -85,6 +92,8 @@ export function createFishing() {
     tug: 0,
     /** Catches this go, and in all. */
     caught: 0,
+    /** This catch is the gold one (decided as it's landed). */
+    gold: false,
     /** For the HUD: what just happened (one frame). */
     event: null as FishEvent,
     /** 0..1, the rod's swing: back over the shoulder (-) and out in front (+). */
@@ -242,6 +251,7 @@ export function updateFishing(f: Fishing, dt: number, rnd: () => number = Math.r
         f.phase = 'landed'
         f.t = 0
         f.caught += 1
+        f.gold = rnd() < GOLD_CHANCE
         f.event = 'caught'
         break
       }

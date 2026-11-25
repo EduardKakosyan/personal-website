@@ -37,8 +37,12 @@ type CowState = 'carried' | 'air' | 'ground'
 
 const GRAVITY = 14
 const COW_REST_Y = 0
+/** How much room the cow needs on the ground. */
+const COW_PAD = 0.15
 /** How close the guest must be to the cow to throw it. */
 export const THROW_REACH = 3.6
+/** How far the guest has to go from where they threw it to count as having walked off. */
+const WALKED_OFF = 3
 /** Throws before Rusty goes to lie down. */
 const THROWS_BEFORE_REST = 2
 /** How close the guest must be to Rusty to rub his belly or look at his tag. */
@@ -63,8 +67,14 @@ export function createRusty(start: Vec2, yaw: number) {
     excitement: 0.4,
     firstDropDone: false,
     throws: 0,
+    /** Where the guest stood for the last throw (to tell a long throw from the guest walking off). */
+    thrownFrom: null as Vec2 | null,
     /** Set when he's decided to stop playing and lie down. */
     tired: false,
+    /** Where he lies down: his spot by the deck, or by the fire at night (callToBed). */
+    bed: { ...BED },
+    /** Called over to a new spot (the fire): he takes the cow there whatever he was doing. */
+    called: false,
     /** 0..1, how far he has lain down. */
     lie: 0,
     /** Seconds of belly rub left. */
@@ -91,6 +101,8 @@ export function createRusty(start: Vec2, yaw: number) {
       spin: { x: 0, y: 0 },
       rot: { x: 0, y: 0 },
       settled: 0,
+      /** Flicked back from an edge: it stays where it comes down (no roll). */
+      plop: false,
     },
   }
 }
@@ -115,8 +127,8 @@ function steer(r: Rusty, goal: Vec2, maxSpeed: number, dt: number) {
   const dx = goal.x - r.pos.x
   const dz = goal.z - r.pos.z
   const dist = Math.hypot(dx, dz)
-  // arrive: ease off over the last stretch
-  const wanted = dist < 0.15 ? 0 : maxSpeed * Math.min(1, dist / 1.6)
+  // arrive: ease off over the last stretch (and no walking while still getting up)
+  const wanted = dist < 0.15 || r.lie > 0.25 ? 0 : maxSpeed * Math.min(1, dist / 1.6)
   const accel = wanted > r.speed ? 7 : 10
   r.speed += Math.max(-accel * dt, Math.min(accel * dt, wanted - r.speed))
   if (dist > 0.15) r.yaw = turnTowards(r.yaw, Math.atan2(dx, dz), (3 + r.speed * 1.2) * dt)
@@ -153,6 +165,45 @@ function dropCow(r: Rusty) {
   c.vel = { x: Math.sin(r.yaw) * 0.35, y: 0.5, z: Math.cos(r.yaw) * 0.35 }
   c.spin = { x: 3, y: 1.5 }
   c.settled = 0
+  c.plop = false
+  // His head reaches past his feet: stopped at the top of the brook's bank (or
+  // against a wall) the cow would come down where there's no ground and hang
+  // in the air. Then he flicks it onto clear ground instead: short of the
+  // edge if there's room in front of him, or else down at his side.
+  const fall = dropTime(c.pos.y, c.vel.y)
+  const down = { x: c.pos.x + c.vel.x * fall, z: c.pos.z + c.vel.z * fall }
+  if (!blocked(down, COW_PAD)) return
+  let to: Vec2 = r.pos
+  const clear: Vec2[] = []
+  for (let k = 0.1; k < 1; k += 0.1) {
+    const p = { x: down.x + (r.pos.x - down.x) * k, z: down.z + (r.pos.z - down.z) * k }
+    if (Math.hypot(p.x - r.pos.x, p.z - r.pos.z) < FLICK_ROOM) break
+    clear.push(p)
+  }
+  for (const side of [1, -1])
+    clear.push({
+      x: r.pos.x + Math.cos(r.yaw) * FLICK_ROOM * side,
+      z: r.pos.z - Math.sin(r.yaw) * FLICK_ROOM * side,
+    })
+  for (const p of clear)
+    if (!blocked(p, COW_PAD)) {
+      to = p
+      break
+    }
+  c.vel.x = (to.x - c.pos.x) / FLICK_TIME
+  c.vel.z = (to.z - c.pos.z) / FLICK_TIME
+  c.vel.y = (0.5 * GRAVITY * FLICK_TIME * FLICK_TIME - (c.pos.y - COW_REST_Y)) / FLICK_TIME
+  c.plop = true
+}
+
+/** How long the cow is in the air when he flicks it back from an edge, and how far from him it has to land. */
+const FLICK_TIME = 0.4
+const FLICK_ROOM = 0.5
+
+/** How long something let go at height `y`, moving up at `vy`, takes to reach the ground. */
+function dropTime(y: number, vy: number) {
+  const h = Math.max(0, y - COW_REST_Y)
+  return (vy + Math.sqrt(vy * vy + 2 * GRAVITY * h)) / GRAVITY
 }
 
 /** Throw the cow towards a point (clamped to a sensible distance). Returns false if it can't be thrown now. */
@@ -177,8 +228,10 @@ export function throwCow(r: Rusty, guest: Vec2, toward: Vec2 | null) {
   }
   c.spin = { x: 9 + Math.random() * 4, y: 3 }
   c.settled = 0
+  c.plop = false
   r.excitement = 1
   r.throws += 1
+  r.thrownFrom = { ...guest }
   if (r.throws >= THROWS_BEFORE_REST) r.tired = true
   enter(r, 'chase')
   return true
@@ -247,6 +300,40 @@ export function lookUp(r: Rusty, seconds: number) {
   r.attention = seconds
 }
 
+/**
+ * Call him over to lie down somewhere else: by the fire, once it's lit (A22,
+ * A31). Wherever he is and whatever he was doing, he gets up if he was lying
+ * down, fetches the cow, trots over and settles there with it.
+ */
+export function callToBed(r: Rusty, bed: { x: number; z: number; yaw: number }) {
+  r.bed = { ...bed }
+  r.tired = true
+  r.called = true
+  r.homeSit = false
+  r.petting = 0
+  r.rubbing = 0
+  if (r.cow.state === 'carried') enter(r, 'toBed')
+  else if (r.state !== 'pickup') enter(r, 'chase')
+}
+
+/** Put him straight down at his spot with the cow, lying (starting the visit at night). */
+export function settleInBed(r: Rusty, bed: { x: number; z: number; yaw: number }) {
+  callToBed(r, bed)
+  r.pos = { x: bed.x, z: bed.z }
+  r.yaw = bed.yaw
+  r.lie = 1
+  r.firstDropDone = true
+  r.cow.state = 'ground'
+  r.cow.pos = {
+    x: bed.x + Math.sin(bed.yaw) * 0.55,
+    y: COW_REST_Y,
+    z: bed.z + Math.cos(bed.yaw) * 0.55,
+  }
+  r.cow.vel = { x: 0, y: 0, z: 0 }
+  r.cow.settled = 1
+  enter(r, 'lying')
+}
+
 export function startApproach(r: Rusty) {
   if (r.state === 'home') {
     r.excitement = 1
@@ -276,6 +363,7 @@ function updateCow(r: Rusty, dt: number, mouth: { x: number; y: number; z: numbe
     c.rot.y += c.spin.y * dt
     if (c.pos.y <= COW_REST_Y) {
       c.pos.y = COW_REST_Y
+      if (c.plop) c.vel.x = c.vel.z = 0
       if (Math.abs(c.vel.y) > 2) {
         // bounce
         c.vel.y = -c.vel.y * 0.35
@@ -292,7 +380,7 @@ function updateCow(r: Rusty, dt: number, mouth: { x: number; y: number; z: numbe
   // on the ground: roll to a stop and settle upright
   const k = damp(dt, 4)
   const next = { x: c.pos.x + c.vel.x * dt, z: c.pos.z + c.vel.z * dt }
-  if (!blocked(next, 0.15)) {
+  if (!blocked(next, COW_PAD)) {
     c.pos.x = next.x
     c.pos.z = next.z
   }
@@ -324,6 +412,11 @@ export function updateRusty(
 ): RustyPose {
   r.timer += dt
   const c = r.cow
+  // Called away while lying down: up on his feet first (he doesn't slide off lying)
+  if (r.state !== 'lying' && r.lie > 0) {
+    r.lie = Math.max(0, r.lie - dt * 2.2)
+    r.roll += (0 - r.roll) * damp(dt, 8)
+  }
   if (guestInside && !r.tired && r.state !== 'home') {
     r.tired = true
     if (r.state === 'approach' || r.state === 'return') enter(r, 'toBed')
@@ -339,13 +432,16 @@ export function updateRusty(
       break
     case 'approach':
     case 'return': {
+      const from = r.thrownFrom
       if (
         r.state === 'return' &&
         r.throws > 0 &&
-        Math.hypot(guest.x - r.pos.x, guest.z - r.pos.z) > 7
+        Math.hypot(guest.x - r.pos.x, guest.z - r.pos.z) > 7 &&
+        (!from || Math.hypot(guest.x - from.x, guest.z - from.z) > WALKED_OFF)
       ) {
         // The guest walked away from him while he was bringing it back after a
-        // throw. (Before any throw he keeps bringing it, wherever they go.)
+        // throw. (Before any throw he keeps bringing it, wherever they go. And
+        // a long throw isn't walking off: they have to have left the spot.)
         r.tired = true
         enter(r, 'toBed')
         break
@@ -376,7 +472,7 @@ export function updateRusty(
       const toGuest = Math.hypot(guest.x - r.pos.x, guest.z - r.pos.z)
       const cowFromGuest = Math.hypot(c.pos.x - guest.x, c.pos.z - guest.z)
       // (Once the guest has gone inside, he takes the cow to his spot: A66.)
-      if (c.state === 'ground' && (cowFromGuest > 4.5 || (guestInside && r.tired))) {
+      if (c.state === 'ground' && (cowFromGuest > 4.5 || (guestInside && r.tired) || r.called)) {
         // The guest walked off. Before any throw he brings the cow again;
         // after a throw he takes it and goes to lie down.
         if (r.throws > 0) r.tired = true
@@ -456,7 +552,7 @@ export function updateRusty(
     }
     case 'toBed': {
       // an easy trot back to his spot
-      const left = steer(r, BED, 2.3, dt)
+      const left = steer(r, r.bed, 2.3, dt)
       r.excitement += (0.35 - r.excitement) * damp(dt, 1)
       if ((left < 0.25 && r.speed < 0.4) || r.stuck > 0.8) enter(r, 'lying')
       break
@@ -464,7 +560,7 @@ export function updateRusty(
     case 'lying': {
       // turn round, lie down, put the cow down between his paws
       r.speed = Math.max(0, r.speed - 6 * dt)
-      r.yaw = turnTowards(r.yaw, BED.yaw, 3 * dt)
+      r.yaw = turnTowards(r.yaw, r.bed.yaw, 3 * dt)
       if (r.timer > 0.5) r.lie += (1 - r.lie) * damp(dt, 4)
       if (c.state === 'carried' && r.lie > 0.7) {
         dropCow(r)

@@ -10,6 +10,8 @@ export type FishingHudState = {
   reel: number
   caught: number
   event: FishEvent
+  /** The catch just landed is the gold one. */
+  gold?: boolean
 }
 
 /** How the frame loop hands the HUD its numbers without re-rendering React every frame. */
@@ -22,6 +24,8 @@ export const FISHING_WORDS: Partial<Record<NonNullable<FishEvent>, string>> = {
   away: 'It got away.',
   caught: 'Caught one!',
 }
+/** DRAFT: for the one catch in a hundred that's gold. */
+export const GOLD_WORDS = 'A gold fish!'
 
 /** DRAFT: the line under the title, for each part of a go (the agent's). */
 const HINTS: Partial<Record<FishPhase, { keys: string; touch: string }>> = {
@@ -68,7 +72,8 @@ export function FishingHud({
         if (fill.current) fill.current.style.width = `${(s.reel * 100).toFixed(1)}%`
         setPhase((p) => (p === s.phase ? p : s.phase))
         setCaught((c) => (c === s.caught ? c : s.caught))
-        const text = s.event ? FISHING_WORDS[s.event] : undefined
+        const text =
+          s.event === 'caught' && s.gold ? GOLD_WORDS : s.event ? FISHING_WORDS[s.event] : undefined
         if (text) {
           wordKey.current += 1
           setWord({ text, key: wordKey.current, kind: s.event ?? '' })

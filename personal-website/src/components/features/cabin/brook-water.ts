@@ -14,6 +14,10 @@ export const waterUniforms = {
   uSheen: { value: new THREE.Color('#d6e8e4') },
   /** The sky it reflects (daylight.ts keeps it the sky's colour). */
   uSky: { value: new THREE.Color('#9fd0ee') },
+  /** The sky straight overhead, which the water shows looking down: cool by day, dark at night. */
+  uOverhead: { value: new THREE.Color().setRGB(0.5, 0.74, 0.88) },
+  /** The leaves over it, as it reflects them (dark green by day, nearly black at night). */
+  uLeaves: { value: new THREE.Color().setRGB(0.13, 0.27, 0.2) },
 }
 
 const WATER_GLSL = /* glsl */ `
@@ -21,6 +25,8 @@ uniform float uTime;
 uniform vec3 uGlint;
 uniform vec3 uSheen;
 uniform vec3 uSky;
+uniform vec3 uOverhead;
+uniform vec3 uLeaves;
 uniform float uWaterSoft;
 varying vec3 vWaterPos;
 float wHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -58,17 +64,19 @@ export function makeWaterMaterial(smooth: boolean) {
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
-  // (the brook runs north–south: everything on it is long along z and drifts downstream)
+  // (the brook runs north–south: everything on it is long along z and drifts
+  // downstream, which is north, towards -z; it used to run the other way,
+  // uphill: Eduard, "the river is flowing the wrong way")
   vec2 w = vWaterPos.xz;
   float flow = uTime * 0.5;
   // what it reflects, in long slow bands: the leaves over it (dark) and
   // gaps of sky between them (light)
-  float band = wNoise(vec2(w.x * 1.7, (w.y - flow * 0.25) * 0.42)) * 0.75
-    + wNoise(vec2(w.x * 4.3, (w.y - flow * 0.5) * 1.1)) * 0.25;
+  float band = wNoise(vec2(w.x * 1.7, (w.y + flow * 0.25) * 0.42)) * 0.75
+    + wNoise(vec2(w.x * 4.3, (w.y + flow * 0.5) * 1.1)) * 0.25;
   float skyGap = wEdge(0.67, band);
   float leaves = 1.0 - wEdge(0.42, band);
   // ripples: thin bright dashes riding the current
-  vec2 rc = vec2(w.x / 0.055, (w.y - flow) / 0.62);
+  vec2 rc = vec2(w.x / 0.055, (w.y + flow) / 0.62);
   rc.y += wHash(vec2(floor(rc.x), 3.0)) * 7.0;
   float rh = wHash(floor(rc));
   float along = fract(rc.y);
@@ -86,8 +94,8 @@ export function makeWaterMaterial(smooth: boolean) {
   // down, water shows the sky overhead, which stays cool when the horizon
   // has gone peach; more of it the flatter you look across the water.
   float fres = 1.0 - abs(dot(normalize(vViewPosition), normalize(normal)));
-  vec3 overhead = mix(uSky, vec3(0.5, 0.74, 0.88), 0.7);
-  outgoingLight = mix(outgoingLight, vec3(0.13, 0.27, 0.2), leaves * 0.55);
+  vec3 overhead = mix(uSky, uOverhead, 0.7);
+  outgoingLight = mix(outgoingLight, uLeaves, leaves * 0.55);
   outgoingLight = mix(outgoingLight, overhead, skyGap * 0.6 + 0.12 * smoothstep(0.3, 0.9, fres));
   outgoingLight = mix(outgoingLight, mix(overhead, uSheen, 0.6) * 1.15, ripple);
   outgoingLight = mix(outgoingLight, uGlint, glint);

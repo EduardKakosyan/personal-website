@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" role="img" aria-labelledby="title desc" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title id="title">How Keystone serves people and Claude</title><desc id="desc">Staff in the browser and Claude, signed in as the person, both call the same registry of operations. Every call passes the same checks and runs under the database row-level rules. Scheduled jobs read from QuickBooks, Linear, SharePoint and Outlook.</desc>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#6b5a45"/></marker></defs>
+<rect width="880" height="470" rx="12" fill="#fbf6ea"/>
+<rect x="24" y="66" width="196" height="66" rx="7" fill="none" stroke="#3b2a1e" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="122.0" y="94.5" fill="#3b2a1e" font-size="15" font-weight="700" text-anchor="middle">Staff</text>
+<text x="122.0" y="113.5" fill="#3b2a1e" font-size="13.5" text-anchor="middle">in the browser</text>
+<rect x="24" y="196" width="196" height="66" rx="7" fill="#f2b880" stroke="#f2b880" stroke-width="2"/>
+<text x="122.0" y="224.5" fill="#3b2a1e" font-size="15" font-weight="700" text-anchor="middle">Claude</text>
+<text x="122.0" y="243.5" fill="#3b2a1e" font-size="13.5" text-anchor="middle">signed in as the person</text>
+<rect x="278" y="24" width="578" height="284" rx="10" fill="none" stroke="#8a7a5a" stroke-width="1.2" stroke-dasharray="2 5"/><text x="292" y="46" fill="#8a7a5a" font-size="13" letter-spacing="1">KEYSTONE</text>
+<rect x="290" y="66" width="250" height="196" rx="7" fill="none" stroke="#6b5a45" stroke-width="2"/>
+<text x="415.0" y="140.5" fill="#3b2a1e" font-size="15" font-weight="700" text-anchor="middle">One registry</text>
+<text x="415.0" y="159.5" fill="#3b2a1e" font-size="13.5" text-anchor="middle">about 150 operations,</text>
+<text x="415.0" y="178.5" fill="#3b2a1e" font-size="13.5" text-anchor="middle">each declared once:</text>
+<text x="415.0" y="197.5" fill="#3b2a1e" font-size="13.5" text-anchor="middle">input · permission · code</text>
+<rect x="580" y="66" width="250" height="86" rx="7" fill="none" stroke="#6b5a45" stroke-width="2"/>
+<text x="705.0" y="95.0" fill="#3b2a1e" font-size="15" font-weight="700" text-anchor="middle">The same checks</text>
+<text x="705.0" y="114.0" fill="#3b2a1e" font-size="13.5" text-anchor="middle">input → permission →</text>
+<text x="705.0" y="133.0" fill="#3b2a1e" font-size="13.5" text-anchor="middle">run as the person → audit</text>
+<rect x="580" y="176" width="250" height="86" rx="7" fill="none" stroke="#6b5a45" stroke-width="2"/>
+<text x="705.0" y="205.0" fill="#3b2a1e" font-size="15" font-weight="700" text-anchor="middle">Postgres</text>
+<text x="705.0" y="224.0" fill="#3b2a1e" font-size="13.5" text-anchor="middle">row-level rules decide</text>
+<text x="705.0" y="243.0" fill="#3b2a1e" font-size="13.5" text-anchor="middle">which rows each person sees</text>
+<path d="M220.0 99.0 L290.0 99.0" fill="none" stroke="#6b5a45" stroke-width="2" marker-end="url(#a)"/>
+<text x="249.0" y="88.0" fill="#6b5a45" font-size="12.5" text-anchor="middle">web app</text>
+<path d="M220.0 229.0 L290.0 229.0" fill="none" stroke="#6b5a45" stroke-width="2" marker-end="url(#a)"/>
+<text x="249.0" y="204.0" fill="#6b5a45" font-size="12.5" text-anchor="middle">MCP tools,</text>
+<text x="249" y="219" fill="#6b5a45" font-size="12.5" text-anchor="middle">generated</text>
+<path d="M540.0 109.0 L580.0 109.0" fill="none" stroke="#6b5a45" stroke-width="2" marker-end="url(#a)"/>
+<path d="M705.0 152.0 L705.0 176.0" fill="none" stroke="#6b5a45" stroke-width="2" marker-end="url(#a)"/>
+<rect x="580" y="338" width="250" height="62" rx="7" fill="none" stroke="#6b5a45" stroke-width="2"/>
+<text x="705.0" y="364.5" fill="#3b2a1e" font-size="15" font-weight="700" text-anchor="middle">Scheduled jobs</text>
+<text x="705.0" y="383.5" fill="#3b2a1e" font-size="13.5" text-anchor="middle">read-only, with the time fetched</text>
+<rect x="24" y="338" width="516" height="62" rx="7" fill="none" stroke="#8a7a5a" stroke-width="1.5"/>
+<text x="282.0" y="364.5" fill="#6b5a45" font-size="15" font-weight="700" text-anchor="middle">QuickBooks · Linear · SharePoint · Outlook</text>
+<text x="282.0" y="383.5" fill="#6b5a45" font-size="13.5" text-anchor="middle">each keeps its own records</text>
+<path d="M540.0 369.0 L580.0 369.0" fill="none" stroke="#6b5a45" stroke-width="2" marker-end="url(#a)"/>
+<path d="M705.0 338.0 L705.0 262.0" fill="none" stroke="#6b5a45" stroke-width="2" marker-end="url(#a)"/>
+<rect x="24" y="433" width="18" height="13" rx="3" stroke-width="1.6" fill="#f2b880" stroke="#f2b880"/>
+<text x="50" y="444" fill="#6b5a45" font-size="13">a model</text>
+<rect x="119.80000000000001" y="433" width="18" height="13" rx="3" stroke-width="1.6" fill="none" stroke="#6b5a45"/>
+<text x="145.8" y="444" fill="#6b5a45" font-size="13">plain code</text>
+<rect x="237.8" y="433" width="18" height="13" rx="3" stroke-width="1.6" fill="none" stroke="#3b2a1e" stroke-dasharray="4 3"/>
+<text x="263.8" y="444" fill="#6b5a45" font-size="13">a person</text>
+</svg>

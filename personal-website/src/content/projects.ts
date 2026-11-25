@@ -7,6 +7,7 @@ export type CaseTopic =
   | 'decisions'
   | 'testing'
   | 'architecture'
+  | 'ai'
   | 'team'
   | 'hard'
   | 'status'
@@ -15,7 +16,7 @@ export interface Project {
   slug: string
   title: string
   tier: 'case-study' | 'archive'
-  beat?: 'systems' | 'private-local' | 'adoption'
+  beat?: 'systems' | 'private-local' | 'adoption' | 'design'
   visibility: 'public-repo' | 'described-only'
   description: string
   detail: string
@@ -32,6 +33,206 @@ export interface Project {
 }
 
 export const projects: Project[] = [
+  {
+    slug: 'keeper',
+    title: 'Keeper',
+    tier: 'case-study',
+    beat: 'private-local',
+    visibility: 'described-only',
+    description:
+      'Meeting notes and dictation for the AI-First team, running on hardware the company owns. It replaced two paid subscriptions.',
+    detail:
+      'Keeper for Mac records Teams calls without a bot and transcribes them on the Mac. A server on the company’s DGX Spark stores every meeting in SQLite, summarises it with an open-weights model and makes it searchable from a web page and from Claude or ChatGPT over MCP. Eduard designed and built it; a local model in his dgx-autonomy loop wrote the first version.',
+    aliases: ['keeper', 'meeting', 'notetaker', 'archive', 'dictation', 'fireflies', 'transcript'],
+    outcome: 'It is our team’s notetaker now, and we switched off both subscriptions it replaced.',
+    casebook: {
+      problem:
+        'AI-First’s team recorded calls with Fireflies, a bot that joins each meeting and keeps the transcripts on its own servers, and dictated with Wispr Flow. Eduard wanted both jobs done on hardware the company owns. Turning speech into text and tidying a paragraph are small jobs that small open models handle without a frontier model, a bill per seat or a rate limit.',
+      decisions:
+        'Recording starts by itself when a Teams call begins, and a small floating indicator shows it with a Stop button. A meeting belongs to the person who recorded it: admins cannot open it, sharing is read-only, and a meeting that is not yours looks the same as one that does not exist. Each person connects Claude or ChatGPT with their own sign-in. Tasks, reminders, calendar changes and voiceprints were left out; an action item is a record of what was said.',
+      testing:
+        'The server has about 1,300 Python tests and the Mac and iPhone code about 1,600 Swift tests. They cover who can see a meeting on every surface, repeat uploads, paging, recovery and MCP over a real server connection.',
+      architecture:
+        'The Mac app records the microphone and the Mac’s own audio as two channels, writes a live transcript with a streaming speech model and transcribes again after the call with a slower, more accurate one. The server is one Python (FastAPI) process with one SQLite file and full-text search, on a DGX Spark. New meetings join a summary queue, so a busy GPU only delays a summary. The web page, the REST API and the MCP tools read through one access rule.',
+      ai: 'Models do the jobs that need one: speech to text, telling speakers apart, summaries and tidying long dictations. Rules format spoken numbers and lists and protect web addresses, search is a keyword index that needs no model, and each person’s vocabulary is learned by counting spellings in their own meetings. A model’s cleanup replaces the rule-based text only if it passes a check: it cannot add a greeting or change a number. Ask Keeper answers a question only from lines a search found, and refuses an answer that cites a meeting the model was not shown.',
+      team: 'A local model in Eduard’s dgx-autonomy loop wrote the first server and Mac app. Eduard took it over on October 13, 2026 and has built it since with Claude Code, on branches reviewed and merged through pull requests.',
+      hard: 'Building it took weeks; getting a whole team to use all of it takes longer. That is why recording starts by itself, and why Keeper has an adoption page that shows where people have stopped using it and what would help.',
+      status:
+        'Keeper is the team’s notetaker and dictation app. Fireflies and Wispr Flow were switched off in November 2026. The Mac app updates itself. The code is private.',
+    },
+    facts: {
+      role: 'Design and development',
+      when: 'September 2026 – present',
+      team: 'Eduard, with Claude Code; first version by a local model in dgx-autonomy',
+      stack: [
+        'Swift',
+        'Python',
+        'FastAPI',
+        'SQLite FTS5',
+        'MCP',
+        'Parakeet',
+        'Nemotron',
+        'Sortformer',
+        'Qwen',
+      ],
+      links: [],
+    },
+  },
+  {
+    slug: 'keystone',
+    title: 'Keystone',
+    tier: 'case-study',
+    beat: 'systems',
+    visibility: 'described-only',
+    description:
+      'Internal operations software for AI-First. Staff and Claude use one registry of operations, under the same permissions.',
+    detail:
+      'Eduard leads a four-person development team and designed Keystone’s architecture. Every operation is declared once in a registry; the web app calls it and the Claude tools are generated from it, so staff and Claude do the same things under the same permissions. It links the company’s records across SharePoint, Linear, QuickBooks and Outlook.',
+    aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
+    outcome:
+      'I designed the architecture and lead the build. It is deployed, and we are rolling it out, switching features on one at a time.',
+    casebook: {
+      problem:
+        'AI-First runs on SharePoint, Linear, QuickBooks and Outlook, and none of them can answer a question that crosses two of them, such as whether a project made money. Eduard mostly built the company’s first dashboard on his own, without asking the people who would use it. It collected more than anyone read, people stopped trusting its numbers, and its Claude tools were written by hand beside the app, so the two drifted apart.',
+      discovery:
+        'Keystone started with the people. Eduard interviewed AI-First’s leadership team, the founder, the head of operations and the head of delivery, about the questions they need answered to do their jobs, and answered his own set as head of tech. A business analyst, a Master of Digital Innovation student, turned the answers into a scorecard prototype.',
+      evidence:
+        'People describe a tidier version of how they work, so Eduard checked the interviews against behaviour. Agents measured which features of the old dashboard were being used, read-only, in the production database.',
+      findings:
+        'Every number already had a home: plans in Linear, time in Outlook, money in QuickBooks and signed work in SharePoint. What was missing was the link between them and agreed definitions. The founder said he would rather ask Claude for a number than open a page of charts.',
+      decisions:
+        'Keystone keeps the join, not the files: SharePoint keeps files, Linear keeps tasks and QuickBooks keeps the ledger, and QuickBooks is read-only for good. Every metric names the role that owns it, the question it answers, its source and how often it updates, and a metric waiting for data says so instead of showing zero. Targets and status colours on anyone’s capacity, and views that no meeting uses, were left out.',
+      testing:
+        'The scorecard was tested as a prototype first: 25 measures across eight views with sample data. In the code, about 4,500 test cases run on every pull request, and about 1,500 of them check the row-level access rules against a real database.',
+      architecture:
+        'Each operation is declared once in a registry with its input, its permission and its code; there are about 150. The web app calls them and the MCP tools Claude uses are generated from the same entries, so a tool cannot exist without the operation behind it. Claude signs in as the person, every request runs under the database’s row-level rules, and no request carries an admin key.',
+      ai: 'There is no model inside Keystone. The numbers are SQL, the sentence explaining each metric comes from a template a person wrote, and alerts are rules such as an opportunity untouched for fourteen days. The AI is the Claude each person already uses, which comes in through the same registry with the same permissions.',
+      team: 'Eduard wrote the requirements and the technical design and built the first phase himself: sign-in, the registry and the generated Claude tools. Developers on his team have built most of what followed from tickets cut from the design. He reviews the Linear issues and what merges to main, and still builds some parts himself.',
+      hard: 'The hard parts are not code. A metric means nothing until someone owns it and its definition is agreed, and people have to change how they work for the numbers to be right. Eduard said in the first brainstorm that change management would matter more than the software.',
+      status:
+        'Keystone is deployed and the team is rolling it out, switching features on one at a time. The old dashboard stays in charge until one planned switch-over. The code is private.',
+    },
+    facts: {
+      role: 'Architect and engineering lead',
+      when: 'August 2026 – present',
+      team: 'Eduard, three developers on his team and a business analyst',
+      stack: ['Next.js', 'TypeScript', 'Supabase', 'Postgres RLS', 'MCP', 'Zod', 'Vercel'],
+      links: [],
+    },
+  },
+  {
+    slug: 'lyfe',
+    title: 'lyfe',
+    tier: 'case-study',
+    beat: 'private-local',
+    visibility: 'public-repo',
+    description:
+      'A private iPhone app for one person’s routines and goals: the gym, breath training, study, food and money.',
+    detail:
+      'Eduard built lyfe for himself: an iPhone app in Swift and a Rust backend on a DGX Spark, reachable only over a private network. The backend alone decides what counts and whether a streak is alive. Two open-weights models have narrow jobs, estimating a meal from a photo and drawing meals and food icons; everything else is rules.',
+    aliases: ['lyfe', 'routines', 'streak', 'breath training', 'food log'],
+    outcome: 'It runs on my own phone, and I built it one working step at a time.',
+    casebook: {
+      problem:
+        'Eduard only buys software he can’t build himself. He can’t build a bank or a brokerage, but he can build an app for his own routines and goals that shows exactly what he needs, the way he wants it. lyfe keeps the gym, breath-hold training, study and food logging going, holds them to a few goals, and shows where his money goes and how far he is from financial independence. The data sits in lyfe’s own database on a machine he runs, not in a budgeting app’s cloud, next to a model he can later point at it; today no model touches money. An earlier attempt covered every part of his life at once and he stopped using it, so lyfe started with one routine.',
+      decisions:
+        'The backend is the single authority and the phone only captures, because with one user two-way sync risks the two disagreeing about a streak. The app is Swift because notification replies, a timer under the lock screen and the barcode scanner need Apple’s frameworks; the backend is Rust. Nothing outside can call in: the backend asks Garmin and the bank bridge for new data.',
+      testing:
+        'The backend has about 320 tests, about 110 of them against a real database, and the Swift package about 350. Each step of the build plan worked end to end, from capture to a screen, before the next one started.',
+      architecture:
+        'An iPhone app in Swift talks to a Rust backend with PostgreSQL on a DGX Spark, over a private Tailscale network. lyfe has its own sign-in, a token per device and a database with no network port, and a nightly backup leaves the machine encrypted. The phone records offline and sends records later, each with an id made on the phone so a retry counts once.',
+      ai: 'Two models have three narrow jobs. A photo of a meal goes to an open-weights vision model on the Spark; its numbers are marked as an estimate with a range, kept apart from measured ones, and discarded if they cannot be true. A second model redraws the photo as an illustration, drew an icon for each catalogue food, and never touches a number. Streaks, what counts as a session, goals, reminders and spending categories are plain rules.',
+      team: 'Eduard is the only user and the only author. He built it with a coding agent from a written glossary, decision records and a fifteen-step plan.',
+      status:
+        'Started in November 2026. The gym, breath, study, food, goals and money parts are installed on his phone, and the code is public.',
+    },
+    facts: {
+      role: 'Design and development',
+      when: 'November 2026 – present',
+      team: 'Solo, with a coding agent',
+      stack: ['Swift', 'Rust', 'PostgreSQL', 'Tailscale', 'Ollama', 'FLUX.2', 'DGX Spark'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/lyfe' }],
+    },
+  },
+  {
+    slug: 'dgx-autonomy',
+    title: 'dgx-autonomy',
+    tier: 'case-study',
+    beat: 'private-local',
+    visibility: 'public-repo',
+    description:
+      'A setup that lets a local open-weights model build software unattended on one DGX Spark, graded by tests it cannot edit.',
+    detail:
+      'Eduard designed the controller around OpenHands and built it with Claude Code. It freezes the brief and the tests, replaces a full conversation with a fresh one that reads a handoff note, checks every claim of completion in separate containers and holds passing builds for review. Recent builds ran Qwen3.8-Flash-Next through SGLang with NVFP4 weights. It built Shoreline, the original Camp Yahtzee release and the first version of Keeper.',
+    aliases: ['dgx', 'autonomy', 'autonomous loops', 'local ai', 'qwen', 'spark'],
+    outcome:
+      'It built Shoreline, Camp Yahtzee and the first version of Keeper. The local model wrote the code, and I set the direction.',
+    casebook: {
+      problem:
+        'Eduard wanted to know how far an open-weights model could get on a desk-sized machine if he gave up speed and let it work for up to about 40 hours. A DGX Spark writes roughly 20 tokens a second, so the bet was patience over speed: the model had to stay on track, recover from its own mistakes and be judged by something other than itself.',
+      discovery:
+        'Before writing code Eduard worked through research questions, a research document, requirements, a technical design and a phased outline. The research inspected the machine directly and kept verified facts apart from estimates.',
+      evidence:
+        'Every model used first qualified on the machine with the whole workload running: tool-call probes, a prompt that fills most of the context with a word to recall from its start, a real build that must pass, and memory sampled throughout. On one build llama.cpp fell from about 25 tokens a second to 8 as the context filled; after SGLang qualified on the machine, the next build held 21 to 25.',
+      findings:
+        'Local models claim success early and with confidence, so finishing became a claim that frozen tests have to confirm. Tests are not taste: every product review found something the tests could not see, such as number keys drawn so that a 4 read as a 3.',
+      decisions:
+        'OpenHands runs the agent loop and Eduard’s controller owns everything around it. Memory is a structured handoff note the next conversation reads, and anything marked done has to cite a file or a test run. He moved from llama.cpp to SGLang after qualifying it on the machine.',
+      testing:
+        'About 390 tests run without a GPU or a model, and a separate set on the machine covers killed controllers and crashed stacks, a forced conversation reset, the network rules and the protected tests.',
+      architecture:
+        'A controller outside the sandbox freezes the brief and the tests with a fingerprint, keeps the deadline, and starts a fresh conversation from a handoff note when the context fills or the builder gets stuck. When the builder says it is done, the controller saves a snapshot, runs each frozen check in its own disposable container against the running demo, and throws the result out and reruns it if the code changed during the check.',
+      ai: 'The model writes all of the code, plain code decides whether it is finished, and a person decides whether it is good. A Claude session supervised: it wrote the briefs and tests for two of the apps and reviewed the demos with Eduard.',
+      team: 'Eduard designed the controller and built it with Claude Code. The local model wrote all the code in each build. A supervising Claude session wrote the Shoreline and Camp Yahtzee briefs and tests and reviewed the demos, and Eduard made the requests and decided what to accept.',
+      hard: 'Handoffs needed enforcing. One builder ignored a request to hand off for 43 minutes while its context filled; a reminder after every three unrelated actions got a handoff within a minute.',
+      status:
+        'Built in a week in September 2026 and public on GitHub. It built Shoreline, the original Camp Yahtzee release and the first version of Keeper, which Eduard took over in October.',
+    },
+    facts: {
+      role: 'Controller design',
+      when: 'September–October 2026',
+      team: 'Eduard, with Claude Code; a local model as builder; a Claude session as supervisor',
+      stack: ['DGX Spark', 'Qwen3.8', 'OpenHands', 'SGLang', 'Python', 'Docker'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/dgx-autonomy' }],
+    },
+  },
+  {
+    slug: 'personal-website',
+    title: 'This website',
+    tier: 'case-study',
+    beat: 'design',
+    visibility: 'public-repo',
+    description:
+      'A small game set at Eduard’s cabin in Nova Scotia: walk around, meet his dog, and find his résumé and projects in the place.',
+    detail:
+      'Eduard rebuilt his site as a walkable 3D scene of his cabin, drawn with React Three Fiber in a pixel look. He directed every decision and a coding agent built it: each choice is logged, and every change is checked in a real browser before he reviews it. The guide, HUGO, only gives answers written ahead of time and approved by Eduard; a small model in the browser picks which one fits a typed question.',
+    aliases: ['personal website', 'this site', 'this website', 'portfolio site', 'cabin'],
+    outcome:
+      'Live: the cabin, the woodshed, the brook and the fire, with every line approved by me.',
+    casebook: {
+      problem:
+        'Eduard’s previous redesign was generated by a coding agent with almost no input from him. It looked like every other portfolio, and he rejected it. He wanted a site designed on purpose, where he decides the place, the story, each interaction and each line.',
+      discovery:
+        'The work started with a design brief, not code: the experience first, then art direction from reference boards and his own photos of the property, then a storyboard, then one small scene to test the feel before building more.',
+      decisions:
+        'Eduard directs and the agent builds: for every decision the agent offers options and one recommendation, then waits, and each decision is logged with his words. The work is in the place, with the résumé on the table in the cabin and past projects in boxes on the workbench, and a bar in the corner gives a direct route to his work, the résumé and his contact details.',
+      testing:
+        'Tests run the simulation directly: a guest can reach every spot the game walks them to, Rusty’s fetch and the fishing rules behave, the split wood lands where it should, and HUGO’s answers never speak as Eduard. Other tests keep the résumé and profile in step with the facts file and keep client names out of every tracked file.',
+      architecture:
+        'Next.js and React Three Fiber draw the scene; the pixel look comes from rendering at low resolution and scaling up, with toon shading and an outline pass. The world is a simulation in plain TypeScript with no 3D code, so ordinary tests can run it. Python scripts build every model in Blender, and one file holds the facts the site, the résumé PDF and his GitHub profile are built from.',
+      ai: 'HUGO never writes a sentence. A small model running in the visitor’s browser only picks which prepared answer fits a typed question, and a keyword match does the same job on devices that cannot run it. Eduard’s answers at the fire are fixed too. When the model was allowed to answer freely it spoke as Eduard and invented hobbies, so that was removed.',
+      team: 'Eduard gives the direction, the photos, the picks and the wording of key lines, and tests each build himself. Coding agents write the code and the Blender scripts.',
+      status:
+        'Live since November 2026. The cabin, the woodshed, the brook and the fire are open; the game has no sound yet.',
+    },
+    facts: {
+      role: 'Direction and design',
+      when: 'October 2026 – present',
+      team: 'Eduard, with coding agents',
+      stack: ['Next.js', 'React Three Fiber', 'three.js', 'Blender', 'WebLLM', 'TypeScript'],
+      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/personal-website' }],
+    },
+  },
   {
     slug: 'volta-sep26',
     title: 'Is the Beach Open',
@@ -110,128 +311,6 @@ export const projects: Project[] = [
     },
   },
   {
-    slug: 'keystone',
-    title: 'Keystone',
-    tier: 'case-study',
-    beat: 'systems',
-    visibility: 'described-only',
-    description:
-      'Internal operations software built after interviewing the team about what they needed. Staff and Claude share one registry of operations.',
-    detail:
-      'Eduard leads a team of five developers and designed Keystone’s architecture. The team had stopped using the old scorecard, so Eduard and a UX researcher interviewed leadership, measured actual usage and settled metric definitions before rebuilding. Staff and Claude use the same registry of operations, through the app and through MCP.',
-    aliases: ['keystone', 'gtm', 'scorecard', 'revenue', 'operations'],
-    outcome: 'I lead the architecture and development. We’re rolling it out now.',
-    casebook: {
-      problem:
-        'Eduard built most of AI-First’s first internal dashboard, and by mid-2026 the team skipped its scorecard in the weekly meeting. Each of its four stages, attract, convert, deliver and collect, squeezed a lot of work into one percentage nobody could act on. His audit also found wrong numbers: the weekly snapshot job had stopped in January, two stages were calculated two different ways, and a finance sync had failed while still logging "completed".',
-      discovery:
-        'Eduard brought in a UX researcher. She reviewed the old dashboard and comparable firms, then wrote an interview guide for each leadership seat that tested specific options instead of asking for wishes. She wrote the questions and Eduard ran the interviews: a 77-minute one-on-one with the CEO on a 16-question guide, and a 30-question set for the operations and finance lead. Eduard answered his own set on custom development, adoption and reusable IP. The delivery lead’s input comes next, so some pipeline definitions are still open.',
-      findings:
-        'Every number already had a home: plans in Linear, time in Outlook, money in QuickBooks and signed statements of work in SharePoint. Nobody had written down what makes a lead qualified, what counts as a productized offer or what reusable IP is, and the CEO and the operations lead disagreed on who the company view is for; the decision register logged 13 conflicts like these. There were no recorded project plans to measure against. Time data had to stay system-level, never ranking individuals. The CEO wanted to ask Claude for data rather than browse prebuilt views.',
-      evidence:
-        'Because people describe a tidier version of how they work, Eduard checked the interviews against behaviour. Eight AI agents measured feature usage read-only in the production database, and he read months of Monday-meeting transcripts to see how project risk was discussed.',
-      decisions:
-        'The team chose not to build file storage or task lists (SharePoint and Linear keep those), a new time-tracking routine, a copy of the cash forecast (QuickBooks stays the source, read-only), red-amber-green colours without an approved threshold, any view without a meeting that uses it, or an off-the-shelf CRM. Each remaining metric got a contract: an owner, the question it answers, its source, its cadence, and whether it is live or waiting for data. Missing data reads "Data missing", never zero.',
-      testing:
-        'The researcher turned the findings into a prototype with 25 measures across eight views: leadership, strategy, capacity, delivery, finance, people, tech adoption and reusable IP. She built it in Figma, then in HTML with sample data. After Eduard’s review they widened the definition of reusable IP, gave plans an optimistic, expected and pessimistic range, and tied capacity targets to job roles. Usability sessions with staff on the live build have not happened yet.',
-      architecture:
-        'Keystone owns no data; it holds SharePoint, Linear, QuickBooks and Outlook together, hence the name. The old dashboard’s MCP tools were hand-written, untested and drifting from the app. In Keystone, each operation is declared once in a capability registry with its input schema and permission, and the Claude tools are generated from it. Claude signs in as the person, so it reaches only what they can, and a parity test checks that the same action from the app and from Claude writes the same record.',
-      team: 'Eduard designed the architecture and built the first phase himself: sign-in, the capability registry and the generated Claude tools. Developers on his team built most of what followed, and he reviews and merges their work. The UX researcher owned the research, interview guides, metric register and prototype.',
-      hard: 'Definitions are owed by people, not code: several metrics wait for someone to agree a definition or accept ownership, and a metric is cut if its proposed owner declines. Consistent naming of files and projects was a constant fight, and only about half of the old opportunities migrated cleanly. Eduard said in the first brainstorm that change management mattered more than the software.',
-      status:
-        'Keystone is rolling out in phases. The first scorecard is due at the end of October 2026. The QuickBooks, Linear and SharePoint connectors come in later phases, and the old dashboard runs until cutover, so there are no adoption numbers yet. The code is private.',
-    },
-    facts: {
-      role: 'Engineering lead and architect',
-      when: '2026 / rolling out',
-      team: 'Eduard with developers from his team, and a UX researcher',
-      stack: ['Capability registry', 'MCP', 'Supabase', 'SharePoint', 'Linear', 'QuickBooks'],
-      links: [],
-    },
-  },
-  {
-    slug: 'keeper',
-    title: 'Keeper',
-    tier: 'case-study',
-    beat: 'private-local',
-    visibility: 'described-only',
-    description:
-      'A private meeting archive meant to replace the team’s cloud notetaker, with search, summaries and access from AI tools, plus a Mac app for recording and dictation.',
-    detail:
-      'Keeper stores transcripts and summary versions in SQLite on a DGX Spark, serves a web UI, a REST API and MCP tools, and summarizes with a local model. A local model in Eduard’s dgx-autonomy loop wrote the first version; Eduard has developed it with Claude Code since October 13, 2026, and teammates began testing it on October 20.',
-    aliases: ['keeper', 'meeting', 'archive', 'dictation', 'fireflies'],
-    outcome:
-      'Teammates are testing it now; a week-long pilot decides whether it replaces our notetaker.',
-    casebook: {
-      problem:
-        'AI-First’s team recorded calls with Fireflies, a bot that joins each meeting and keeps transcripts on the vendor’s servers. Eduard set out to replace it with a meeting memory on hardware the company owns: every transcript, summary and action item, searchable from a web page and from Claude or ChatGPT over MCP, with local dictation in the same Mac app.',
-      discovery:
-        'The requirements were written as a brief and acceptance checks before the code existed. On October 14 and 15, 2026 Eduard turned them into release issues with explicit product decisions: automatic recording like Fireflies, an archive kept for good, one admin, and 16 GB Macs as the pilot hardware. From October 20 he gave teammates builds and asked them to compare Keeper with Fireflies and their dictation app.',
-      evidence:
-        'Eduard tested the Mac app on his own Mac, where a 75-second recording of a three-person panel produced both audio files, a live transcript and three detected speakers. Search and paging were checked against synthetic archives of 600 and 2,007 meetings. The first teammate recordings surfaced a case no test covered, calls that uploaded with no audio, and both the Mac app and the web page now explain it.',
-      findings:
-        'Real machines changed the plan. A Teams chat window left open once produced a recording of someone in no call, so a window alone never starts a recording. Apple’s built-in recogniser could not transcribe two channels live, so meetings use Nemotron live and Parakeet afterwards.',
-      decisions:
-        'Keeper records meetings automatically, shows a Stop and Skip indicator and posts a notice in the Teams chat. Dictated text never leaves the Mac, and a meeting is visible only to its owner and the colleagues they share it with. Eduard ruled out task tracking, reminders, calendar writes, cross-person voiceprints and pooled training data, and the admin token can never be used to connect an AI assistant.',
-      testing:
-        'At the October 20 merge the server had 934 Python tests and the Mac core had 1,135 Swift tests. They cover account isolation on every surface, repeat imports, paging, recovery and MCP over a real server, alongside 16 frozen acceptance checks the builder could not edit.',
-      architecture:
-        'The server is one Python (FastAPI) process with one SQLite database, FTS5 search, a web UI, a REST API and MCP tools, running on a DGX Spark that teammates reach over a private network. Summaries go through a queue, so a busy model only delays them. The Mac app detects a Teams call, records the microphone and the Mac’s audio, transcribes and labels speakers on the Mac, and uploads when the call ends.',
-      team: 'A local model in Eduard’s dgx-autonomy loop wrote the first server and Mac app between late September and October 12, 2026. Eduard reviewed its builds, sent feedback and made the first Mac build compile. Since October 13 he has developed Keeper with Claude Code.',
-      hard: 'The builder wrote the first Mac app in a Linux sandbox with no Apple compiler, so Eduard handled the first native build on a Mac and had it recording after 15 fixes. Search once ranked results worst-first because SQLite’s BM25 score is a cost and the code read it as relevance; paging tests passed regardless, so he added a test on the score itself.',
-      status:
-        'Keeper for Mac reached version 0.3.1 on October 21, 2026, the first update delivered through its own update feed. Teammates began testing on October 20. The week-long pilot that decides whether the team can cancel Fireflies has not run yet. The code is private.',
-    },
-    facts: {
-      role: 'Lead developer; operated the builder loop for the first version',
-      when: 'September–October 2026 / in pilot',
-      team: 'AI-First team tool; first version written by a local model in dgx-autonomy',
-      stack: ['Python', 'FastAPI', 'SQLite FTS5', 'MCP', 'Swift', 'Parakeet', 'Nemotron'],
-      links: [],
-    },
-  },
-  {
-    slug: 'dgx-autonomy',
-    title: 'dgx-autonomy',
-    tier: 'case-study',
-    beat: 'private-local',
-    visibility: 'public-repo',
-    description:
-      'A setup for running a coding agent on a DGX Spark. It saves progress between conversations and submits its code to tests it cannot edit.',
-    detail:
-      'Eduard designed the controller around OpenHands and built it with Claude Code: it saves progress, recovers interrupted runs, tests code in separate containers and pauses for review. Recent app runs use SGLang and NVFP4; llama.cpp and a Qwen3.6 fallback are also supported. Shoreline and the original Camp Yahtzee release are documented outputs, with a supervising Claude session acting as product lead on Eduard’s instructions.',
-    aliases: ['dgx', 'autonomy', 'autonomous loops', 'local ai', 'qwen', 'spark'],
-    outcome:
-      'Shoreline and the first Camp Yahtzee release were built with this setup; a supervising Claude session reviewed them as product lead, and I set the direction.',
-    casebook: {
-      problem:
-        'Eduard wanted to know whether an open-weights model on hardware the company controls could take a request like "build me a weather app", work unattended for up to about 40 hours and come back with a working app. The box decodes at roughly 20 tokens a second, so the bet was patience over speed: the model had to stay on track, recover from its own mistakes and be graded by tests it could not edit.',
-      discovery:
-        'Before writing code, Eduard worked through research questions, a research document, a PRD, a technical design and a structure outline. The research inspected the DGX directly and checked model repositories, llama.cpp and the OpenHands SDK against their sources, keeping verified facts apart from estimates. It found separate inference, agent and test pieces but no harness that connected them.',
-      evidence:
-        'A model is only used after qualification on the machine with the whole workload running: five tool-call probes, a prompt filling 75% of the context with a word to recall from its start, a real build that must pass, and memory sampled throughout. Logs from a real run showed llama.cpp decode falling from 24.9 tokens a second near an empty context to 8.0 at 225–250K, while SGLang held 21–25 up to 180K.',
-      findings:
-        'Local models claim success early and confidently, so finishing became a claim that frozen tests have to confirm. One builder ignored a handoff request for 43 minutes while its context filled; a reminder after every three unrelated actions got a handoff within a minute. SGLang, unlike llama.cpp, refuses a request whose prompt plus maximum output exceeds the context, so the rollover point now leaves room for a full response.',
-      decisions:
-        'OpenHands runs the agent loop and Eduard’s controller owns everything around it; a custom agent loop was out of scope. Memory is structured handoff notes rather than a graph service, which the design records as simpler to inspect, not proven better. The first version left out a web dashboard, public hosting, several models in one run and automatic stronger-model review. He moved from llama.cpp to SGLang only after measuring it on the box.',
-      testing:
-        'About 390 tests run without a GPU, Docker or a model, and a separate suite on the DGX covers controller kills, forced resets, network rules, protected evaluation and reboots. Every set of acceptance checks is dry-run first: each check must fail with no app and pass against a throwaway reference app. That once caught a check that matched two labels on any page.',
-      architecture:
-        'A controller outside the sandbox freezes the brief and checks with a digest, keeps the deadline, and starts a fresh conversation from a validated handoff when the context fills, the builder loops or errors, or three claims fail in a row. When the builder says it is done, the controller pins a snapshot, runs each frozen check in its own disposable container against the live demo, and rejects the result if the code changed mid-test.',
-      team: 'Eduard designed the controller and built it with Claude Code. The local model wrote all the app code. During runs a supervising Claude session reviewed live demos as product lead on Eduard’s instructions and drafted the feedback, while Eduard made the requests and decided when to stop, switch backends and publish.',
-      hard: 'Runs held for review depend on someone watching: when the supervising session ended, its monitor stopped and held runs waited, so review notifications became part of the design. An uncapped response once spent 20 minutes on more than 10,000 tokens of thinking, so response length, thinking budget and timeouts are now set per model.',
-      status:
-        'Built between September 22 and 29, 2026, and public on GitHub since September 28. It produced Shoreline and the original Camp Yahtzee release, and wrote the first version of Keeper.',
-    },
-    facts: {
-      role: 'Controller design and tests',
-      when: 'September 2026',
-      team: 'Eduard (with Claude Code); local model as builder; a supervising Claude session as product lead',
-      stack: ['Qwen3.8', 'DGX Spark', 'OpenHands', 'SGLang', 'Python', 'Docker'],
-      links: [{ label: 'Source code', href: 'https://github.com/EduardKakosyan/dgx-autonomy' }],
-    },
-  },
-  {
     slug: 'shoreline',
     title: 'Shoreline',
     tier: 'archive',
@@ -254,8 +333,8 @@ export const projects: Project[] = [
         'The final run passed 19 of 19 automated acceptance checks (78 Playwright tests) in three evaluations, and both human-judgment criteria passed on review. Before launch, the reference app passed all 78 tests and 234 of 234 over three repeats, while the existing app failed every new test.',
       architecture:
         'Shoreline is a static HTML, CSS and JavaScript site with no build step. Weather and marine requests go out together, tides come from Open-Meteo’s hourly sea-level series with an "approximate" note, and the acceptance checks swap the API hosts for fixtures so they run without a network.',
-      team: 'The local model, Qwen3.8-Flash-Next, wrote all 42 commits of the app on a DGX Spark. A supervising Claude session, acting as product lead for Eduard, wrote the Shoreline brief and checks, reviewed each claim and drafted feedback; it never commented on code. Eduard made the requests, moved the model to SGLang, accepted the result and published it.',
-      hard: 'A visual glitch above the weather icon took three review rounds to remove; each fix left a sliver or smudge, until the builder wrote a pixel detector that compared the sky around the icon with its CSS gradient.',
+      team: 'The local model, Qwen3.8-Flash-Next, wrote all 42 commits of the app on a DGX Spark. A supervising Claude session, acting as product lead for Eduard, wrote the Shoreline brief and checks, reviewed each claim and drafted feedback; it never commented on code. Eduard made the requests, decided to move the model to SGLang and accepted the result.',
+      hard: 'A visual glitch above the weather icon took two rounds of feedback to remove. The first fix turned a sliver into a grey smudge, so the builder wrote a check that screenshots every sky and compares the pixels around the icon with the card’s CSS gradient.',
       status:
         'Built over three runs from September 24 to 28, 2026, and accepted on review on September 28. It is live on GitHub Pages with the briefs, checks and every message to the builder in the repository.',
     },
@@ -476,14 +555,14 @@ export const projects: Project[] = [
       team: 'Eduard co-founded CarGrep with Huy Huynh as a ShiftKey Labs build at Dalhousie, and they split the commits about evenly. Eduard built the n8n chat agent, the chat page and its tests, the CI pipeline, the survey, the token system and the listings job; Huy built the landing pages, sign-up and login, the chat interface and the car-data loaders.',
       hard: 'Getting listing data was the hard part. In April 2025 Eduard and Huy tried an agent on Azure OpenAI that crawled dealership inventory pages directly; one dealer’s site loaded its inventory with JavaScript, so the crawler only saw a fallback page, and the two model calls in each search were slow.',
       status:
-        'Development ran from October 2024 to April 2025, and cargrep.com now hosts a waitlist.',
+        'Development ran from October 2024 to April 2025. The site is no longer online and the code is private.',
     },
     facts: {
       role: 'Co-founder and builder',
       when: '2024–2025',
       team: 'Eduard and Huy Huynh',
       stack: ['Next.js', 'TypeScript', 'Supabase', 'n8n', 'OpenAI', 'Python'],
-      links: [{ label: 'Website', href: 'https://www.cargrep.com' }],
+      links: [],
     },
   },
   {

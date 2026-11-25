@@ -20,6 +20,4 @@ The app had Jest tests for the chat, the survey, sign-up and login, and GitHub A
 
 ## Where it stands
 
-We pitched an early version at the ImpactX conference in November 2024. CarGrep is now a waitlist page.
-
-[Visit CarGrep](https://www.cargrep.com)
+We pitched an early version at the ImpactX conference in November 2024. Development stopped in April 2025, and the site is no longer online.

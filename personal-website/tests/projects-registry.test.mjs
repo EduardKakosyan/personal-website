@@ -20,6 +20,10 @@ test('one pure registry owns unique slugs and preserves all previous routes', as
   assert.equal(native.projects.length, projects.length)
   assert.equal(new Set(projects.map((p) => p.slug)).size, projects.length)
   for (const slug of [
+    'keeper',
+    'keystone',
+    'lyfe',
+    'personal-website',
     'dgx-autonomy',
     'shoreline',
     'yahtzee',
@@ -44,7 +48,7 @@ test('one pure registry owns unique slugs and preserves all previous routes', as
 test('featured case studies have complete facts, authored bodies and qualitative outcomes', () => {
   assert.deepEqual(
     caseStudies.map((p) => p.slug),
-    ['keystone', 'keeper', 'dgx-autonomy'],
+    ['keeper', 'keystone', 'lyfe', 'dgx-autonomy', 'personal-website'],
   )
   assert.deepEqual(
     featuredWorks.map((p) => p.slug),
@@ -72,7 +76,8 @@ test('described-only work never offers repository links; CarGrep website is not 
     }
   }
   assert.equal(portfolioWorks.find((p) => p.slug === 'cargrep').repo, undefined)
-  assert.equal(getProjectBySlug('cargrep').facts.links[0].href, 'https://www.cargrep.com')
+  // cargrep.com no longer resolves, so CarGrep has no links at all.
+  assert.deepEqual(getProjectBySlug('cargrep').facts.links, [])
   assert.equal(getProjectBySlug('keeper').visibility, 'described-only')
 })
 
@@ -86,7 +91,7 @@ test('retired projects are gone from the registry and guide, and their pages red
   const redirects = await config.redirects()
   assert.deepEqual(
     redirects.map((rule) => rule.source),
-    ['/projects/voxcoach', '/projects/claude-autonomous'],
+    ['/preview/arrival', '/projects/voxcoach', '/projects/claude-autonomous'],
   )
   for (const slug of ['keystone', 'keeper'])
     assert.equal(directGuideAction(`Open ${slug}`).target, slug)
@@ -104,28 +109,44 @@ test('project Markdown and registry contain no hidden terms', () => {
   assert.equal(findHiddenTerms(JSON.stringify(projects), terms).length, 0)
 })
 
-test('new case studies are short, retain section anchors and use only synthetic Keystone visuals', () => {
-  for (const slug of ['keystone', 'keeper']) {
+test('every case study is short, follows one shape and has one diagram', () => {
+  for (const { slug } of caseStudies) {
     const body = readFileSync(new URL(`${slug}.md`, bodies), 'utf8')
-    assert.ok(body.split(/\s+/).length < 800)
+    assert.ok(body.split(/\s+/).length < 800, `${slug} is too long`)
     const headings = [...body.matchAll(/^## (.+)$/gm)].map((match) => match[1])
     assert.deepEqual(
       headings,
-      slug === 'keystone'
-        ? ['Problem', 'Discovery', 'Findings', 'Decisions', 'Architecture', 'What was hard']
-        : ['Problem', 'System', 'Decisions', 'Result', 'What broke'],
+      [
+        'The problem',
+        'What it does',
+        'How it works',
+        'The choices',
+        'Where AI fits',
+        'Where it is now',
+      ],
+      slug,
     )
-    if (slug === 'keystone') {
-      assert.match(body, /rolling (?:Keystone )?out/)
-      const images = [...body.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
-      assert.equal(images.length, 3)
-      for (const [, path] of images) {
-        assert.match(path, /^\/images\/keystone\/[a-z]+\.svg$/)
-        assert.match(
-          readFileSync(new URL(`../public${path}`, import.meta.url), 'utf8'),
-          /SYNTHETIC/,
-        )
-      }
-    }
+    const images = [...body.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)]
+    assert.equal(images.length, 1, `${slug} needs exactly one diagram`)
+    const [, alt, path] = images[0]
+    assert.ok(alt.length > 30, `${slug}: the diagram needs a sentence of alt text`)
+    assert.equal(path, `/images/projects/${slug}.svg`)
+    assert.ok(existsSync(new URL(`../public${path}`, import.meta.url)), path)
   }
+  assert.match(readFileSync(new URL('keystone.md', bodies), 'utf8'), /rolling it out/)
+})
+
+test('authored website copy avoids empty quality claims', () => {
+  const copy = [
+    JSON.stringify(projects),
+    profile.headline,
+    ...profile.roles.map((role) => role.summary),
+    ...readdirSync(bodies)
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => readFileSync(new URL(name, bodies), 'utf8')),
+  ].join('\n')
+  assert.doesNotMatch(
+    copy,
+    /\b(?:(?:actually|really|just|truly) works?|works? in practice|actually (?:useful|use)|real[- ]world solutions?|production[- ]ready|battle[- ]tested)\b/i,
+  )
 })

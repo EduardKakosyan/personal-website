@@ -58,17 +58,6 @@ test('unknown topics do not pick a project based on generic words', () => {
   assert.equal(directGuideAction('Show me underwater basketweaving'), null)
 })
 
-test('biography and selected-work requests have explicit destinations', () => {
-  assert.deepEqual(guideDestination(directGuideAction('Show me his background')), {
-    path: '/',
-    id: 'about',
-  })
-  assert.deepEqual(guideDestination(directGuideAction('Show me all projects')), {
-    path: '/',
-    id: 'selected-work',
-  })
-})
-
 test('external URLs, script URLs, traversal and unknown actions cannot execute', () => {
   for (const target of [
     'https://evil.example',
@@ -268,12 +257,12 @@ test('Keystone suggestions ask about discovery and problem solving', () => {
 
 test('forward-deployed questions about Keystone land on the matching notes', () => {
   const cases = [
-    ['Who did he interview?', /CEO/],
+    ['Who did he interview?', /founder/],
     ['What did they find?', /already had a home/],
     ['Did they watch people work?', /production database/],
-    ['What did they decide not to build?', /off-the-shelf CRM/],
+    ['What did they decide not to build?', /read-only for good/],
     ['How did they test it with people?', /prototype/],
-    ['What was hard?', /owed by people/],
+    ['What was hard?', /definition is agreed/],
     ['Why a capability registry?', /generated/],
   ]
   for (const [question, expected] of cases) {
@@ -315,7 +304,7 @@ test('recruiter questions about Eduard are answered from his profile', () => {
     ['What is his biggest project?', /Keystone/],
     ['Is he a forward deployed engineer?', /interview/i],
     ['What is his tech stack?', /Python/],
-    ['Why should I hire him?', /five developers/],
+    ['Why should I hire him?', /four-person development team/],
     ['How can I contact him?', /linkedin/i],
     ['Where did he study?', /Dalhousie/],
   ]
@@ -337,8 +326,11 @@ test('a project counts as named only by its title, slug or alias', () => {
 
 test('outcome, usage, motivation and speed questions reach the right project notes', () => {
   const work = (slug) => portfolioWorks.find((item) => item.slug === slug)
-  assert.equal(notesAnswer(work('volta-sep26'), 'What was the outcome?'), work('volta-sep26').casebook.status)
-  assert.match(notesAnswer(work('keeper'), 'Is anyone using it?'), /testing/)
+  assert.equal(
+    notesAnswer(work('volta-sep26'), 'What was the outcome?'),
+    work('volta-sep26').casebook.status,
+  )
+  assert.match(notesAnswer(work('keeper'), 'Is anyone using it?'), /notetaker/)
   assert.match(notesAnswer(work('keeper'), 'Why did he build this?'), /Fireflies/)
   assert.match(notesAnswer(work('hugo'), 'How fast does it respond?'), /seconds/)
   assert.match(notesAnswer(work('volta-sep26'), 'How did he validate the idea?'), /Swim Guide/)

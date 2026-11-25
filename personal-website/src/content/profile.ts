@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // The facts every public artifact draws on: the site, the résumé PDF, the GitHub profile README
-// and the guide. Each artifact writes its own copy from these facts.
+// and HUGO's answers in the cabin. Each artifact writes its own copy from these facts.
 // No `@/` imports: Node scripts (scripts/render-resume.mts) load this file without a bundler.
 
 export type Surface = 'resume' | 'site' | 'github'
@@ -79,9 +79,9 @@ export interface Profile {
   /** The case studies published on ai-first.ca/work (the only client work the site may cite), anonymised. */
   clientWork: ClientWork[]
   /**
-   * Eduard's own ventures that must not appear in any artifact. Client names never go in this
-   * repo, not even here: they live in the gitignored hidden-terms.local.txt (or the HIDDEN_TERMS
-   * env var), which the tests read to scan every tracked file.
+   * Terms that must not appear in any artifact. Empty on purpose: this repo is public, so client
+   * names and Eduard's own ventures live in the gitignored hidden-terms.local.txt (or the
+   * HIDDEN_TERMS env var), which the tests read to scan every tracked file.
    */
   hidden: string[]
 }
@@ -192,7 +192,7 @@ export const profile: Profile = profileSchema.parse({
     email: 'kakosyaneduard@gmail.com',
   },
   headline:
-    'I lead tech and AI at AI-First Solutions, where I work with local organizations and build software for our internal operations. This site covers my professional work, along with my passion projects in loop engineering, local AI systems and anything else new in AI.',
+    'I lead tech and AI at AI-First Solutions, where I work with local organizations and build the software our own team runs on. I start with the problem and use AI only where it fits. This site covers that work, along with my own projects in loop engineering, local AI systems and anything else new in AI.',
   roles: [
     {
       id: 'ai-first',
@@ -203,7 +203,7 @@ export const profile: Profile = profileSchema.parse({
       location: 'Halifax, NS',
       start: '2025-02',
       summary:
-        'I lead a team of five developers and sit on the leadership team. Our work includes document-review agents and chat tools built around client content. We’re also building an assistant for a client’s own GPU. I built and managed a data science and ML curriculum for a client’s workforce program through AI-First.',
+        'I lead a four-person development team and sit on the leadership team. I designed Keystone, our operations software, and built Keeper, the meeting-notes and dictation app our team runs on our own hardware. For clients we build document-review agents, chat tools built around their content and an assistant that runs on a client’s own GPU. I also built and managed a data science and ML curriculum for a client’s workforce program through AI-First.',
     },
     {
       id: 'teaching',
@@ -219,7 +219,6 @@ export const profile: Profile = profileSchema.parse({
       id: 'cargrep',
       title: 'Co-Founder',
       org: 'CarGrep (ShiftKey Build)',
-      orgUrl: 'https://www.cargrep.com',
       location: 'Halifax, NS',
       start: '2024-10',
       end: '2025-01',
@@ -241,6 +240,7 @@ export const profile: Profile = profileSchema.parse({
       label: 'AI & LLMs',
       items: [
         'Anthropic Claude',
+        'Claude Code',
         'MCP',
         'RAG',
         'pgvector',
@@ -252,6 +252,7 @@ export const profile: Profile = profileSchema.parse({
         'Ollama',
         'llama.cpp',
         'MLX',
+        'OpenHands',
         'LangChain',
       ],
     },
@@ -380,7 +381,8 @@ export const profile: Profile = profileSchema.parse({
       role: 'team',
     },
   ],
-  hidden: ['Sideline', 'Breakwater'],
+  // empty on purpose: the names are in hidden-terms.local.txt (see Profile.hidden)
+  hidden: [],
 })
 
 export const identity = profile.identity

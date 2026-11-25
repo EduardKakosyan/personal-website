@@ -1,64 +1,55 @@
 # Keystone
 
-## Problem
+## The problem
 
-I built most of AI-First's first internal dashboard. By mid-2026 the team skipped its scorecard in the weekly meeting. Each of its four stages, attract, convert, deliver and collect, squeezed a lot of work into one percentage that nobody could act on.
+AI-First runs on SharePoint, Linear, QuickBooks and Outlook. Each holds part of the picture: files, tasks, money and time. None of them can answer a question that crosses two of them, such as whether a project made money or who has room for new work next month.
 
-An audit showed the numbers were also wrong. The weekly snapshot job had stopped in January, so every trend arrow read "flat". Two stages were calculated twice, in SQL and TypeScript, with different rules. A finance sync had failed while still logging "completed".
+My first attempt was a dashboard I mostly built on my own, without asking the people who would use it. It collected far more than anyone read, and people stopped trusting its numbers. Its Claude tools were written by hand beside the app, so the two drifted apart.
 
-![The old scorecard's four stages. Synthetic diagram, no company data.](/images/keystone/funnel.svg)
+Keystone is the second attempt. It started with the people instead of the screens.
 
-## Discovery
+## What it does
 
-I brought in a UX researcher. She reviewed the old dashboard and comparable firms, then wrote an interview guide for each leadership seat. The guides tested specific options instead of asking for wishes: should the capacity view flag overbooked people, unassigned won work, or a thin pipeline first?
+Keystone connects client, opportunity, project, person, time and money in one place. It keeps its own records for the things no other system owns: the pipeline, project plans, capacity and risks. For everything else it reads from the system that owns it and shows when it last checked.
 
-She wrote the questions and I ran the interviews to her script. The CEO's was a 77-minute one-on-one on a 16-question guide. The operations and finance lead answered a 30-question set, and I answered my own on custom development, adoption and reusable IP. The delivery lead's input comes next, so some pipeline definitions are still open.
+That lets it answer questions no single tool can, such as which blocked projects in Linear also have an overdue invoice in QuickBooks.
 
-People describe a tidier version of how they work, so I checked against behaviour: eight AI agents measured feature usage read-only in the production database, and I read months of Monday-meeting transcripts to see how project risk was discussed.
+Staff use it in the browser. They also use it from Claude. Nearly everything the app can do, Claude can do for them, with the same permissions.
 
-## Findings
+## How it works
 
-**Every number already had a home.** Plans live in Linear, time in Outlook, money in QuickBooks and signed statements of work in SharePoint. The dashboard kept weaker copies.
+![One registry of operations serves both the web app and Claude, and both pass through the same permission checks.](/images/projects/keystone.svg)
 
-**Definitions were missing or contested.** Nobody had written down what makes a lead qualified, what counts as a productized offer or what reusable IP is. The CEO and the operations lead disagreed on who the company view is for. Her decision register logged 13 conflicts like these.
+Every operation is declared once in a registry: its name, a one-line description, the shape of its input, the permission it needs and the code that runs it. There are about 150.
 
-**There were no plans to measure against.** A project can't be on budget if its original plan isn't recorded.
+The web app calls those operations. The Claude tools are generated from the same entries, so nobody writes a tool by hand. Both paths go through the same steps: check the input, check the permission, run as the signed-in person under the database's row-level rules, and write an audit record.
 
-**The CEO wanted to ask, not browse.** He questioned building views up front when he could ask Claude for the data.
+Claude signs in as the person, through a consent screen. It reaches what they can reach and nothing more.
 
-## Decisions
+Scheduled jobs read from QuickBooks, Linear, SharePoint and Outlook, and store what they find with the time it was fetched. If a connector goes quiet for twice its usual interval, Keystone flags it.
 
-Much of the design is what we chose not to build:
+## The choices
 
-- No file storage or task lists. SharePoint keeps files, Linear keeps tasks; Keystone links to them.
-- No new time-tracking routine for staff.
-- No copy of the cash forecast. QuickBooks stays the source, read-only.
-- No red, amber or green without an approved threshold. Missing data reads "Data missing".
-- No view without a meeting that uses it.
-- No off-the-shelf CRM. MCP added on top of an old API wouldn't make AI the main way in.
+**Start with interviews.** Before any design I interviewed our leadership team: the founder, the head of operations and the head of delivery, with my own answers as head of tech. Agents measured which parts of the old dashboard were being used. A business analyst, a Master of Digital Innovation student, turned that into a scorecard prototype we could argue over: 25 measures across eight views, with sample data.
 
-Each remaining metric got a contract: an owner, the question it answers, its source, its cadence, and whether it's live or waiting for data. The researcher turned that into a prototype with 25 measures across eight views: leadership, strategy, capacity, delivery, finance, people, tech adoption and reusable IP.
+**One registry for people and for Claude.** In the old dashboard, keeping the app and the AI tools in step was a rule people had to remember. Here a tool can't exist without the operation behind it.
 
-![Eight synthetic scorecard wireframes, one per view.](/images/keystone/scorecards.svg)
+**Keep the join, not the files.** SharePoint keeps files, Linear keeps tasks and QuickBooks keeps the ledger. Keystone links them. QuickBooks is read-only, permanently.
 
-She built it in Figma, then in HTML with sample data. After review we widened the definition of reusable IP, gave plans an optimistic, expected and pessimistic range, and tied capacity targets to job roles.
+**Every metric has an owner.** A number on a scorecard names the role that owns it, the question it answers, where it comes from and how often it updates. A metric that is waiting for data says so instead of showing zero.
 
-## Architecture
+**The database enforces access.** No request carries an admin key. Every request runs as the person who made it, and about 1,500 tests check the row-level rules against a real database.
 
-Keystone owns no data; it holds the other systems together, hence the name.
+**Left out on purpose:** targets and status colours on anyone's capacity, and any view that no meeting uses.
 
-The old dashboard's MCP tools were hand-written, untested and drifting from the app. In Keystone, each operation is declared once in a capability registry with its input schema and permission, and the Claude tools are generated from it. Claude signs in as the person, so it reaches only what they can. A parity test checks that the same action from the app and from Claude writes the same record. If only one of the two can do a thing, it isn't finished.
+## Where AI fits
 
-![Synthetic architecture diagram: capability registry to MCP to an agent.](/images/keystone/capabilities.svg)
+There is no model inside Keystone. The numbers are SQL. The sentence under each metric that says why it matters comes from a template a person wrote. The alerts are rules, such as an opportunity nobody has touched in fourteen days, and each one opens a work item for a person.
 
-I designed the architecture and built the first phase: sign-in, the registry and the generated Claude tools. Developers on my team built most of what followed; I review and merge their work.
+The AI is the one each person already has. Our founder told me he would rather ask Claude for a number than open a page of charts. So Claude gets the same door as everyone else, and the same lock.
 
-We're rolling Keystone out in phases. The first scorecard is due at the end of October 2026. The QuickBooks, Linear and SharePoint connectors come later, and the old dashboard runs until cutover, so there are no adoption numbers yet. The code is private.
+## Where it is now
 
-## What was hard
+We started in August 2026. I wrote the requirements and the technical design, then built the first phase myself: sign-in, the registry and the generated Claude tools. Developers on my team have built most of what followed, each working from tickets cut from the design. I review the Linear issues and what merges to main, and I still build some parts myself.
 
-**Definitions are owed by people, not code.** Several metrics wait for someone to agree a definition or accept ownership; if the proposed owner declines, the metric is cut.
-
-**Data discipline.** Consistent naming was a constant fight, and only about half of the old opportunities migrated cleanly.
-
-**Change management.** In the first brainstorm I said it mattered more than the software. It did.
+Keystone is deployed and we are rolling it out, switching features on one at a time. The old dashboard stays in charge until one planned switch-over. The code is private.

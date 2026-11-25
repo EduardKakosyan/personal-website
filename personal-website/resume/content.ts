@@ -38,32 +38,33 @@ export interface ResumeContent {
 
 export const resumeContent: ResumeContent = {
   summary:
-    'Hands-on AI engineering lead working directly with clients, from discovery and architecture through integration and rollout. I lead a team of five developers building AI applications, workflow integrations and local-model systems.',
+    'AI engineering lead. I start with the problem and use a model only where it fits, and I lead a four-person development team building AI systems for clients and for our own company.',
   experience: [
     {
       roleId: 'ai-first',
       groups: [
         {
-          label:
-            'Client engineering: {metric:projects} projects {metric:projects.detail}, spanning AI Accelerator sprints and custom builds',
+          label: 'Internal products',
           bullets: [
-            'Built RFQ, RFP and legal-review triage agents for HVAC, consulting and recruitment firms (Power Automate).',
-            'Led RAG chat platforms grounded in clients’ own content, with eval-gated releases (Next.js, pgvector, Claude).',
-            'Leading an on-prem build: a local-model assistant on the client’s own GPU, so the data stays on site.',
+            'Architect and lead of Keystone, our operations system: each operation is declared once and served to both the web app and Claude over MCP, under the same row-level permissions (Next.js, Supabase).',
+            'Ran discovery first: interviewed the leadership team and audited how the old dashboard was used.',
+            'Built Keeper, the meeting-notes and dictation app our team uses in place of two paid subscriptions: speech recognition on each Mac, summaries from an open-weights model on our own DGX Spark (Swift, Python).',
           ],
         },
         {
-          label: 'Architecture & systems integration',
+          label:
+            'Client engineering: {metric:projects} projects {metric:projects.detail}, spanning AI Accelerator sprints and custom builds',
           bullets: [
-            'Designed and lead development of Keystone (rolling out): one capability registry generates the app’s operations and Claude’s MCP tools, so staff and AI share permissions.',
-            'Ran discovery with a UX researcher before the rebuild: leadership interviews and a usage audit replaced an unused scorecard with owned, sourced metrics.',
-            'Cut proposals from days to 30 minutes and connected client meetings to Linear tasks (Fireflies, Claude).',
+            'Delivered RFQ, RFP and legal-review triage agents for HVAC, consulting and recruitment firms (Power Automate).',
+            'Led RAG chat platforms grounded in clients’ own content, released only after passing evals (Next.js, pgvector).',
+            'Leading an on-prem build: a local-model assistant on the client’s own GPU, so the data stays on site.',
           ],
         },
         {
           label: 'Engineering leadership & enablement',
           bullets: [
-            'Hold the leadership team’s tech and AI seat; lead development, technical direction and delivery across the team.',
+            'Hold the leadership team’s tech and AI seat; set technical direction and lead delivery across the team.',
+            'Set how the team builds with coding agents: requirements and design are reviewed before code, each task runs in its own branch, and secret scans, lint and tests gate every commit.',
             'Designed and managed a client’s Skills for Hire data science and ML curriculum: {metric:learners} learners, {metric:learners.detail}.',
             'Ran AI Accelerator sprints, cohort programs and workshops for client teams, CPA firms and a college.',
           ],
@@ -85,20 +86,20 @@ export const resumeContent: ResumeContent = {
   ],
   projects: [
     {
-      name: 'Keeper',
-      description:
-        'self-hosted meeting memory on a local model, served over REST, MCP and a web UI',
-      when: '2026',
-    },
-    {
       name: 'dgx-autonomy',
-      description: 'a coding agent that runs unattended on a DGX Spark against tests it can’t edit',
+      description:
+        'a local open-weights model builds apps unattended, graded by tests it can’t edit',
       when: '2026',
     },
     {
-      name: 'HUGO',
+      name: 'lyfe',
       description:
-        'voice assistant for a Reachy Mini robot, with speech and the LLM local on a DGX Spark',
+        'iPhone app and Rust backend for my routines and goals; a model estimates meals, rules decide',
+      when: '2026',
+    },
+    {
+      name: 'kakosyaneduard.ca',
+      description: 'my site as a small game at my cabin; a model only picks from answers I wrote',
       when: '2026',
     },
     {
@@ -113,20 +114,31 @@ export const resumeContent: ResumeContent = {
       label: 'AI & LLMs',
       items: [
         'Anthropic Claude',
+        'Claude Code',
         'MCP',
         'RAG',
-        'pgvector',
-        'Voyage',
-        'Vercel AI SDK',
         'evals',
         'vLLM',
         'SGLang',
         'Ollama',
+        'llama.cpp',
+        'OpenHands',
       ],
     },
     {
       label: 'Languages & Frameworks',
-      items: ['Python', 'TypeScript', 'SQL', 'Go', 'Next.js', 'React', 'Node.js', 'FastAPI'],
+      items: [
+        'Python',
+        'TypeScript',
+        'SQL',
+        'Swift',
+        'Rust',
+        'Go',
+        'Next.js',
+        'React',
+        'Node.js',
+        'FastAPI',
+      ],
     },
     {
       label: 'Cloud & Infrastructure',

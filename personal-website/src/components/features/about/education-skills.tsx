@@ -4,7 +4,7 @@ import { formatMonth } from '@/components/features/about/experience-list'
 export function EducationSkills() {
   return (
     <>
-      <section className="site-section" aria-labelledby="skills-heading">
+      <section className="site-sheet site-section" aria-labelledby="skills-heading">
         <h2 id="skills-heading">Skills</h2>
         <div className="site-grid">
           {profile.skills.map((group) => (
@@ -19,7 +19,7 @@ export function EducationSkills() {
           ))}
         </div>
       </section>
-      <section className="site-section" aria-labelledby="education-heading">
+      <section className="site-sheet site-section" aria-labelledby="education-heading">
         <h2 id="education-heading">Education & certificates</h2>
         {profile.education.map((entry) => (
           <article className="site-card" key={entry.school}>

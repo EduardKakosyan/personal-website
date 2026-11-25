@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 
 test('header accessible name includes both visible identity lines', () => {
   const header = readFileSync(
@@ -27,4 +27,18 @@ test('case study links keep their visible label intact in the accessible name', 
 test('web analytics is opt-in until its Vercel endpoint is enabled', () => {
   const layout = readFileSync(new URL('../src/app/layout.tsx', import.meta.url), 'utf8')
   assert.match(layout, /NEXT_PUBLIC_VERCEL_ANALYTICS_ENABLED === 'true' && <Analytics \/>/)
+})
+
+test('legacy styles are gone and the initial page never hides no-JS content', () => {
+  assert.deepEqual(
+    readdirSync(new URL('../src/app/', import.meta.url))
+      .filter((p) => p.endsWith('.css'))
+      .sort(),
+    ['globals.css', 'site.css'],
+  )
+  const transition = readFileSync(
+    new URL('../src/components/providers/page-transition-provider.tsx', import.meta.url),
+    'utf8',
+  )
+  assert.match(transition, /initial=\{false\}/)
 })

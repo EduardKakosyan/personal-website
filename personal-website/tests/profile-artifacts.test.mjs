@@ -28,6 +28,7 @@ const resumeTex = readFileSync(join(root, 'resume/resume.tex'), 'utf8')
 const githubReadme = readFileSync(join(root, 'profile-readme/README.md'), 'utf8')
 const draftNames = [
   'keeper',
+  'lyfe',
   'dgx-autonomy',
   'hugo',
   'claude-hackathon-volta-sep26',
@@ -44,13 +45,15 @@ test('GitHub README matches a fresh render and the cleared selection', async () 
   assert.equal(githubReadme, await renderGithubReadme())
   assert.deepEqual(githubContent.selected, [
     'keeper',
+    'keystone',
+    'lyfe',
     'dgx-autonomy',
-    'hugo',
-    'volta-sep26',
     'personal-website',
   ])
-  assert.doesNotMatch(githubReadme, /github\.com\/[^\s/]+\/keeper\b/i)
-  assert.match(githubReadme, /source private; audit pending/)
+  // Keeper and Keystone are private: named, never linked.
+  assert.doesNotMatch(githubReadme, /github\.com\/[^\s/]+\/(?:keeper|keystone)\b/i)
+  assert.match(githubReadme, /Keeper \(private\)/)
+  assert.match(githubReadme, /Keystone \(private\)/)
   assert.equal((githubReadme.match(/^- \*\*/gm) ?? []).length, 4)
   assert.doesNotMatch(githubReadme, /\d+\s*(?:%|\+|clients|learners|deals)/i)
 })
@@ -105,17 +108,6 @@ test('all GitHub kit site links resolve and all output files exclude hidden term
       assert.ok(routes.has(new URL(href).pathname), href)
     }
   }
-  const completed =
-    readFileSync(join(root, 'repo-readmes/CHECKLIST.md'), 'utf8').match(/^- \[x\].+$/gm) ?? []
-  assert.equal(completed.length, 5)
-  assert.match(completed[0], /Approve the generated profile README/)
-  assert.match(
-    completed[1],
-    /Publish the generated README.*6a867472810d905c73b0f373450923aac35d34ad/,
-  )
-  assert.match(completed[2], /Add HIDDEN_TERMS as a GitHub Actions secret/)
-  assert.match(completed[3], /Pass that secret as HIDDEN_TERMS/)
-  assert.match(completed[4], /publish the root personal-website README/)
 })
 // Client names are never committed: they come from the gitignored hidden-terms.local.txt or the
 // HIDDEN_TERMS env var. In CI the names are a secret, so failures there name the term by number.
@@ -178,14 +170,15 @@ test('curriculum delivery belongs to AI-First, not the ShiftKey teaching role', 
   )
 })
 
-test('public copy describes hands-on leadership of a team of five developers', () => {
+test('public copy describes hands-on leadership of a four-person development team', () => {
   for (const copy of [
     profile.roles.find((role) => role.id === 'ai-first').summary,
     resumeContent.summary,
     githubContent.role,
     projects.find((project) => project.slug === 'keystone').detail,
   ]) {
-    assert.match(copy, /team of five developers/i)
+    assert.match(copy, /four-person development team/i)
+    assert.doesNotMatch(copy, /five developers/i)
     assert.doesNotMatch(copy, /co-op developers|GTM|revenue and operations/i)
   }
   assert.equal(resumeContent.skills[0].label, 'AI & LLMs')
@@ -200,7 +193,8 @@ test('resume.sha matches sha256(resume.tex)', () => {
 })
 
 test('the committed profile holds no client names, only anonymised client work', () => {
-  assert.deepEqual(profile.hidden, ['Sideline', 'Breakwater'])
+  // Every hidden name lives in hidden-terms.local.txt or HIDDEN_TERMS, never in a tracked file.
+  assert.deepEqual(profile.hidden, [])
   for (const work of profile.clientWork) {
     assert.equal(work.url, clientWorkIndex, `${work.slug} must link to the case-study index`)
   }

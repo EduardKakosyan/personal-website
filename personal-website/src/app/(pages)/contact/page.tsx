@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="site-page site-width">
-      <header className="site-intro">
+    <div className="site-page">
+      <header className="site-sheet site-intro">
         <p className="site-kicker">Contact / {identity.location}</p>
         <h1>
           Get in <em>touch.</em>
@@ -19,7 +19,7 @@ export default function ContactPage() {
           Email is the best way to reach me about a role, a project, or something you’ve read here.
         </p>
       </header>
-      <section className="site-section" aria-labelledby="contact-heading">
+      <section className="site-sheet site-section" aria-labelledby="contact-heading">
         <h2 id="contact-heading">Where to find me</h2>
         <div className="site-grid">
           <article className="site-card">
@@ -46,7 +46,7 @@ export default function ContactPage() {
             <p>
               {identity.title} at {identity.company}.
             </p>
-            <p>I lead a team of five developers and write code alongside them.</p>
+            <p>I lead a four-person development team and write code alongside them.</p>
           </article>
         </div>
       </section>

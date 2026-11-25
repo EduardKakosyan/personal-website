@@ -5,13 +5,17 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
-  // Retired project pages point back to the work index.
   async redirects() {
-    return ['voxcoach', 'claude-autonomous'].map((slug) => ({
-      source: `/projects/${slug}`,
-      destination: '/projects',
-      permanent: true,
-    }))
+    return [
+      // The cabin was previewed here before it became the home page.
+      { source: '/preview/arrival', destination: '/', permanent: true },
+      // Retired project pages point back to the work index.
+      ...['voxcoach', 'claude-autonomous'].map((slug) => ({
+        source: `/projects/${slug}`,
+        destination: '/projects',
+        permanent: true,
+      })),
+    ]
   },
 
   // Comprehensive Security Headers
@@ -131,9 +135,8 @@ const nextConfig = {
 
   // Compiler options
   compiler: {
-    // Keep error/warn/info: /api/narrate logs one anonymised info line per request.
-    removeConsole:
-      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn', 'info'] } : false,
+    // Keep errors and warnings.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
   // Logging

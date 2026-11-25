@@ -3,7 +3,7 @@ import { ResumeLink } from '@/components/features/about/resume-link'
 
 export function AboutIntro() {
   return (
-    <header className="site-intro">
+    <header className="site-sheet site-intro">
       <p className="site-kicker">About / {identity.location}</p>
       <h1>{identity.name}</h1>
       <p className="site-role">

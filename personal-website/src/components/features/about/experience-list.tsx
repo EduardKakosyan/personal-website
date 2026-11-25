@@ -10,7 +10,7 @@ export function formatMonth(value: string) {
 
 export function ExperienceList() {
   return (
-    <section className="site-section" aria-labelledby="experience-heading">
+    <section className="site-sheet site-section" aria-labelledby="experience-heading">
       <h2 id="experience-heading">Experience</h2>
       <ol className="site-experience">
         {profile.roles.map((role) => (

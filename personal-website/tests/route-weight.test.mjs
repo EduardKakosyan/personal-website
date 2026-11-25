@@ -45,59 +45,37 @@ function visit(file, seen = new Set(), chain = []) {
   return seen
 }
 
-for (const entry of files(path.join(src, 'app')).filter(
-  (file) => /(?:page|layout)\.tsx$/.test(file) && file !== path.join(src, 'app/page.tsx'),
+for (const entry of files(path.join(src, 'app')).filter((file) =>
+  /(?:page|layout)\.tsx$/.test(file),
 )) {
   test(`${path.relative(src, entry)} has no eager 3D, model or smooth-scroll dependency`, () => {
     const reached = visit(entry)
-    assert.ok(![...reached].some((file) => /(?:guide-panel|webllm-provider)\.tsx$/.test(file)))
+    assert.ok(![...reached].some((file) => /webllm-provider\.tsx$/.test(file)))
   })
 }
 
-test('on-demand guide has no static 3D dependencies', () => {
-  visit(path.join(src, 'components/features/guide/guide-panel.tsx'))
-})
-
-test('guide panel mounts only when open through a dynamic boundary', () => {
-  const launcher = readFileSync(
-    path.join(src, 'components/features/guide/guide-launcher.tsx'),
-    'utf8',
-  )
-  assert.match(launcher, /dynamic\(/)
-  assert.match(launcher, /import\('\.\/guide-panel'\)/)
-  assert.match(launcher, /open && <LazyGuidePanel/)
-})
-
-test('initial story client islands do not import profile validation or guide knowledge', () => {
+test('initial client islands do not import profile validation or guide knowledge', () => {
   for (const entry of [
     'components/layouts/header-client.tsx',
     'components/features/about/resume-link-client.tsx',
-    'components/features/story/story-scroller.tsx',
-    'components/features/guide/guide-launcher.tsx',
   ]) {
     const reached = visit(path.join(src, entry))
     for (const file of reached) {
-      assert.ok(
-        !/content\/(profile|portfolio|story-copy)\.ts$/.test(file),
-        `${entry} reaches ${file}`,
-      )
+      assert.ok(!/content\/(profile|portfolio)\.ts$/.test(file), `${entry} reaches ${file}`)
       assert.ok(!imports(file).includes('zod'), `${entry} imports Zod through ${file}`)
     }
   }
 })
 
-test('3D story stage is reachable only through its dynamic canvas chunk', () => {
-  // Static imports from the stage gate must stay free of three.js (visit() asserts this).
-  visit(path.join(src, 'components/features/story/story-stage.tsx'))
-  const stage = readFileSync(path.join(src, 'components/features/story/story-stage.tsx'), 'utf8')
-  assert.match(stage, /dynamic\(\s*\(\) => import\('\.\/story-canvas'\)/)
-  assert.match(stage, /ssr: false/)
-  assert.match(stage, /capable && state !== 'lost' && \(\s*<StoryCanvas/)
+test("the cabin's 3D scene and HUGO's model load only through dynamic imports", () => {
+  const preview = readFileSync(
+    path.join(src, 'components/features/cabin/arrival-preview.tsx'),
+    'utf8',
+  )
+  assert.match(preview, /dynamic\(\(\) => import\('\.\/arrival-scene'\), \{ ssr: false \}\)/)
+  assert.match(preview, /dynamic\(\(\) => import\('\.\/hugo-ask'\)/)
   const importers = files(src).filter((file) =>
-    imports(file).some((specifier) => /(?:story-canvas|agent-scene)$/.test(specifier)),
+    imports(file).some((specifier) => /\/(?:arrival-scene|hugo-ask)$/.test(specifier)),
   )
-  assert.deepEqual(
-    importers.map((file) => path.relative(src, file)),
-    ['components/features/story/story-canvas.tsx'],
-  )
+  assert.deepEqual(importers, [])
 })

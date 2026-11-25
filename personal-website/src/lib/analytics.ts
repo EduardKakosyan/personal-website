@@ -1,5 +1,4 @@
 import { track } from '@vercel/analytics'
-import type { ChapterId, Persona } from '@/content/story'
 
 /**
  * Analytics utility functions for tracking custom events
@@ -24,17 +23,12 @@ export function trackEvent(event: string, properties?: EventProperties) {
  * Pre-defined analytics events for common actions
  */
 export const analyticsEvents = {
-  personaChosen: (persona: Persona) => trackEvent('Persona Chosen', { persona }),
-  chapterReached: (chapter: ChapterId, persona: Persona) =>
-    trackEvent('Chapter Reached', { chapter, persona }),
-  // Where a narrator question was answered: the DGX Spark, or the on-page guide fallback.
-  narratorAnswered: (source: 'dgx' | 'script') => trackEvent('Narrator Answered', { source }),
   // Project interactions
   projectViewed: (projectSlug: string) => trackEvent('Project Viewed', { project: projectSlug }),
 
   projectLinkClicked: (projectSlug: string, linkType: 'live' | 'repo') =>
     trackEvent('Project Link Clicked', { project: projectSlug, type: linkType }),
 
-  // Download events (wired to the header Résumé button in Phase 2)
+  // Download events (the header and About page Résumé links)
   resumeDownloaded: () => trackEvent('Resume Downloaded'),
 }

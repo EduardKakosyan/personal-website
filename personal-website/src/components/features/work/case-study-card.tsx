@@ -5,6 +5,7 @@ export const beatLabels = {
   systems: 'Applied AI systems',
   'private-local': 'Private and local',
   adoption: 'Adoption and leadership',
+  design: 'Design and craft',
 }
 
 export function CaseStudyCard({ project }: { project: Project }) {
@@ -26,7 +27,7 @@ export function CaseStudyCard({ project }: { project: Project }) {
 
 export function FeaturedCaseStudies() {
   return (
-    <section className="site-section" aria-labelledby="featured-heading">
+    <section className="site-sheet site-section" aria-labelledby="featured-heading">
       <h2 id="featured-heading">Selected case studies</h2>
       <div className="work-features">
         {caseStudies.map((project) => (

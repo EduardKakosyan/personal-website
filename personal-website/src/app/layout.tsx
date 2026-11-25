@@ -1,14 +1,9 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Pixelify_Sans } from 'next/font/google'
 import './globals.css'
 import './site.css'
 import { cn } from '@/lib/utils'
-import { Header } from '@/components/layouts/header'
-import { Footer } from '@/components/layouts/footer'
-import { GuideLauncher } from '@/components/features/guide/guide-launcher'
-import { GuideProvider } from '@/components/providers/guide-provider'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
-import { PageTransitionProvider } from '@/components/providers/page-transition-provider'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { WebVitals } from '@/components/features/web-vitals'
@@ -23,6 +18,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
+  display: 'swap',
+})
+
+// The cabin's pixel font: the game's speech and paper, and the headings on the plain pages.
+const pixel = Pixelify_Sans({
+  subsets: ['latin'],
+  variable: '--font-pixel',
   display: 'swap',
 })
 
@@ -45,9 +47,8 @@ const personJsonLd = {
   knowsAbout: profile.skills.flatMap((group) => group.items),
 }
 
-const siteTitle = 'Eduard Kakosyan | Forward Deployed AI Developer'
-const siteDescription =
-  'Eduard Kakosyan is a Forward Deployed AI Developer based in Halifax. He leads tech and AI at AI-First Solutions and builds local AI systems and coding-agent loops.'
+const siteTitle = `${identity.name} | ${identity.title}`
+const siteDescription = `${identity.name} is the ${identity.title} at ${identity.company} in Halifax, Nova Scotia. His site is a small game: walk around his cabin and find his résumé and projects in the place.`
 
 export const metadata: Metadata = {
   metadataBase: new URL(identity.website),
@@ -57,21 +58,18 @@ export const metadata: Metadata = {
   },
   description: siteDescription,
   keywords: [
-    'AI Developer',
-    'Forward Deployed Engineering',
+    'Eduard Kakosyan',
+    'Lead AI Developer',
+    'AI-First Solutions',
     'Applied AI',
-    'Machine Learning',
-    'LLM',
-    'OpenAI',
-    'Ollama',
+    'Local AI',
+    'Coding agents',
     'Halifax',
     'Nova Scotia',
-    'HealthByte',
-    'CarGrep',
+    'Keeper',
+    'Keystone',
+    'dgx-autonomy',
     'Dalhousie University',
-    'AI Education',
-    'Agentic AI',
-    'Shiftkey Labs',
   ],
   authors: [{ name: identity.name, url: identity.website }],
   creator: identity.name,
@@ -142,32 +140,12 @@ export default function RootLayout({
           'min-h-screen bg-background font-sans antialiased',
           geistSans.variable,
           geistMono.variable,
+          pixel.variable,
         )}
       >
         <ErrorBoundary>
           <WebVitals />
-          {/* Skip to main content link for accessibility */}
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            Skip to main content
-          </a>
-
-          <GuideProvider>
-            <div className="site-shell relative flex min-h-dvh flex-col">
-              <Header />
-              <main
-                id="main-content"
-                className="flex-1 flex flex-col items-center w-full"
-                role="main"
-              >
-                <PageTransitionProvider>{children}</PageTransitionProvider>
-              </main>
-              <Footer />
-              <GuideLauncher />
-            </div>
-          </GuideProvider>
+          {children}
         </ErrorBoundary>
         {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS_ENABLED === 'true' && <Analytics />}
         <SpeedInsights />

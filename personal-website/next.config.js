@@ -5,6 +5,19 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
+  async redirects() {
+    return [
+      // The cabin was previewed here before it became the home page.
+      { source: '/preview/arrival', destination: '/', permanent: true },
+      // Retired project pages point back to the work index.
+      ...['voxcoach', 'claude-autonomous'].map((slug) => ({
+        source: `/projects/${slug}`,
+        destination: '/projects',
+        permanent: true,
+      })),
+    ]
+  },
+
   // Comprehensive Security Headers
   async headers() {
     return [
@@ -35,7 +48,9 @@ const nextConfig = {
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
-              'upgrade-insecure-requests',
+              // Production only: in dev it would break testing from a phone over
+              // the local network (http://<lan-ip>:3000), which has no https.
+              ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
             ].join('; '),
           },
           // Prevent clickjacking
@@ -120,9 +135,8 @@ const nextConfig = {
 
   // Compiler options
   compiler: {
-    // Keep error/warn/info: /api/narrate logs one anonymised info line per request.
-    removeConsole:
-      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn', 'info'] } : false,
+    // Keep errors and warnings.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
   // Logging

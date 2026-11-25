@@ -3,7 +3,7 @@ import { archiveProjects } from '@/content/projects'
 
 export function ArchiveTable() {
   return (
-    <section className="site-section" aria-labelledby="archive-heading">
+    <section className="site-sheet site-section" aria-labelledby="archive-heading">
       <h2 id="archive-heading">Older projects</h2>
       <p className="site-lead">Hackathons, experiments and earlier builds.</p>
       <div className="work-table-scroll" role="region" aria-label="Project archive" tabIndex={0}>

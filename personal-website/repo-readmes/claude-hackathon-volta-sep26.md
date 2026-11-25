@@ -2,7 +2,7 @@
 
 ## What
 
-A map of supervised beaches around Halifax, with public notices behind each swimming status.
+A map of the 35 Nova Scotia beaches where a government tests the water, with the official notice behind each status.
 
 ## Why
 

@@ -2,29 +2,29 @@
 
 # Eduard Kakosyan
 
-Lead AI Developer at AI-First Solutions. I lead a team of five developers and build AI systems with clients, from discovery and architecture through integration and rollout.
+Lead AI Developer at AI-First Solutions. I lead a four-person development team and build AI systems for clients and for our own company. I start with the problem and use a model only where it fits.
 
 [Website](https://kakosyaneduard.ca) · [Resume](https://kakosyaneduard.ca/eduard-kakosyan-resume.pdf) · [LinkedIn](https://www.linkedin.com/in/eduard-kakosyan) · [Email](mailto:kakosyaneduard@gmail.com)
 
 ## Now
 
-- Building private meeting tools and local coding-agent infrastructure.
-- Turning engineering decisions into readable case studies and reproducible code.
+- Rolling out Keystone, the operations software our staff and Claude share.
+- Building lyfe. My website is now a small game set at my cabin.
 
 ## Selected work
 
-| Project                                                                             | What to inspect                                                                                                                               | Context                                                  |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Keeper (source private; audit pending)                                              | A private archive for meeting transcripts, with search, summaries and access from AI tools. Comes with a Mac app for recording and dictation. | [Notes](https://kakosyaneduard.ca/projects/keeper)       |
-| [dgx-autonomy](https://github.com/EduardKakosyan/dgx-autonomy)                      | A setup for running a coding agent on a DGX Spark. It saves progress between conversations and submits its code to tests it cannot edit.      | [Notes](https://kakosyaneduard.ca/projects/dgx-autonomy) |
-| [HUGO](https://github.com/EduardKakosyan/hugo)                                      | A voice assistant for a Reachy Mini robot, running speech recognition, reasoning, tools and synthesis on a DGX Spark.                         | [Notes](https://kakosyaneduard.ca/projects/hugo)         |
-| [Is the Beach Open](https://github.com/EduardKakosyan/claude-hackathon-volta-sep26) | A map of supervised beaches around Halifax, with public notices behind each swimming status.                                                  | [Notes](https://kakosyaneduard.ca/projects/volta-sep26)  |
-| [personal-website](https://github.com/EduardKakosyan/personal-website)              | This site: shared facts, case studies and an on-demand guide.                                                                                 | [Site](https://kakosyaneduard.ca)                        |
+| Project                                                                | What it is                                                                                                                   | Write-up                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Keeper (private)                                                       | Meeting notes and dictation for the AI-First team, running on hardware the company owns. It replaced two paid subscriptions. | [Notes](https://kakosyaneduard.ca/projects/keeper)           |
+| Keystone (private)                                                     | Internal operations software for AI-First. Staff and Claude use one registry of operations, under the same permissions.      | [Notes](https://kakosyaneduard.ca/projects/keystone)         |
+| [lyfe](https://github.com/EduardKakosyan/lyfe)                         | A private iPhone app for one person’s routines and goals: the gym, breath training, study, food and money.                   | [Notes](https://kakosyaneduard.ca/projects/lyfe)             |
+| [dgx-autonomy](https://github.com/EduardKakosyan/dgx-autonomy)         | A setup that lets a local open-weights model build software unattended on one DGX Spark, graded by tests it cannot edit.     | [Notes](https://kakosyaneduard.ca/projects/dgx-autonomy)     |
+| [personal-website](https://github.com/EduardKakosyan/personal-website) | My website: a small game set at my cabin in Nova Scotia, with my work in the place.                                          | [Notes](https://kakosyaneduard.ca/projects/personal-website) |
 
 ## Tech
 
 - **AI & LLMs:** MCP, RAG, evals, SGLang, vLLM
-- **Languages & Frameworks:** Python, TypeScript, Go, Next.js, FastAPI
+- **Languages & Frameworks:** Python, TypeScript, Swift, Rust, Next.js, FastAPI
 - **Cloud & Infrastructure:** PostgreSQL, Docker, NVIDIA DGX Spark
 - **Integrations & Automation:** n8n, Microsoft Graph, Power Automate
 

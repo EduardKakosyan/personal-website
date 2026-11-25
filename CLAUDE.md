@@ -41,13 +41,13 @@ Tests live in `personal-website/tests/*.test.mjs` and use Node's built-in test r
 
 ### Key directories (`personal-website/src/`)
 
-- `app/` — App Router pages. Route group `(pages)/` contains contact and projects. `projects/[slug]/` has dynamic routes with `generateStaticParams`.
-- `components/features/` — Domain components (homepage, portfolio guide, agent scene, project pages)
+- `app/` — App Router pages. `page.tsx` is the home page, the cabin game. Route group `(pages)/` (its layout adds the header and footer) contains projects, about and contact. `projects/[slug]/` has dynamic routes with `generateStaticParams`.
+- `components/features/` — Domain components: `cabin/` (the home page game: the 3D scene, HUGO and the plain fallback note) and the work, about and project pages
 - `components/ui/` — shadcn/ui components (new-york style, Lucide icons). Add via `npx shadcn@latest add <component>`.
 - `components/layouts/` — Header and Footer
 - `content/projects.ts` — Project data source; long descriptions loaded from `content/project-descriptions/*.md`
-- `lib/` — Utilities: sanitizer (DOMPurify), validation (Zod schemas), markdown processing, guardrails (guide safety)
-- `components/providers/webllm-provider.tsx` — client-side LLM via WebLLM, run in a web worker
+- `lib/` — Utilities: sanitizer (DOMPurify), validation (Zod schemas), markdown processing, guardrails (checks on questions typed to HUGO)
+- `components/providers/webllm-provider.tsx` — HUGO's in-browser model via WebLLM, run in a web worker; the model downloads only once a guest starts typing a question to him
 
 ### Important patterns
 

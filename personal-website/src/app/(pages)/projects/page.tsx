@@ -6,14 +6,14 @@ import { ArchiveTable } from '@/components/features/work/archive-table'
 export const metadata: Metadata = {
   title: 'Work',
   description:
-    'Keystone, Keeper and dgx-autonomy: software I build at AI-First Solutions and my own experiments with local models.',
+    'Keeper, Keystone, lyfe, dgx-autonomy and this website: software I build at AI-First Solutions and projects of my own.',
   alternates: { canonical: '/projects' },
 }
 
 export default function ProjectsPage() {
   return (
-    <div className="site-page site-width">
-      <header>
+    <div className="site-page">
+      <header className="site-sheet site-intro">
         <p className="site-kicker">Work / Eduard Kakosyan</p>
         <h1>
           Projects <em>and experiments.</em>

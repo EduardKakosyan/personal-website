@@ -1,6 +1,6 @@
-import { ArrowUpRight } from 'lucide-react'
 import { identity } from '@/content/profile'
 
+/** A quiet paper strip at the foot of the plain pages. */
 export function Footer() {
   return (
     <footer className="site-footer">
@@ -14,16 +14,13 @@ export function Footer() {
           </div>
           <div className="site-footer-links">
             <a href={identity.github} target="_blank" rel="noopener noreferrer">
-              GitHub
-              <ArrowUpRight size={12} />
+              GitHub <span aria-hidden="true">↗</span>
             </a>
             <a href={identity.linkedin} target="_blank" rel="noopener noreferrer">
-              LinkedIn
-              <ArrowUpRight size={12} />
+              LinkedIn <span aria-hidden="true">↗</span>
             </a>
             <a href={`mailto:${identity.email}`}>
-              Email
-              <ArrowUpRight size={12} />
+              Email <span aria-hidden="true">↗</span>
             </a>
           </div>
         </div>

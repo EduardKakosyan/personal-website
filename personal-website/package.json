@@ -19,7 +19,6 @@
     "resume": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-resume.mts --pdf",
     "readme": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/render-github-readme.mts",
     "check:3d": "node scripts/check-3d-budget.mjs",
-    "narrator:record": "node --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/record-narrator-evals.mts",
     "icons": "node scripts/render-icons.mjs"
   },
   "dependencies": {

@@ -11,7 +11,7 @@ export async function renderGithubReadme(): Promise<string> {
   const { identity } = profile
   const rows = githubContent.selected.map((slug) => {
     if (slug === 'personal-website') {
-      return `| [personal-website](${identity.github}/personal-website) | This site: shared facts, case studies and an on-demand guide. | [Site](${identity.website}) |`
+      return `| [personal-website](${identity.github}/personal-website) | My website: a small game set at my cabin in Nova Scotia, with my work in the place. | [Notes](${identity.website}/projects/personal-website) |`
     }
     const project = projects.find((entry) => entry.slug === slug)
     if (!project) throw new Error(`Unknown selected project: ${slug}`)
@@ -19,9 +19,7 @@ export async function renderGithubReadme(): Promise<string> {
       project.visibility === 'public-repo'
         ? project.facts.links.find((link) => link.label === 'Source code')?.href
         : undefined
-    const title = source
-      ? `[${project.title}](${source})`
-      : `${project.title} (source private; audit pending)`
+    const title = source ? `[${project.title}](${source})` : `${project.title} (private)`
     return `| ${title} | ${project.description} | [Notes](${identity.website}/projects/${slug}) |`
   })
   const tech = githubContent.tech.map((pick) => {
@@ -40,7 +38,7 @@ export async function renderGithubReadme(): Promise<string> {
       '## Now',
       githubContent.now.map((line) => `- ${line}`).join('\n'),
       '## Selected work',
-      ['| Project | What to inspect | Context |', '| --- | --- | --- |', ...rows].join('\n'),
+      ['| Project | What it is | Write-up |', '| --- | --- | --- |', ...rows].join('\n'),
       '## Tech',
       tech.join('\n'),
       `The code is here; the decisions and my contribution are at [${identity.website.replace('https://', '')}](${identity.website}/projects).`,

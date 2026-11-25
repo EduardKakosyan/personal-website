@@ -1,10 +1,15 @@
 // Comprehensive guardrail system for Eduard's personal website chatbot
+// Relative import keeps this loadable by the Node tests without a bundler.
+import { projects } from '../content/projects'
 
 interface GuardrailResult {
   allowed: boolean
   reason?: string
   suggestedResponse?: string
 }
+
+// General knowledge questions. Allowed when they point at the page ("what is this about?").
+const GENERAL_QUESTION = /\b(what is|how does|explain|definition of|meaning of)\s+(?!.*eduard)/i
 
 // Keywords and patterns that should redirect to Eduard-related topics
 const OFF_TOPIC_PATTERNS = [
@@ -16,9 +21,6 @@ const OFF_TOPIC_PATTERNS = [
 
   // Other people (unless asking for comparison)
   /\b(who is|tell me about|what do you know about)\s+(?!eduard|kakosyan)/i,
-
-  // General knowledge questions
-  /\b(what is|how does|explain|definition of|meaning of)\s+(?!.*eduard)/i,
 
   // Weather, time, location (unless Eduard-related)
   /\b(weather|temperature|time|date|where am i|location)\b/i,
@@ -46,14 +48,33 @@ const OFF_TOPIC_PATTERNS = [
 const EDUARD_RELATED_PATTERNS = [
   /\b(eduard|kakosyan|his|he|him)\b/i,
   /\b(projects?|work|experience|background|skills?|education|university|dalhousie)\b/i,
-  /\b(healthbyte|cargrep|second brain|q-learning|hackathon|ai first|hugo|dev template|claude autonomous|dgx|autonomy|qwen|shoreline|yahtzee|spark|agents?|verification|checks|handoff|loop)\b/i,
+  /\b(hackathon|ai first|agents?|verification|checks|handoff|loop)\b/i,
   /\b(python|javascript|react|next\.?js|ai|machine learning|developer|programmer)\b/i,
   /\b(contact|reach|email|website|portfolio)\b/i,
   /\b(hiking|camping|photography|hobbies|interests)\b/i,
   /\b(atlantic|canada|canadian|halifax|nova scotia)\b/i,
   /\b(navigate|go to|show me|take me|open|visit|scroll)\b/i,
   /\b(page|section|home)\b/i,
+  // Questions about a case study
+  /\b(outcomes?|results?|impact|team|role|stack|tech|code|repo|source|architecture|design|built|demo|case study)\b/i,
 ]
+
+// Project names come from the registry so new projects are never refused by name.
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const projectTerms = [
+  ...new Set(
+    projects.flatMap((project) => [
+      project.title,
+      project.slug,
+      ...project.aliases,
+      ...project.facts.stack,
+    ]),
+  ),
+].map((term) => escapeRegExp(term.toLowerCase()).replace(/[\s-]+/g, '[\\s-]*'))
+const PROJECT_PATTERN = new RegExp(`\\b(${projectTerms.join('|')})\\b`, 'i')
+
+// "What is this about?" refers to the page the visitor is on.
+const PAGE_REFERENCE = /\b(this|it|here|that)\b/i
 
 // System prompt extraction attempts (more specific)
 const SYSTEM_PROMPT_ATTEMPTS = [
@@ -63,9 +84,7 @@ const SYSTEM_PROMPT_ATTEMPTS = [
   /what are your guidelines/i,
   /your context/i,
   /internal instructions/i,
-  /configuration/i,
-  /settings/i,
-  /programming/i,
+  /your (configuration|settings|programming)/i,
 ]
 
 // Jailbreak attempts
@@ -84,7 +103,9 @@ const JAILBREAK_ATTEMPTS = [
 
 // Check if the input contains Eduard-related content
 const containsEduardContent = (input: string): boolean => {
-  return EDUARD_RELATED_PATTERNS.some((pattern) => pattern.test(input))
+  return (
+    PROJECT_PATTERN.test(input) || EDUARD_RELATED_PATTERNS.some((pattern) => pattern.test(input))
+  )
 }
 
 // Check if the input is trying to extract system prompt
@@ -98,18 +119,32 @@ const isJailbreakAttempt = (input: string): boolean => {
 }
 
 // Check if the input is off-topic
-const isOffTopic = (input: string): boolean => {
+const isOffTopic = (input: string, context: GuardrailContext = {}): boolean => {
   // If it contains Eduard-related content, it's likely on-topic
   if (containsEduardContent(input)) {
     return false
   }
 
   // Check for off-topic patterns
-  return OFF_TOPIC_PATTERNS.some((pattern) => pattern.test(input))
+  if (OFF_TOPIC_PATTERNS.some((pattern) => pattern.test(input))) {
+    return true
+  }
+
+  // On a page, "what is this about?" is a question about that page
+  const aboutPage = Boolean(context.page) && PAGE_REFERENCE.test(input)
+  return !aboutPage && GENERAL_QUESTION.test(input)
+}
+
+export interface GuardrailContext {
+  // What the visitor is looking at, e.g. a project title
+  page?: string
 }
 
 // Main guardrail function for input validation
-export const validateUserInput = (input: string): GuardrailResult => {
+export const validateUserInput = (
+  input: string,
+  context: GuardrailContext = {},
+): GuardrailResult => {
   // Check for empty input
   if (!input.trim()) {
     return {
@@ -140,7 +175,7 @@ export const validateUserInput = (input: string): GuardrailResult => {
   }
 
   // Check if the question is off-topic
-  if (isOffTopic(input)) {
+  if (isOffTopic(input, context)) {
     return {
       allowed: false,
       reason: 'Off-topic question',

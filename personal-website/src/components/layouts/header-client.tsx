@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ArrowDown } from 'lucide-react'
 import type { identity as ProfileIdentity } from '@/content/profile'
 import { analyticsEvents } from '@/lib/analytics'
 
+/** The plain pages' header: the name, as the game writes it, and a bar like the game's corner bar. */
 export function HeaderClient({
   identity,
   resumePdfPath,
@@ -21,16 +21,16 @@ export function HeaderClient({
           className="site-wordmark"
           aria-current={pathname === '/' ? 'page' : undefined}
         >
-          <span className="site-monogram" aria-hidden="true" />
-          <span>
-            <strong>{identity.name}</strong>
-            <small>
-              {identity.title} at {identity.company}
-            </small>
-          </span>
+          <strong>{identity.name}</strong>
+          <small>
+            {identity.title} at {identity.company}
+          </small>
           <span className="sr-only"> home</span>
         </Link>
-        <nav className="site-nav" aria-label="Main navigation">
+        <nav className="site-bar" aria-label="Main navigation">
+          <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>
+            <span aria-hidden="true">←</span> Cabin
+          </Link>
           <Link
             href="/projects"
             aria-current={pathname.startsWith('/projects') ? 'page' : undefined}
@@ -46,13 +46,12 @@ export function HeaderClient({
           <a
             href={resumePdfPath}
             download
-            className="site-nav-resume"
+            className="site-bar-resume"
             aria-current={pathname === resumePdfPath ? 'page' : undefined}
             aria-label="Download résumé (PDF)"
             onClick={() => analyticsEvents.resumeDownloaded()}
           >
-            Résumé
-            <ArrowDown size={12} aria-hidden="true" />
+            Résumé <span aria-hidden="true">↓</span>
           </a>
         </nav>
       </div>

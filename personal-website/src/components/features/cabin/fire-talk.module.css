@@ -1,0 +1,273 @@
+/* Talking with Eduard by the fire (scene 7), the way a game does it: the
+   things to ask in a dark box along the bottom of the screen, a pointer on
+   the one that's picked. What's said is in the speech bubbles over their
+   heads (speech-bubble.tsx), not here. */
+.talk {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 40;
+  width: min(760px, calc(100vw - 32px));
+  padding: 10px 12px 12px;
+  color: #fff7e6;
+  background: #2a1d14;
+  border: 3px solid #fff7e6;
+  box-shadow:
+    0 0 0 3px #2a1d14,
+    7px 9px 0 rgba(0, 0, 0, 0.45);
+  outline: none;
+  transform: translateX(-50%);
+  animation: talkIn 0.2s steps(4, end);
+}
+
+@keyframes talkIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 4px 8px;
+}
+
+.title {
+  color: #fec54f;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hint {
+  color: #b9a88a;
+  font-size: 0.72rem;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* "Ask HUGO" and "Get up": the last row, under a dotted line */
+.options li[data-action='true'] {
+  margin-top: 6px;
+  padding-top: 8px;
+  background: repeating-linear-gradient(
+      90deg,
+      rgba(255, 247, 230, 0.35) 0 6px,
+      transparent 6px 10px
+    )
+    top / 100% 2px no-repeat;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px 7px 6px;
+  color: #fff7e6;
+  background: transparent;
+  border: 2px solid transparent;
+  font: inherit;
+  font-size: 0.98rem;
+  line-height: 1.15;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.option:focus-visible {
+  outline: none;
+}
+
+/* the one the pointer is on */
+.option[data-on='true'] {
+  color: #2a1d14;
+  background: #fec54f;
+  border-color: #fff7e6;
+}
+
+.option[data-asked='true']:not([data-on='true']) {
+  color: #b9a88a;
+}
+
+.pointer {
+  flex: none;
+  width: 0.9em;
+  font-size: 0.7rem;
+  visibility: hidden;
+}
+
+.option[data-on='true'] .pointer {
+  visibility: visible;
+  animation: pointer 0.6s steps(2, jump-none) infinite;
+}
+
+@keyframes pointer {
+  from {
+    transform: translateX(-2px);
+  }
+  to {
+    transform: translateX(1px);
+  }
+}
+
+.key {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 1.45em;
+  height: 1.45em;
+  padding: 0 0.3em;
+  color: #2a1d14;
+  background: #fff7e6;
+  border: 2px solid #2a1d14;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  font: inherit;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.label {
+  flex: 1;
+}
+
+.tick {
+  flex: none;
+  color: #8fce6e;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.option[data-on='true'] .tick {
+  color: #3d7a2a;
+}
+
+/* while someone's speaking: a click or a tap anywhere goes on */
+.anywhere {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.goOn {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.goOnButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 14px 7px 10px;
+  color: #2a1d14;
+  background: #fec54f;
+  border: 3px solid #fff7e6;
+  box-shadow:
+    0 0 0 3px #2a1d14,
+    5px 7px 0 rgba(0, 0, 0, 0.45);
+  font: inherit;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* how far through his answer he is */
+.progress {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.progress span {
+  width: 9px;
+  height: 9px;
+  background: #2a1d14;
+  border: 2px solid #fff7e6;
+}
+
+.progress span[data-on='true'] {
+  background: #fec54f;
+}
+
+@media (max-width: 640px) {
+  .talk {
+    right: 8px;
+    left: 8px;
+    bottom: var(--bar-clear, 5.4rem);
+    width: auto;
+    max-height: 52vh;
+    padding: 8px 8px 9px;
+    overflow-y: auto;
+    transform: none;
+    animation: none;
+  }
+
+  .head {
+    margin-bottom: 4px;
+  }
+
+  .options {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .options li[data-action='true'] {
+    margin-top: 0;
+    padding-top: 0;
+    background: none;
+  }
+
+  .options li[data-action='true']:nth-last-child(2) {
+    margin-top: 4px;
+    padding-top: 5px;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 247, 230, 0.35) 0 6px,
+        transparent 6px 10px
+      )
+      top / 100% 2px no-repeat;
+  }
+
+  .option {
+    min-height: 33px;
+    padding: 4px 8px 5px 4px;
+    font-size: 0.88rem;
+  }
+
+  .goOn {
+    bottom: calc(var(--bar-clear, 5.4rem) + 6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talk,
+  .option[data-on='true'] .pointer {
+    animation: none;
+  }
+}

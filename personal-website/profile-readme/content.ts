@@ -1,15 +1,15 @@
 export const githubContent = {
-  role: 'I lead a team of five developers and build AI systems with clients, from discovery and architecture through integration and rollout.',
+  role: 'I lead a four-person development team and build AI systems for clients and for our own company. I start with the problem and use a model only where it fits.',
   now: [
-    'Building private meeting tools and local coding-agent infrastructure.',
-    'Turning engineering decisions into readable case studies and reproducible code.',
+    'Rolling out Keystone, the operations software our staff and Claude share.',
+    'Building lyfe. My website is now a small game set at my cabin.',
   ],
-  selected: ['keeper', 'dgx-autonomy', 'hugo', 'volta-sep26', 'personal-website'],
+  selected: ['keeper', 'keystone', 'lyfe', 'dgx-autonomy', 'personal-website'],
   tech: [
     { label: 'AI & LLMs', items: ['MCP', 'RAG', 'evals', 'SGLang', 'vLLM'] },
     {
       label: 'Languages & Frameworks',
-      items: ['Python', 'TypeScript', 'Go', 'Next.js', 'FastAPI'],
+      items: ['Python', 'TypeScript', 'Swift', 'Rust', 'Next.js', 'FastAPI'],
     },
     { label: 'Cloud & Infrastructure', items: ['PostgreSQL', 'Docker', 'NVIDIA DGX Spark'] },
     { label: 'Integrations & Automation', items: ['n8n', 'Microsoft Graph', 'Power Automate'] },

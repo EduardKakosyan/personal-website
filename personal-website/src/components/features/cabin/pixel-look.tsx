@@ -1,0 +1,634 @@
+'use client'
+
+// How the world is drawn. Three looks to compare (Eduard, after the pixel
+// pass: "a bit more smoothed out and less pixelly ... closer to Animal Crossing"):
+// - pixel:  drawn ~230 pixels tall, light in flat steps, one-pixel outlines (A34)
+// - soft:   the same, at about twice the resolution, so pixels and outlines are finer
+// - smooth: full resolution, soft light and shadows, no outlines
+
+import { useEffect, useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+import { waterUniforms } from './brook-water'
+import { GROUND_MASK, GROUND_RECT, type Look } from './world'
+
+let currentLook: Look = 'pixel'
+/** Shared by the ground and foliage shaders: 1 = soft edges, and how strong the speckles are. */
+const lookUniforms = { uSoft: { value: 0 }, uSpeck: { value: 1 } }
+
+/** Whether the smooth look is on (soft edges instead of pixel steps). */
+export const isSmoothLook = () => currentLook === 'smooth'
+
+/** Call once, before the models load. */
+export function configureLook(look: Look) {
+  currentLook = look
+  lookUniforms.uSoft.value = look === 'smooth' ? 1 : 0
+  lookUniforms.uSpeck.value = look === 'pixel' ? 1 : look === 'soft' ? 0.7 : 0
+}
+
+// ------------------------------------------------------------------ light
+/**
+ * The light ramp: away from the sun, side-on, facing the sun. Pixel looks use
+ * hard steps; the smooth look blends them into a soft terminator.
+ */
+function makeGradient(steps: number[], smooth: boolean) {
+  const data = new Uint8Array(steps.length * 4)
+  steps.forEach((v, i) => data.set([v, v, v, 255], i * 4))
+  const tex = new THREE.DataTexture(data, steps.length, 1, THREE.RGBAFormat)
+  tex.minFilter = smooth ? THREE.LinearFilter : THREE.NearestFilter
+  tex.magFilter = smooth ? THREE.LinearFilter : THREE.NearestFilter
+  tex.generateMipmaps = false
+  tex.needsUpdate = true
+  return tex
+}
+
+const steppedGradient = makeGradient([0, 150, 255], false)
+const smoothGradient = makeGradient([30, 120, 215, 255], true)
+const gradientFor = () => (currentLook === 'smooth' ? smoothGradient : steppedGradient)
+const toonCache = new Map<string, THREE.Material>()
+
+/** Swap the glTF's standard materials for toon ones (shared, so cheap). */
+export function toToon(source: THREE.Material): THREE.Material {
+  const key = `${currentLook}:${source.uuid}`
+  const cached = toonCache.get(key)
+  if (cached) return cached
+  const m = source as THREE.MeshStandardMaterial
+  const toon = new THREE.MeshToonMaterial({
+    name: m.name,
+    color: m.color?.clone() ?? new THREE.Color('#ffffff'),
+    map: m.map ?? null,
+    emissive: m.emissive?.clone() ?? new THREE.Color('#000000'),
+    emissiveIntensity: m.emissiveIntensity ?? 1,
+    gradientMap: gradientFor(),
+    vertexColors: m.vertexColors,
+    side: m.side,
+  })
+  if (FOLIAGE.test(m.name)) addFoliageTexture(toon)
+  toonCache.set(key, toon)
+  return toon
+}
+
+/**
+ * The cabin cutaway: 0 = solid, 1 = gone. Shared by the roof, the south wall
+ * and the string lights, which dissolve in a pixel dither pattern when the
+ * guest steps inside.
+ */
+export const cutaway = { value: 0 }
+const fadeCache = new Map<string, THREE.Material>()
+
+export function toFadeable(source: THREE.Material): THREE.Material {
+  const key = `${currentLook}:${source.uuid}`
+  const cached = fadeCache.get(key)
+  if (cached) return cached
+  const mat = makeFadeable(source, cutaway)
+  fadeCache.set(key, mat)
+  return mat
+}
+
+/**
+ * A material of its own that dissolves in the same pixel dither, driven by its
+ * own amount (0 = solid, 1 = gone). Used for a tree that stands between the
+ * camera and the guest.
+ */
+export function toOwnFade(source: THREE.Material, amount: { value: number }): THREE.Material {
+  return makeFadeable(source, amount)
+}
+
+function makeFadeable(source: THREE.Material, amount: { value: number }): THREE.Material {
+  const toon = toToon(source) as THREE.MeshToonMaterial
+  const mat = toon.clone()
+  // keep the toon material's own shader changes (the foliage blotches)
+  const before = toon.onBeforeCompile.bind(toon)
+  const baseKey = toon.customProgramCacheKey()
+  mat.onBeforeCompile = (shader, renderer) => {
+    before(shader, renderer)
+    shader.uniforms.uCutaway = amount
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+uniform float uCutaway;
+float bayer4(vec2 p) {
+  ivec2 i = ivec2(mod(p, 4.0));
+  float m[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
+  return (m[i.x + i.y * 4] + 0.5) / 16.0;
+}`,
+      )
+      .replace(
+        'void main() {',
+        'void main() {\n  if (uCutaway > 0.001 && bayer4(gl_FragCoord.xy) < uCutaway) discard;',
+      )
+  }
+  mat.customProgramCacheKey = () => `cabin-fade:${baseKey}`
+  return mat
+}
+
+const FOLIAGE = /^(spruce|blue_spruce|birch_leaf|alder|grass|moss)/
+
+const NOISE_GLSL = /* glsl */ `
+uniform float uSoft;
+uniform float uSpeck;
+// a hard step in the pixel looks, a soft blend in the smooth look
+float edge(float a, float x) { return mix(step(a, x), smoothstep(a - 0.12, a + 0.12, x), uSoft); }
+float gHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float gNoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), f.x),
+             mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), f.x), f.y);
+}`
+
+/** Needles and leaves: light and dark blotches, so trees look painted, not faceted. */
+function addFoliageTexture(mat: THREE.MeshToonMaterial) {
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, lookUniforms)
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vLeafPos;')
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvLeafPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      )
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\nvarying vec3 vLeafPos;\n${NOISE_GLSL}`)
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+  vec2 lp = vLeafPos.xz + vec2(vLeafPos.y * 0.7, -vLeafPos.y * 0.4);
+  float blot = gNoise(lp * 2.6) + (gHash(floor(lp / 0.13)) - 0.5) * 0.35 * uSpeck;
+  diffuseColor.rgb *= mix(0.74, 1.0, edge(0.4, blot));
+  diffuseColor.rgb *= mix(1.0, 1.25, edge(0.74, blot));`,
+      )
+  }
+  mat.customProgramCacheKey = () => 'cabin-foliage'
+}
+
+// ------------------------------------------------------------------ painted ground
+// Colours for the ground paint, from the palette sampled from Eduard's photos (A37).
+const GROUND_COLORS = {
+  uGrassDark: '#4d8a3a',
+  uGrass: '#5f9c42',
+  uGrassLight: '#79b24c',
+  uMeadow: '#7f9c44',
+  uMeadowLight: '#9bb052',
+  uBlue: '#4c6e45',
+  uBlueDark: '#3f5d40',
+  uBerry: '#4a5aa8',
+  uGravel: '#c2b49b',
+  uGravelLight: '#d5c8ae',
+  uGravelDark: '#9a8c77',
+  // the brook (photo 03): earth banks, and red-brown cobbles on the bed
+  uBank: '#7c5e42',
+  uBankDark: '#5f4632',
+  uBed: '#8c5a3d',
+  uBedLight: '#a97c56',
+  uBedDark: '#66432f',
+  // what the water does to the bed: clear tea in the shallows, green-dark in
+  // the deep; and the pale line where it laps the bank
+  uShallow: '#8f8552',
+  uDeep: '#24493f',
+  uLap: '#e9efe2',
+}
+
+/**
+ * The ground is one big mesh. Where the gravel, the meadow and the blueberry
+ * field are comes from a small mask painted in Blender; this shader turns it
+ * into crisp, wobbly patches with speckles, so the ground looks hand-pixelled
+ * at any screen size.
+ */
+export function makeGroundMaterial() {
+  const mask = new THREE.TextureLoader().load(GROUND_MASK)
+  mask.colorSpace = THREE.NoColorSpace
+  mask.minFilter = THREE.LinearFilter
+  mask.magFilter = THREE.LinearFilter
+  mask.generateMipmaps = false
+
+  const mat = new THREE.MeshToonMaterial({ color: '#ffffff', gradientMap: gradientFor() })
+  const uniforms: Record<string, THREE.IUniform> = {
+    uMask: { value: mask },
+    uMaskRect: { value: new THREE.Vector3(GROUND_RECT.x0, GROUND_RECT.y0, GROUND_RECT.size) },
+  }
+  for (const [k, hex] of Object.entries(GROUND_COLORS))
+    uniforms[k] = { value: new THREE.Color(hex) }
+
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms, lookUniforms, { uTime: waterUniforms.uTime })
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vGroundPos;')
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvGroundPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      )
+    const colorUniforms = Object.keys(GROUND_COLORS)
+      .map((k) => `uniform vec3 ${k};`)
+      .join('\n')
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+varying vec3 vGroundPos;
+uniform sampler2D uMask;
+uniform vec3 uMaskRect;
+uniform float uTime;
+${colorUniforms}
+${NOISE_GLSL}`,
+      )
+      .replace(
+        '#include <map_fragment>',
+        `
+  // Blender's ground plane: x east, y north (three.js z points south).
+  vec2 w = vec2(vGroundPos.x, -vGroundPos.z);
+  vec3 m = texture2D(uMask, (w - uMaskRect.xy) / uMaskRect.z).rgb;
+  float wob = gNoise(w * 1.4) - 0.5;
+  float big = gNoise(w * 0.33);
+  float fine = gNoise(w * 2.3) - 0.5;
+  float speck = gHash(floor(w / 0.11));
+
+  vec3 c = mix(uGrassDark, uGrass, edge(0.38, big + fine * 0.2));
+  c = mix(c, uGrassLight, edge(0.7, big + fine * 0.25));
+  c = mix(c, c * 1.16, step(0.95, speck) * uSpeck);
+
+  vec3 meadow = mix(uMeadow, uMeadowLight, edge(0.55, gNoise(w * 0.6) + fine * 0.3));
+  meadow = mix(meadow, uGrassDark, step(0.93, speck) * uSpeck);
+  c = mix(c, meadow, edge(0.5, m.g + wob * 0.35));
+
+  vec3 berries = mix(uBlue, uBlueDark, edge(0.5, gNoise(w * 0.9) + fine * 0.2));
+  berries = mix(berries, uBerry, step(0.9, speck) * uSpeck);
+  c = mix(c, berries, edge(0.5, m.b + wob * 0.25));
+
+  vec3 gravel = mix(uGravel, uGravelLight, edge(0.58, gNoise(w * 1.6) + fine * 0.3));
+  gravel = mix(gravel, uGravelDark, step(0.86, speck) * uSpeck);
+  c = mix(c, gravel, edge(0.5, m.r + wob * 0.3));
+
+  // the brook's banks: bare earth where the channel drops away, in layers
+  float gy = vGroundPos.y;
+  vec3 earth = mix(uBank, uBankDark, edge(0.55, gNoise(vec2(w.x * 2.5 + w.y * 0.8, gy * 11.0)) + fine * 0.3));
+  c = mix(c, earth, edge(0.5, smoothstep(-0.05, -0.2, gy) + wob * 0.45));
+  // the bed, under the water: rounded red-brown cobbles, darker in the deep
+  // (the fishing hole); the water itself is drawn over it (brook-water.ts)
+  vec2 q = w / 0.17 + vec2(gNoise(w * 1.7), gNoise(w * 1.7 + 9.0)) * 0.8;
+  float stone = gHash(floor(q));
+  vec3 bed = mix(uBed, uBedLight, step(0.62, stone));
+  bed = mix(bed, uBedDark, step(stone, 0.22));
+  vec2 f = abs(fract(q) - 0.5) * 2.0;
+  bed *= mix(1.0, 0.78, step(0.8, max(f.x, f.y)) * uSpeck);
+  // the water over it (its surface is at -0.5): the deeper the bed, the more
+  // the cobbles sink into the water's own colour, tea in the shallows and
+  // green-dark in the fishing hole
+  float deep = smoothstep(0.03, 0.5, -0.5 - gy);
+  bed = mix(bed, mix(uShallow, uDeep, deep), 0.3 + 0.62 * deep);
+  // the bank is dark and wet just above the water, and the water laps it in
+  // a pale line that comes and goes
+  float lapAt = -0.5 + 0.02 * sin(uTime * 1.1 + w.y * 2.3 + gNoise(w * 1.3) * 5.0);
+  c *= mix(1.0, 0.72, smoothstep(-0.3, -0.42, gy));
+  c = mix(c, bed, edge(0.5, smoothstep(lapAt + 0.02, lapAt - 0.02, gy) + wob * 0.05));
+  float lap = step(lapAt - 0.012, gy) * step(gy, lapAt + 0.034);
+  // (it drifts north with the current: w.y is north here)
+  c = mix(c, uLap, lap * step(0.28, gNoise(vec2(w.x * 5.0, w.y * 1.6 - uTime * 0.25))));
+  diffuseColor.rgb *= c;
+`,
+      )
+  }
+  mat.customProgramCacheKey = () => 'cabin-ground'
+  return mat
+}
+
+// ------------------------------------------------------------------ highlights
+/**
+ * Things the guest can use glow (Eduard: "a little glow or slight hint"). Each
+ * registered object carries `userData.glow` (0 = off .. 1 = full); the pass
+ * draws them into a mask and the composite puts a pulsing light outline round
+ * them, and a faint tint on them, only where they're actually in view.
+ */
+const highlighted = new Set<THREE.Object3D>()
+const maskMaterials = new Map<THREE.Object3D, THREE.MeshBasicMaterial>()
+export const HIGHLIGHT_LAYER = 1
+
+export function registerHighlight(obj: THREE.Object3D) {
+  obj.userData.glow = 0
+  highlighted.add(obj)
+}
+
+export function unregisterHighlight(obj: THREE.Object3D) {
+  highlighted.delete(obj)
+}
+
+/**
+ * Put every mesh of a glowing object on the highlight layer with its mask
+ * material for the mask render, then put it back.
+ */
+function withMaskMaterials(fn: () => void) {
+  const swapped: { mesh: THREE.Mesh; material: THREE.Material | THREE.Material[] }[] = []
+  for (const obj of highlighted) {
+    const glow = obj.userData.glow as number
+    if (!(glow > 0.01) || !obj.visible) continue
+    let mask = maskMaterials.get(obj)
+    if (!mask) {
+      mask = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false })
+      maskMaterials.set(obj, mask)
+    }
+    mask.color.setScalar(Math.min(1, glow))
+    const maskMaterial = mask
+    obj.traverse((o) => {
+      const mesh = o as THREE.Mesh
+      // (invisible tap areas are marked noGlow)
+      if (!mesh.isMesh || !mesh.visible || mesh.userData.noGlow) return
+      swapped.push({ mesh, material: mesh.material })
+      mesh.material = maskMaterial
+      mesh.layers.enable(HIGHLIGHT_LAYER)
+    })
+  }
+  if (swapped.length > 0) fn()
+  for (const s of swapped) {
+    s.mesh.material = s.material
+    s.mesh.layers.disable(HIGHLIGHT_LAYER)
+  }
+  return swapped.length > 0
+}
+
+/** A tiny pixel star for the sparkles over the easter eggs (nearest-filtered, so it stays crisp). */
+export function makeSparkleTexture() {
+  const size = 9
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.clearRect(0, 0, size, size)
+  const px = (x: number, y: number, c: string) => {
+    ctx.fillStyle = c
+    ctx.fillRect(x, y, 1, 1)
+  }
+  // a four-point star: a bright cross with a warm centre
+  for (let i = 0; i < size; i++) {
+    const d = Math.abs(i - 4)
+    const c = d === 0 ? '#fff7e6' : d <= 2 ? '#ffe9a8' : '#fec54f'
+    px(i, 4, c)
+    px(4, i, c)
+  }
+  px(3, 3, '#ffe9a8')
+  px(5, 3, '#ffe9a8')
+  px(3, 5, '#ffe9a8')
+  px(5, 5, '#ffe9a8')
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.magFilter = THREE.NearestFilter
+  tex.minFilter = THREE.NearestFilter
+  tex.generateMipmaps = false
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+/** A little pixel arrow pointing down, for "this one" (it bobs over the résumé until it's read). */
+export function makeArrowTexture() {
+  const w = 9
+  const h = 8
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  ctx.clearRect(0, 0, w, h)
+  // a dark outline with a warm fill: a stem, then a head narrowing to a point
+  const rows = [
+    '..ooooo..',
+    '..oyyyo..',
+    '..oyyyo..',
+    'oooyyyooo',
+    'oyyyyyyyo',
+    '.oyyyyyo.',
+    '..oyyyo..',
+    '...ooo...',
+  ]
+  rows.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c === '.') return
+      ctx.fillStyle = c === 'o' ? '#3b2a1e' : '#fec54f'
+      ctx.fillRect(x, y, 1, 1)
+    }),
+  )
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.magFilter = THREE.NearestFilter
+  tex.minFilter = THREE.NearestFilter
+  tex.generateMipmaps = false
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+// ------------------------------------------------------------------ low-res render + outlines
+const compositeVertex = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}`
+
+// Outlines in the style of pixel-art 3D: a dark pixel on the near side of a
+// depth jump (silhouettes), and a light pixel along outward creases (edges).
+const compositeFragment = /* glsl */ `
+#include <packing>
+uniform sampler2D tColor;
+uniform sampler2D tDepth;
+uniform sampler2D tNormal;
+uniform sampler2D tMask;
+uniform sampler2D tMaskDepth;
+uniform vec2 uRes;
+uniform float uNear;
+uniform float uFar;
+uniform float uOutlines;
+uniform float uGlow;
+uniform vec3 uGlowColor;
+varying vec2 vUv;
+
+float depthAt(vec2 uv) {
+  return -perspectiveDepthToViewZ(texture2D(tDepth, uv).x, uNear, uFar);
+}
+vec3 normalAt(vec2 uv) {
+  return texture2D(tNormal, uv).xyz * 2.0 - 1.0;
+}
+// how much a glowing thing shows at this pixel: its mask, if nothing nearer hides it
+float glowAt(vec2 uv) {
+  float m = texture2D(tMask, uv).r;
+  if (m < 0.01) return 0.0;
+  float md = -perspectiveDepthToViewZ(texture2D(tMaskDepth, uv).x, uNear, uFar);
+  float d = depthAt(uv);
+  return md <= d + 0.03 + d * 0.012 ? m : 0.0;
+}
+
+void main() {
+  vec4 col = texture2D(tColor, vUv);
+  if (uGlow > 0.5) {
+    vec2 t = 1.0 / uRes;
+    float here = glowAt(vUv);
+    float around = max(
+      max(glowAt(vUv + vec2(t.x, 0.0)), glowAt(vUv - vec2(t.x, 0.0))),
+      max(glowAt(vUv + vec2(0.0, t.y)), glowAt(vUv - vec2(0.0, t.y))));
+    // a warm outline just outside the thing, and a faint lift on it
+    float rim = step(0.01, around) * (1.0 - step(0.01, here)) * around;
+    col.rgb = mix(col.rgb, uGlowColor, rim * 0.95);
+    col.rgb = mix(col.rgb, uGlowColor, here * 0.14);
+  }
+  if (uOutlines > 0.5) {
+    vec2 t = 1.0 / uRes;
+    float d = depthAt(vUv);
+    vec3 n = normalAt(vUv);
+    float depthDiff = 0.0;
+    float creases = 0.0;
+    vec2 offs[4];
+    offs[0] = vec2(0.0, 1.0); offs[1] = vec2(0.0, -1.0);
+    offs[2] = vec2(1.0, 0.0); offs[3] = vec2(-1.0, 0.0);
+    for (int i = 0; i < 4; i++) {
+      vec2 uv = vUv + offs[i] * t;
+      float dn = depthAt(uv);
+      depthDiff += max(dn - d, 0.0);
+      vec3 nn = normalAt(uv);
+      float towards = smoothstep(-0.01, 0.01, dot(n - nn, vec3(1.0, 1.0, 1.0)));
+      float sameSurface = 1.0 - step(0.15, abs(dn - d));
+      creases += (1.0 - dot(n, nn)) * towards * sameSurface;
+    }
+    float silhouette = step(0.3 + d * 0.035, depthDiff);
+    float crease = step(0.25, creases) * (1.0 - silhouette);
+    // keep the sky and far haze clean
+    float near = 1.0 - step(70.0, d);
+    col.rgb = mix(col.rgb, col.rgb * vec3(0.42, 0.4, 0.52), silhouette * near);
+    col.rgb = mix(col.rgb, col.rgb * 1.22 + 0.015, crease * near);
+  }
+  gl_FragColor = col;
+  #include <colorspace_fragment>
+}`
+
+/** The render targets and the full-screen pass that draws them with outlines. */
+function createPixelPass() {
+  const depthTexture = new THREE.DepthTexture(1, 1)
+  depthTexture.type = THREE.UnsignedIntType
+  const color = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    type: THREE.HalfFloatType,
+    depthTexture,
+  })
+  const normal = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+  })
+  // the glowing things, with their own depth, so the glow stops where a wall hides them
+  const maskDepth = new THREE.DepthTexture(1, 1)
+  maskDepth.type = THREE.UnsignedIntType
+  const mask = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    depthTexture: maskDepth,
+  })
+  const material = new THREE.ShaderMaterial({
+    vertexShader: compositeVertex,
+    fragmentShader: compositeFragment,
+    uniforms: {
+      tColor: { value: color.texture },
+      tDepth: { value: depthTexture },
+      tNormal: { value: normal.texture },
+      tMask: { value: mask.texture },
+      tMaskDepth: { value: maskDepth },
+      uRes: { value: new THREE.Vector2(1, 1) },
+      uNear: { value: 0.5 },
+      uFar: { value: 140 },
+      uOutlines: { value: 1 },
+      uGlow: { value: 0 },
+      uGlowColor: { value: new THREE.Color('#ffd25a') },
+    },
+    depthTest: false,
+    depthWrite: false,
+  })
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material)
+  quad.frustumCulled = false
+  const quadScene = new THREE.Scene()
+  quadScene.add(quad)
+  const quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+  const normalMaterial = new THREE.MeshNormalMaterial()
+  const size = new THREE.Vector2()
+
+  function render(
+    gl: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    outlines: boolean,
+  ) {
+    gl.getDrawingBufferSize(size)
+    if (color.width !== size.x || color.height !== size.y) {
+      color.setSize(size.x, size.y)
+      normal.setSize(size.x, size.y)
+      mask.setSize(size.x, size.y)
+    }
+    const cam = camera as THREE.PerspectiveCamera
+    material.uniforms.uRes.value.copy(size)
+    material.uniforms.uNear.value = cam.near
+    material.uniforms.uFar.value = cam.far
+    material.uniforms.uOutlines.value = outlines ? 1 : 0
+
+    gl.setRenderTarget(color)
+    gl.render(scene, camera)
+
+    // The glowing things alone, drawn flat into the mask (their brightness is
+    // how strongly each glows). Only the highlight layer is drawn.
+    const layers = camera.layers.mask
+    const bg = scene.background
+    const fog = scene.fog
+    scene.background = null
+    scene.fog = null
+    camera.layers.set(HIGHLIGHT_LAYER)
+    gl.setRenderTarget(mask)
+    gl.setClearColor(0x000000, 1)
+    gl.clear()
+    const anyGlow = withMaskMaterials(() => gl.render(scene, camera))
+    camera.layers.mask = layers
+    scene.background = bg
+    scene.fog = fog
+    material.uniforms.uGlow.value = anyGlow ? 1 : 0
+
+    if (outlines) {
+      // Normals of everything solid (things marked noOutline are skipped).
+      const hidden: THREE.Object3D[] = []
+      scene.traverse((o) => {
+        if (o.visible && o.userData.noOutline) {
+          o.visible = false
+          hidden.push(o)
+        }
+      })
+      scene.background = null
+      scene.fog = null
+      scene.overrideMaterial = normalMaterial
+      gl.setRenderTarget(normal)
+      gl.setClearColor(0x8080ff, 1)
+      gl.clear()
+      gl.render(scene, camera)
+      scene.overrideMaterial = null
+      scene.background = bg
+      scene.fog = fog
+      hidden.forEach((o) => (o.visible = true))
+    }
+
+    gl.setRenderTarget(null)
+    gl.render(quadScene, quadCamera)
+  }
+
+  function dispose() {
+    color.dispose()
+    normal.dispose()
+    mask.dispose()
+    maskDepth.dispose()
+    depthTexture.dispose()
+    material.dispose()
+    normalMaterial.dispose()
+    quad.geometry.dispose()
+  }
+
+  if (process.env.NODE_ENV !== 'production')
+    Object.assign(window, { __cabinPass: { material, mask, highlighted } })
+  return { render, dispose }
+}
+
+/**
+ * Takes over drawing: renders the scene into small targets (the canvas itself is
+ * already low-res, see `dpr`), then draws it to the screen with outlines.
+ */
+export function PixelPass({ outlines }: { outlines: boolean }) {
+  const pass = useMemo(() => createPixelPass(), [])
+  useEffect(() => () => pass.dispose(), [pass])
+  useFrame(({ gl, scene, camera }) => pass.render(gl, scene, camera, outlines), 1)
+  return null
+}

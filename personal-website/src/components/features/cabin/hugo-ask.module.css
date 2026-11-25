@@ -1,0 +1,333 @@
+/* HUGO's card (A48): a paper index card like the box cards (A102),
+   bottom-right on a computer and along the bottom on a phone, so the guest
+   and HUGO stay in view. Uses .card, .pixel, .speaker and the paper buttons
+   from cabin.module.css. */
+.askCard {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100vh - 90px);
+  filter: drop-shadow(6px 7px 0 rgba(25, 15, 8, 0.5));
+  outline: none;
+  animation: askIn 0.22s steps(4, end);
+}
+
+@keyframes askIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.paper {
+  max-height: 100%;
+}
+
+/* the red line under the heading, like the other index cards */
+.head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 10px;
+  border-bottom: 3px solid rgba(184, 53, 47, 0.8);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  display: block;
+  color: #2a4fa3;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title h2 {
+  margin: 2px 0 0;
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.closeKey {
+  margin-right: 6px;
+  font-size: 0.6rem;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 16px 10px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  scrollbar-color: #b98d5c transparent;
+  scrollbar-width: thin;
+}
+
+.answer {
+  margin-bottom: 12px;
+}
+
+/* "there's more below": a strip across the foot of the card's body */
+.more {
+  flex: none;
+  min-height: 0;
+  height: 20px;
+  margin: 0 16px;
+  padding: 0;
+  color: #3b2a1e;
+  background: #f1e2bd;
+  border: 2px solid #3b2a1e;
+  border-bottom: 0;
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.you {
+  margin: 0 0 14px;
+  color: #6b5a3c;
+  font-size: 0.85rem;
+}
+
+.you > span {
+  color: #8a7a5a;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* HUGO's answer: his speech bubble, on the paper */
+.say {
+  position: relative;
+  padding: 0.65rem 0.7rem 0.6rem;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 3px 3px 0 rgba(59, 42, 30, 0.25);
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.status {
+  color: #6b5a3c;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.links a {
+  padding: 4px 10px 5px;
+  font-size: 0.85rem;
+}
+
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.question {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px 7px;
+  color: #3b2a1e;
+  background: #fff7e6;
+  border: 3px solid #3b2a1e;
+  box-shadow: 2px 2px 0 rgba(59, 42, 30, 0.3);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.question:hover,
+.question:focus-visible {
+  background: #fec54f;
+  outline: none;
+}
+
+.question[aria-current='true'] {
+  background: #f1e2c0;
+}
+
+.question kbd {
+  flex: none;
+}
+
+/* the box, under a dotted line */
+.form {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  margin: 0 16px;
+  padding: 11px 0 6px;
+  background: repeating-linear-gradient(90deg, rgba(59, 42, 30, 0.35) 0 6px, transparent 6px 10px)
+    top / 100% 3px no-repeat;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px 6px;
+  color: #3b2a1e;
+  background: #fffdf7;
+  border: 3px solid #3b2a1e;
+  border-radius: 0;
+  font: inherit;
+  /* (16px: a phone doesn't zoom in on the box) */
+  font-size: 16px;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: manipulation;
+}
+
+.input::placeholder {
+  color: #9c8a68;
+}
+
+.input:focus-visible {
+  background: #fff;
+  box-shadow: inset 0 0 0 2px #fec54f;
+}
+
+.askButton {
+  flex: none;
+  padding: 4px 12px 5px;
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.askButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.foot {
+  flex: none;
+  margin: 0;
+  padding: 0 16px 12px;
+  color: #8a7a5a;
+  font-size: 0.72rem;
+}
+
+/* The "Ask" prompt over HUGO at a stop where he hasn't been asked yet. */
+.marker {
+  pointer-events: auto;
+  cursor: pointer;
+  margin-top: -6px;
+  touch-action: manipulation;
+}
+
+.marker:hover,
+.marker:focus-visible {
+  background: #fec54f;
+  outline: none;
+}
+
+.markerDot {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: #fff7e6;
+  background: #2a4fa3;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  /* (about half the screen, like the box card; the rest scrolls inside it) */
+  .askCard {
+    right: 8px;
+    left: 8px;
+    bottom: var(--bar-clear, 5.4rem);
+    width: auto;
+    max-height: 47vh;
+  }
+
+  /* (the question just answered is in "You asked"; the row peeking out
+     under the answer is the next one to ask) */
+  .questions li:has(.question[aria-current='true']) {
+    display: none;
+  }
+
+  .head {
+    padding: 7px 14px 5px;
+  }
+
+  /* (one line: "ASK HUGO  The brook") */
+  .title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .title h2 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .body {
+    padding: 9px 14px 8px;
+    font-size: 0.85rem;
+  }
+
+  .you {
+    margin-bottom: 10px;
+  }
+
+  .answer {
+    margin-bottom: 9px;
+  }
+
+  .say {
+    padding: 0.55rem 0.6rem 0.5rem;
+    font-size: 0.88rem;
+  }
+
+  .question {
+    padding: 5px 9px 6px;
+    font-size: 0.85rem;
+  }
+
+  .form {
+    margin: 0 14px;
+  }
+
+  .foot {
+    padding: 0 14px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .askCard {
+    animation: none;
+  }
+}

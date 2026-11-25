@@ -2,19 +2,19 @@
 
 ## What
 
-A controller for local coding agents that saves progress and submits builds to checks outside the builder's control.
+A setup that lets a local open-weights model build software on its own for up to 40 hours on one NVIDIA DGX Spark. The work isn't finished when the model says so. It's finished when tests the model can't edit say so.
 
 ## Why
 
-I wanted to test what local models can build when persistence and independent verification matter more than quick generation.
+Putting a frontier model in a loop is well understood, and you pay for every token. I wanted to know how far an open model could get on a machine that sits on a desk, if I gave up speed and let it work for a day or two.
 
 ## Demo
 
-[Recorded build walkthrough](https://kakosyaneduard.ca/projects/dgx-autonomy). Shoreline and Camp Yahtzee are outputs, not guarantees for arbitrary briefs.
+Two apps it built are live: [Shoreline](https://eduardkakosyan.github.io/shoreline/) and [Camp Yahtzee](https://eduardkakosyan.github.io/yahtzee/). Each repository keeps its brief, its acceptance tests and every message sent to the builder.
 
 ## Run it
 
-The upstream README documents Linux, an NVIDIA GPU, Docker with its NVIDIA runtime, nftables and uv. Model memory and machine-specific networking need configuration; this is not a portable one-command install. Start with the upstream `docs/operator-manual.md` before launching a controller.
+You need Linux, an NVIDIA GPU, Docker with the NVIDIA runtime, nftables and uv. Model memory and the network rules are specific to the machine, so start with `docs/operator-manual.md`.
 
 ```sh
 uv sync
@@ -22,22 +22,26 @@ uv sync
 
 ## How it's tested
 
-The documented non-hardware suite is:
-
 ```sh
 uv run pytest -m "not dgx"
 ```
 
-It was not run for this README pass. Actual builds also require frozen acceptance checks and human product review.
+About 390 tests run without a GPU or a model. A separate set runs on the machine itself and covers killed controllers and crashed stacks, a forced conversation reset, the network rules and the protected tests.
 
 ## How it works
 
-I built the controller around OpenHands. It manages handoffs, isolated evaluators, snapshots and recovery. SGLang or llama.cpp serves the configured model. Human and Claude supervision supply briefs and product review; the local builder produces the app code.
+1. **Freeze.** The brief and the acceptance tests are locked and fingerprinted before the build starts.
+2. **Build.** The model works in a locked-down container as an OpenHands agent. It can reach the internet for packages and documentation, but not the host or the local network.
+3. **Hand off.** When a conversation fills up or gets stuck, the model writes a handoff note and a fresh conversation continues from it.
+4. **Check the claim.** When the model says it is done, the controller saves a snapshot, runs each frozen test in its own throwaway container against the running demo, and rejects the result if the code changed during the test.
+5. **Review.** A passing build can be held for a person, who accepts it or sends feedback as a user would.
+
+The model writes the code. Plain code decides whether it is finished. A person decides whether it is good.
 
 ## Status
 
-Experimental local build infrastructure. The upstream README and operator manual are the setup evidence, inspected read-only; host-specific configuration must be reviewed before reuse.
+Built in September 2026 with Claude Code. It built Shoreline, Camp Yahtzee and the first version of Keeper, a meeting-notes app my team now uses.
 
 ## More
 
-[Architecture and build evidence](https://kakosyaneduard.ca/projects/dgx-autonomy).
+[dgx-autonomy: the problem, the choices and where AI fits](https://kakosyaneduard.ca/projects/dgx-autonomy).

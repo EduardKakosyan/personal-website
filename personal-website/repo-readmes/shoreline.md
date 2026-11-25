@@ -6,7 +6,7 @@ Weather, tides and sea conditions for a day at the water.
 
 ## Why
 
-I supplied briefs and product review to test whether a local coding agent could build a useful mobile app.
+I set the direction to test whether a local coding agent could build a useful mobile app; a supervising Claude session wrote the brief and checks and reviewed each build as product lead.
 
 ## Demo
 
@@ -22,7 +22,7 @@ Upstream documents Playwright acceptance checks with intercepted Open-Meteo fixt
 
 ## How it works
 
-The browser reads Open-Meteo APIs. A local model built the app within dgx-autonomy; human and Claude supervision supplied briefs and reviews. Frozen checks and operator feedback are preserved in `loop/runs/`.
+The browser reads Open-Meteo APIs. A local model built the app within dgx-autonomy; a supervising Claude session wrote the brief and reviewed it, and I accepted the result. Frozen checks and operator feedback are preserved in `loop/runs/`.
 
 ## Status
 

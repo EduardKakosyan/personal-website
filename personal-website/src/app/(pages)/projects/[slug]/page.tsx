@@ -30,38 +30,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProjectDetailPage({ params }: Props) {
   const project = getProjectBySlug((await params).slug)
   if (!project) notFound()
+  const body = await getProjectBody(project.slug)
   if (project.slug === 'dgx-autonomy')
     return (
       <>
         <ProjectAnalytics projectSlug={project.slug} />
-        <DgxCaseStudy />
+        <DgxCaseStudy body={body} />
       </>
     )
-  const body = await getProjectBody(project.slug)
   return (
     <>
       <ProjectAnalytics projectSlug={project.slug} />
       {project.tier === 'case-study' ? (
         <CaseStudy project={project} body={body} />
       ) : (
-        <article className="site-page site-width work-study">
-          <nav className="work-breadcrumb" aria-label="Breadcrumb">
-            <Link href="/projects">Work</Link>
-            <span> / Archive / </span>
-            <span aria-current="page">{project.title}</span>
-          </nav>
-          <header>
-            <p className="site-kicker">Archive note</p>
-            <h1>{project.title}</h1>
-            <p className="site-lead">{project.description}</p>
-          </header>
-          <div className="work-study-grid">
-            <FactsBox project={project} />
-            <SecureContent content={body} className="work-prose" />
+        <article className="site-page work-study">
+          <div className="site-sheet">
+            <nav className="work-breadcrumb" aria-label="Breadcrumb">
+              <Link href="/projects">Work</Link>
+              <span> / Archive / </span>
+              <span aria-current="page">{project.title}</span>
+            </nav>
+            <header>
+              <p className="site-kicker">Archive note</p>
+              <h1>{project.title}</h1>
+              <p className="site-lead">{project.description}</p>
+            </header>
+            <div className="work-study-grid">
+              <FactsBox project={project} />
+              <SecureContent content={body} className="work-prose" />
+            </div>
+            <p className="work-next">
+              <Link className="site-button site-button-quiet" href="/projects">
+                Back to all work &rarr;
+              </Link>
+            </p>
           </div>
-          <Link className="work-link" href="/projects">
-            Back to all work &rarr;
-          </Link>
         </article>
       )}
     </>

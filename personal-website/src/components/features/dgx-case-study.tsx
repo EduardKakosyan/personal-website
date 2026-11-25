@@ -1,42 +1,42 @@
 import Link from 'next/link'
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  ArrowRight,
-  LockKeyhole,
-  GitBranch,
-  ShieldCheck,
-  Timer,
-} from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, ArrowRight } from 'lucide-react'
 import { getProjectBySlug } from '@/content/projects'
+import { SecureContent } from '@/components/ui/secure-content'
 import { FactsBox } from './work/facts-box'
 import { RunReplay } from './run-replay'
 
 const work = getProjectBySlug('dgx-autonomy')!
-const repo = work.facts.links.find((link) => link.label === 'Source code')!.href
-export function DgxCaseStudy() {
+
+/** The written case study (dgx-autonomy.md), then the build replay and the apps it built. */
+export function DgxCaseStudy({ body }: { body: string }) {
   return (
-    <article className="site-page site-width work-dgx">
-      <Link href="/projects" className="work-link">
-        <ArrowLeft size={14} /> All work
+    <article className="site-page work-dgx">
+      <Link href="/projects" className="site-back">
+        <ArrowLeft size={14} aria-hidden="true" /> All work
       </Link>
-      <header>
+      <header className="site-sheet site-intro">
         <span className="site-kicker">LOCAL AI / AUTONOMOUS SYSTEMS / 2026</span>
         <h1>
-          Running a local
+          A local model
           <br />
-          <span>coding agent.</span>
+          <span>that builds on its own.</span>
         </h1>
-        <p>
-          I built dgx-autonomy to run a coding agent on my DGX Spark. It saves progress between
-          conversations, recovers from interrupted runs, and tests the code in a separate container.
-        </p>
+        <p className="site-lead">{work.description}</p>
         <FactsBox project={work} />
       </header>
-      <section id="dgx-workflow" className="site-section" aria-labelledby="workflow-heading">
+      {/* The guide's "verification" and "model" shortcuts both land on the write-up. */}
+      <section id="dgx-verification" className="site-sheet site-section">
+        <span id="dgx-inference" />
+        <SecureContent content={body} className="work-prose" />
+      </section>
+      <section
+        id="dgx-workflow"
+        className="site-sheet site-section"
+        aria-labelledby="workflow-heading"
+      >
         <div className="work-section-heading">
           <div>
-            <span className="site-kicker">01 / THE LOOP</span>
+            <span className="site-kicker">REPLAY</span>
             <h2 id="workflow-heading">How Camp Yahtzee was built</h2>
           </div>
           <span className="site-kicker">CAMP YAHTZEE / ORIGINAL RELEASE</span>
@@ -44,81 +44,11 @@ export function DgxCaseStudy() {
         <RunReplay />
       </section>
       <section
-        id="dgx-verification"
-        className="site-section"
-        aria-labelledby="verification-heading"
+        id="dgx-results"
+        className="site-sheet site-section"
+        aria-labelledby="results-heading"
       >
-        <span className="site-kicker">02 / THE ENGINEERING</span>
-        <h2 id="verification-heading">Testing, memory, and isolation</h2>
-        <p className="site-lead">
-          OpenHands runs the coding agent. I built the controller around it to manage saved state,
-          restrict access to tools, run tests independently, and pause for product review.
-        </p>
-        <div className="work-principles">
-          {[
-            {
-              icon: LockKeyhole,
-              title: 'Protect the acceptance tests',
-              text: 'The controller checks that the tests run, then locks the brief and tests before the build starts. It checks them again before evaluation so the agent can’t change how its work is graded.',
-            },
-            {
-              icon: ShieldCheck,
-              title: 'Test a fixed code snapshot',
-              text: 'The controller saves a specific version of the code and tests that version in a separate container. If the code changes during evaluation, the result is rejected.',
-            },
-            {
-              icon: GitBranch,
-              title: 'Save progress between sessions',
-              text: 'A new conversation starts with the brief, previous decisions, test results, and review feedback. The controller checks the handoff before letting the next session pick up the work.',
-            },
-            {
-              icon: Timer,
-              title: 'Limit access and run time',
-              text: 'The builder runs without elevated privileges or access to the host, local network, or Docker controls. Time limits and recovery checks keep interrupted runs from hanging indefinitely.',
-            },
-          ].map((item) => (
-            <div key={item.title}>
-              <item.icon size={21} />
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </div>
-          ))}
-        </div>
-        <a
-          href={`${repo}/blob/main/README.md`}
-          className="work-link"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          More on the setup
-          <ArrowUpRight size={14} />
-        </a>
-      </section>
-      <section id="dgx-inference" className="site-section work-inference">
-        <span className="site-kicker">03 / THE INFERENCE TRADEOFF</span>
-        <h2>Choosing a model and inference server</h2>
-        <p>
-          For these app builds, I used Qwen3.8-Flash-Next through SGLang with NVFP4 weights and
-          multi-token prediction. I switched from llama.cpp because it slowed down as the
-          conversations grew longer.
-        </p>
-        <p>
-          Before using a model, the setup checks tool calls, recall in long conversations, memory
-          use, and a real build on the machine. It also supports a smaller Qwen3.6-35B-A3B model as
-          a fallback.
-        </p>
-        <a
-          href={`${repo}/blob/main/config/models.yaml`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="work-link"
-        >
-          Model settings and test records
-          <ArrowUpRight size={14} />
-        </a>
-      </section>
-      <section id="dgx-results" className="site-section" aria-labelledby="results-heading">
-        <span className="site-kicker">04 / WHAT IT BUILT</span>
+        <span className="site-kicker">WHAT IT BUILT</span>
         <h2 id="results-heading">Apps built with dgx-autonomy</h2>
         <div className="work-results">
           <div>
@@ -138,7 +68,7 @@ export function DgxCaseStudy() {
                 rel="noopener noreferrer"
               >
                 Try Shoreline
-                <ArrowUpRight size={14} />
+                <ArrowUpRight size={14} aria-hidden="true" />
               </a>
               <a
                 href="https://github.com/EduardKakosyan/shoreline/tree/main/loop/runs"
@@ -146,7 +76,7 @@ export function DgxCaseStudy() {
                 rel="noopener noreferrer"
               >
                 Build records
-                <ArrowUpRight size={14} />
+                <ArrowUpRight size={14} aria-hidden="true" />
               </a>
             </div>
           </div>
@@ -155,7 +85,7 @@ export function DgxCaseStudy() {
             <h3>Camp Yahtzee</h3>
             <p>
               An offline game for the camp table. Its original release crossed four conversations
-              and two product reviews.
+              and two rounds of product feedback.
             </p>
             <strong>
               24 / 24 <small>original-release acceptance tests passed</small>
@@ -167,7 +97,7 @@ export function DgxCaseStudy() {
                 rel="noopener noreferrer"
               >
                 Play Yahtzee
-                <ArrowUpRight size={14} />
+                <ArrowUpRight size={14} aria-hidden="true" />
               </a>
               <a
                 href="https://github.com/EduardKakosyan/yahtzee/tree/main/loop"
@@ -175,29 +105,23 @@ export function DgxCaseStudy() {
                 rel="noopener noreferrer"
               >
                 Build records
-                <ArrowUpRight size={14} />
+                <ArrowUpRight size={14} aria-hidden="true" />
               </a>
             </div>
           </div>
         </div>
         <p className="site-lead site-muted">
-          These results come from the public build records. I supplied briefs and reviewed the apps
-          with help from a supervising Claude session. Later Yahtzee game-management controls were
-          added separately through CodeLayer.
+          These results come from the public build records. I set the direction and accepted the
+          results; a supervising Claude session wrote the briefs and checks and reviewed each build
+          as product lead. Later Yahtzee game controls were added separately through CodeLayer.
         </p>
       </section>
-      <section className="site-section">
-        <span className="site-kicker">MY CONTRIBUTION</span>
-        <h2>What I built around the agent</h2>
-        <p>
-          The model wrote the app code. My work was the controller: saving progress, recovering from
-          failures, isolating the tests, and deciding when a run should stop for review.
-        </p>
-        <Link href="/projects/keystone" className="work-link">
-          Next case study: Keystone
-          <ArrowRight size={16} />
+      <nav className="work-next" aria-label="Next case study">
+        <Link href="/projects/personal-website" className="site-button">
+          Next case study: This website
+          <ArrowRight size={16} aria-hidden="true" />
         </Link>
-      </section>
+      </nav>
     </article>
   )
 }

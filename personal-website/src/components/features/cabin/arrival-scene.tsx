@@ -25,6 +25,7 @@ import { InteractPrompt, type PromptInput } from './interact-prompt'
 import {
   createEduard,
   eduardPose,
+  layAmount,
   marshmallow,
   seatAtFire,
   updateEduard,
@@ -105,6 +106,7 @@ import {
   updateFishing,
 } from './fishing'
 import { createFishingGear, updateFishingGear } from './fishing-gear'
+import { KNEEL, legDrop } from './legs'
 import type { FishingHudState } from './fishing-hud'
 import styles from './cabin.module.css'
 import {
@@ -356,6 +358,61 @@ const ARM_LENGTH = 0.32
 const PET_CROUCH = 0.12
 const PET_HEAD_AT = 0.4
 const PET_BOW_MAX = 0.3
+/** The middle of a laid deck board, above the ground (DeckBoard_k in cabin-parts.glb: 0.257..0.303). */
+const DECK_BOARD_Y = 0.28
+/**
+ * Rubbing his belly: the guest kneels this far from the line down the middle
+ * of him, and bends forward (or sits back) at the hips within these limits so
+ * both hands are on his belly.
+ */
+const RUB_GAP = 0.38
+const RUB_BOW = { min: -0.1, max: 0.45 }
+
+/** Where the guest kneels to rub his belly: at his side (the side they're on), level with the middle of his belly. */
+function rubSpot(dog: { pos: Vec2; yaw: number }, guest: Vec2): Vec2 {
+  const c = Math.cos(dog.yaw)
+  const sn = Math.sin(dog.yaw)
+  const side = Math.sign((guest.x - dog.pos.x) * c - (guest.z - dog.pos.z) * sn) || 1
+  return {
+    x: dog.pos.x + c * RUB_GAP * side + sn * 0.075,
+    z: dog.pos.z - sn * RUB_GAP * side + c * 0.075,
+  }
+}
+
+/**
+ * The arm angles that put a guest's palm on `target` (world): `x` swings the
+ * arm forwards (negative) from hanging straight down, `z` out to the side
+ * (+ towards their left). The guest's hip is at `at`, `hipY` up, turned `yaw`
+ * and bent forward `bow`; `side` is +1 for the left shoulder. `reach` is how
+ * far the target is from the shoulder (the arm is ARM_LENGTH).
+ */
+function armTo(
+  target: THREE.Vector3,
+  at: Vec2,
+  hipY: number,
+  yaw: number,
+  bow: number,
+  side: number,
+) {
+  const cy = Math.cos(yaw)
+  const sy = Math.sin(yaw)
+  const cb = Math.cos(bow)
+  const sb = Math.sin(bow)
+  // the shoulder: up the spine from the hip, and out to the side
+  const lx = side * SHOULDER_OUT
+  const ly = SPINE * cb
+  const lz = SPINE * sb
+  const dx = target.x - (at.x + lx * cy + lz * sy)
+  const dy = target.y - (hipY + ly)
+  const dz = target.z - (at.z - lx * sy + lz * cy)
+  // into the guest's own frame: turned, then bent forward
+  const fz = dx * sy + dz * cy
+  const mx = dx * cy - dz * sy
+  const my = dy * cb + fz * sb
+  const mz = -dy * sb + fz * cb
+  const reach = Math.hypot(mx, my, mz) || 1
+  return { x: Math.atan2(-mz, -my), z: Math.asin(Math.max(-1, Math.min(1, mx / reach))), reach }
+}
 
 /** How fast HUGO glides between pieces and to the woodshed (m/s). */
 const HUGO_GLIDE = 2.6
@@ -555,6 +612,35 @@ function node(root: THREE.Object3D, name: string) {
 
 type Joint = ReturnType<typeof node>
 
+/**
+ * A joint that turns about the point it turned about in Blender. The model
+ * compressor moves a leaf node's origin to the middle of its mesh (see
+ * pivotWrap), so turning the node itself turned the guest's left arm about
+ * its elbow, the shins about the middle of the shin, Rusty's legs about their
+ * knees and his tail about its middle: the far end came away from the body
+ * (his legs sank into the ground when he lay down, his tail's root swung out
+ * of his rump). This puts a group at `pivot` (in the parent's frame) carrying
+ * the node's own rest turn, and the scene turns the group instead.
+ */
+function jointAt(root: THREE.Object3D, name: string, pivot: THREE.Vector3): Joint {
+  const found = root.getObjectByName(name)
+  const parent = found?.parent
+  if (!found || !parent) throw new Error(`missing node ${name}`)
+  // (already wrapped: the rig is rebuilt when the guest changes)
+  if (parent.name === `${name}_Joint`) return { obj: parent, base: parent.rotation.clone() }
+  const w = new THREE.Group()
+  w.name = `${name}_Joint`
+  w.position.copy(pivot)
+  w.quaternion.copy(found.quaternion)
+  parent.add(w)
+  found.position.sub(pivot).applyQuaternion(found.quaternion.clone().invert())
+  found.quaternion.identity()
+  w.add(found)
+  return { obj: w, base: w.rotation.clone() }
+}
+
+const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
+
 type Groups = Record<'hiker' | 'eduard' | 'rusty' | 'cow' | 'hugo', THREE.Object3D>
 
 /** Find the animated parts by the names the Blender script gives them. */
@@ -563,9 +649,10 @@ function buildRig(g: Groups, guest: string) {
     hiker: {
       legL: node(g.hiker, `${guest}_LegL`),
       legR: node(g.hiker, `${guest}_LegR`),
-      shinL: node(g.hiker, `${guest}_ShinL`),
-      shinR: node(g.hiker, `${guest}_ShinR`),
-      armL: node(g.hiker, `${guest}_ArmL`),
+      // (the knee, the shoulder: guest_model.py)
+      shinL: jointAt(g.hiker, `${guest}_ShinL`, v3(0, -0.2, 0)),
+      shinR: jointAt(g.hiker, `${guest}_ShinR`, v3(0, -0.2, 0)),
+      armL: jointAt(g.hiker, `${guest}_ArmL`, v3(0.26, 0.74, 0)),
       armR: node(g.hiker, `${guest}_ArmR`),
       head: node(g.hiker, `${guest}_Head`),
       // the right hand: open, or a fist round the axe's handle
@@ -584,8 +671,9 @@ function buildRig(g: Groups, guest: string) {
       torso: node(g.eduard, 'Eduard_Torso'),
       legL: node(g.eduard, 'Eduard_LegL'),
       legR: node(g.eduard, 'Eduard_LegR'),
-      shinL: node(g.eduard, 'Eduard_ShinL'),
-      shinR: node(g.eduard, 'Eduard_ShinR'),
+      // (his knees: eduard_model.py)
+      shinL: jointAt(g.eduard, 'Eduard_ShinL', v3(0, -0.2, 0)),
+      shinR: jointAt(g.eduard, 'Eduard_ShinR', v3(0, -0.2, 0)),
       board: node(g.eduard, 'Eduard_Board'),
       // the hammer turns in his fist (the wrist), like the guest's axe
       hammer: {
@@ -594,19 +682,22 @@ function buildRig(g: Groups, guest: string) {
       },
     },
     rusty: {
-      fl: node(g.rusty, 'Rusty_LegFL'),
-      fr: node(g.rusty, 'Rusty_LegFR'),
-      bl: node(g.rusty, 'Rusty_LegBL'),
-      br: node(g.rusty, 'Rusty_LegBR'),
+      // (the tops of his legs and the root of his tail: rusty_model.py)
+      fl: jointAt(g.rusty, 'Rusty_LegFL', v3(0.1, 0.31, 0.24)),
+      fr: jointAt(g.rusty, 'Rusty_LegFR', v3(-0.1, 0.31, 0.24)),
+      bl: jointAt(g.rusty, 'Rusty_LegBL', v3(0.1, 0.31, -0.24)),
+      br: jointAt(g.rusty, 'Rusty_LegBR', v3(-0.1, 0.31, -0.24)),
       head: node(g.rusty, 'Rusty_Head'),
-      tail: node(g.rusty, 'Rusty_Tail'),
+      body: node(g.rusty, 'Rusty_Body'),
+      tail: jointAt(g.rusty, 'Rusty_Tail', v3(0, 0.5, -0.33)),
       mouth: node(g.rusty, 'Rusty_Mouth'),
       tag: node(g.rusty, 'Rusty_Tag'),
     },
     hugo: {
       head: node(g.hugo, 'Hugo_Head'),
-      antL: node(g.hugo, 'Hugo_AntennaL'),
-      antR: node(g.hugo, 'Hugo_AntennaR'),
+      // (where each antenna stands on his head: build_arrival.py)
+      antL: jointAt(g.hugo, 'Hugo_AntennaL', v3(0.1, 0.27, 0)),
+      antR: jointAt(g.hugo, 'Hugo_AntennaR', v3(-0.1, 0.27, 0)),
     },
   }
 }
@@ -947,10 +1038,14 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     pendingRub: false,
     /** 0..1, how far the guest has crouched (rubbing Rusty's belly). */
     crouch: 0,
+    /** 0..1, how far the guest has knelt down beside Rusty (rubbing his belly). */
+    kneel: 0,
     /** Petting Rusty: 0..1 how far the hand is on his head, how far the guest bends, which hand (+1 right). */
     petK: 0,
     bow: 0,
     petSide: 1,
+    /** 0..1, how far both hands are on Rusty's belly. */
+    rubK: 0,
     guestYaw: startAtNight
       ? facing(NIGHT_START, FIRE)
       : resumeSpot
@@ -1512,14 +1607,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         break
       case 'rub': {
         // kneel down at his side, then rub
-        const d = s.dog
-        const side = Math.sign(
-          (s.guest.x - d.pos.x) * Math.cos(d.yaw) - (s.guest.z - d.pos.z) * Math.sin(d.yaw),
-        )
-        walkTo({
-          x: d.pos.x + Math.cos(d.yaw) * 0.52 * (side || 1),
-          z: d.pos.z - Math.sin(d.yaw) * 0.52 * (side || 1),
-        })
+        walkTo(rubSpot(s.dog, s.guest))
         s.marker.life = 0
         s.pendingRub = true
         break
@@ -2485,7 +2573,22 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       s.pendingRub = false
       if (toDog < 1.2 && rubBelly(dog, s.guest)) callbacks.current.onGoal('rub')
     }
-    const rubbing = dog.rubbing > 0 && toDog < 1.4 && !s.target
+    // Rubbing his belly: kneeling beside him with both hands on it (they used
+    // to rub the air by his front paws, 20 to 30 cm off him). The hands stay on
+    // until he rolls back over, and the guest gets up once he's settled.
+    const besideDog = dog.state === 'lying' && toDog < 1.4 && !s.target
+    const onBelly = besideDog && (dog.rubbing > 0 || (s.rubK > 0.05 && dog.roll > 0.6))
+    s.rubK += ((onBelly ? 1 : 0) - s.rubK) * damp(dt, onBelly ? 5 : 9)
+    const rubbing = besideDog && (dog.rubbing > 0 || dog.roll > 0.15)
+    if (rubbing && s.kneel < 0.98) {
+      // (going down on their knees, the guest shuffles the last few
+      // centimetres in: the walk stops a little short of the spot)
+      const spot = rubSpot(dog, s.guest)
+      if (Math.hypot(spot.x - s.guest.x, spot.z - s.guest.z) < 0.3) {
+        s.guest.x += (spot.x - s.guest.x) * damp(dt, 6)
+        s.guest.z += (spot.z - s.guest.z) * damp(dt, 6)
+      }
+    }
     const petting = dog.petting > 0 && toDog < 2 && !s.target
     // Petting: the hand goes to the top of his head, wherever that is this
     // frame (Eduard: "petting animation seems to be offset, I am not touching
@@ -2518,7 +2621,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       petYaw = yawTo + s.petSide * Math.asin(Math.min(0.95, SHOULDER_OUT / d))
       // in the upright plane through that shoulder: how far ahead and how high his head is
       const ahead = Math.sqrt(Math.max(0.0004, d * d - SHOULDER_OUT * SHOULDER_OUT))
-      const high = top.y - s.guestY + PET_CROUCH * 0.24
+      const high = top.y - s.guestY + legDrop(-PET_CROUCH * 1.1, PET_CROUCH * 1.9)
       let b = 0
       for (; b < PET_BOW_MAX; b += 0.025)
         if (
@@ -2530,13 +2633,54 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       // (the arm's angle from hanging straight down, forwards)
       petArm = Math.atan2(ahead - SPINE * Math.sin(b), HIP_Y + SPINE * Math.cos(b) - high) + lift
     }
-    s.bow += (bowGoal * s.petK - s.bow) * damp(dt, 8)
+    if (rubbing) {
+      // (square on to the middle of his belly, so both hands reach it)
+      const mid = joints.rusty.body.obj.localToWorld(tmpA.set(0, -0.17, 0.075))
+      s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, mid), 8 * dt)
+    } else if (petYaw !== null) s.guestYaw = turnTowards(s.guestYaw, petYaw, 8 * dt)
+    s.crouch += ((petting ? PET_CROUCH : bx.hold * shelfCrouch) - s.crouch) * damp(dt, 7)
+    s.kneel += ((rubbing ? 1 : 0) - s.kneel) * damp(dt, 6)
+    // Crouching (thighs forward, shins back) or kneeling (legs.ts), the body
+    // comes down until the knees or boots meet the ground: a fixed drop put
+    // the boots 15 cm into the ground once the knees bent at the knee.
+    const crouchThigh = -s.crouch * 1.1 + s.kneel * KNEEL.thigh
+    const crouchShin = s.crouch * 1.9 + s.kneel * KNEEL.shin
+    const drop = legDrop(crouchThigh, crouchShin)
+    // Both hands on his belly, wherever it is this frame (he squirms), each
+    // going round in small circles, one towards his chest and one towards his
+    // hips; the guest bends at the hips just as far as it takes to reach.
+    let rubArmL = { x: 0, z: 0 }
+    let rubArmR = { x: 0, z: 0 }
+    let rubBow = 0
+    if (s.rubK > 0.001) {
+      const body = joints.rusty.body.obj
+      const ph = t * 7
+      // (just off his belly's surface, which rises towards his waist: rusty_model.py)
+      const chest = body.localToWorld(
+        tmpA.set(Math.cos(ph) * 0.035, -0.19, 0.15 + Math.sin(ph) * 0.035),
+      )
+      const hips = body.localToWorld(tmpB.set(-Math.cos(ph) * 0.035, -0.165, -Math.sin(ph) * 0.035))
+      // (whichever is on the guest's left takes their left hand)
+      const leftOf = (p: THREE.Vector3) =>
+        (p.x - s.guest.x) * Math.cos(s.guestYaw) - (p.z - s.guest.z) * Math.sin(s.guestYaw)
+      const [toL, toR] = leftOf(chest) > leftOf(hips) ? [chest, hips] : [hips, chest]
+      const hipY = s.guestY - drop + HIP_Y
+      let best = Infinity
+      for (let b = RUB_BOW.min; b <= RUB_BOW.max; b += 0.025) {
+        const l = armTo(toL, s.guest, hipY, s.guestYaw, b, 1)
+        const r = armTo(toR, s.guest, hipY, s.guestYaw, b, -1)
+        const miss = Math.abs(l.reach - ARM_LENGTH) + Math.abs(r.reach - ARM_LENGTH)
+        if (miss < best) {
+          best = miss
+          rubBow = b
+        }
+      }
+      rubArmL = armTo(toL, s.guest, hipY, s.guestYaw, s.bow, 1)
+      rubArmR = armTo(toR, s.guest, hipY, s.guestYaw, s.bow, -1)
+    }
+    const bowWant = s.rubK > 0.001 ? rubBow * s.rubK : bowGoal * s.petK
+    s.bow += (bowWant - s.bow) * damp(dt, 8)
     const bow = s.bow
-    if (rubbing) s.guestYaw = turnTowards(s.guestYaw, facing(s.guest, dog.pos), 8 * dt)
-    else if (petYaw !== null) s.guestYaw = turnTowards(s.guestYaw, petYaw, 8 * dt)
-    s.crouch +=
-      ((rubbing ? 1 : petting ? PET_CROUCH : bx.hold * shelfCrouch) - s.crouch) * damp(dt, 7)
-    const crouch = s.crouch
     // step up onto the deck and the cabin floor
     s.guestY += (groundHeight(s.guest) - s.guestY) * damp(dt, 14)
     s.walkPhase += walking ? dt * 11 : 0
@@ -2547,23 +2691,26 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const lerpRot = (jt: Joint, axis: 'x' | 'y' | 'z', value: number, rate = relax) => {
       jt.obj.rotation[axis] += (jt.base[axis] + value - jt.obj.rotation[axis]) * rate
     }
-    // crouching: thighs forward, shins back, both hands on his belly rubbing in circles
-    const rubStroke = Math.sin(t * 7) * 0.18
+    // crouching: thighs forward, shins back (the hands are on his belly: above)
     // sitting on the bench: thighs out over the end of it, shins hanging, hands on knees
     const seat = s.sit.k * s.sit.k * (3 - 2 * s.sit.k)
-    lerpRot(j.legL, 'x', swing * 0.6 - crouch * 1.1 - seat * 1.5 - bow)
-    lerpRot(j.legR, 'x', -swing * 0.6 - crouch * 1.1 - seat * 1.5 - bow)
+    // (going down or getting up, the legs keep up with the body: lagging
+    // behind it, the boots dipped into the ground on the way down)
+    const legRate = s.kneel > 0.005 || s.crouch > 0.005 ? snap : relax
+    lerpRot(j.legL, 'x', swing * 0.6 + crouchThigh - seat * 1.5 - bow, legRate)
+    lerpRot(j.legR, 'x', -swing * 0.6 + crouchThigh - seat * 1.5 - bow, legRate)
     lerpRot(
       j.shinL,
       'x',
-      (walking ? Math.max(0, -Math.cos(s.walkPhase)) * 0.6 : 0) + crouch * 1.9 + seat * 1.5,
+      (walking ? Math.max(0, -Math.cos(s.walkPhase)) * 0.6 : 0) + crouchShin + seat * 1.5,
+      legRate,
     )
     lerpRot(
       j.shinR,
       'x',
-      (walking ? Math.max(0, Math.cos(s.walkPhase)) * 0.6 : 0) + crouch * 1.9 + seat * 1.5,
+      (walking ? Math.max(0, Math.cos(s.walkPhase)) * 0.6 : 0) + crouchShin + seat * 1.5,
+      legRate,
     )
-    const rub = rubbing ? crouch : 0
     const hold = bx.hold
     if (axeHeld) {
       // both hands on the axe: low and ready, up over the head, then down hard
@@ -2596,18 +2743,20 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       // (bent forward to pet him, the arms hang straight down unless one is on his head)
       const petL = s.petSide < 0 ? s.petK : 0
       const petR = s.petSide > 0 ? s.petK : 0
-      const restL =
-        -swing * 0.5 - rub * (0.8 - rubStroke) - hold * 1.05 - s.reach * 0.2 - seat * 0.55 - bow
-      const restR =
-        swing * 0.5 - rub * (0.8 + rubStroke) - hold * 1.05 - s.reach * 1.25 - seat * 0.55 - bow
-      lerpRot(j.armL, 'x', restL + (-(petArm + bow) - restL) * petL, petL > 0.5 ? snap : relax)
-      lerpRot(j.armR, 'x', restR + (-(petArm + bow) - restR) * petR, petR > 0.5 ? snap : relax)
-      lerpRot(j.armL, 'z', (rub * (0.12 - Math.cos(t * 7) * 0.15) + hold * 0.3) * (1 - petL))
-      lerpRot(
-        j.armR,
-        'z',
-        (rub * (-0.12 + Math.cos(t * 7) * 0.15) - hold * 0.3 - s.reach * 0.1) * (1 - petR),
-      )
+      const restL = -swing * 0.5 - hold * 1.05 - s.reach * 0.2 - seat * 0.55 - bow
+      const restR = swing * 0.5 - hold * 1.05 - s.reach * 1.25 - seat * 0.55 - bow
+      const rubK = s.rubK
+      // (on his belly or his head the hand keeps up with him: snappier)
+      const fastL = petL > 0.5 || rubK > 0.5 ? snap : relax
+      const fastR = petR > 0.5 || rubK > 0.5 ? snap : relax
+      const armLx = restL + (-(petArm + bow) - restL) * petL
+      const armRx = restR + (-(petArm + bow) - restR) * petR
+      lerpRot(j.armL, 'x', armLx + (rubArmL.x - armLx) * rubK, fastL)
+      lerpRot(j.armR, 'x', armRx + (rubArmR.x - armRx) * rubK, fastR)
+      const armLz = hold * 0.3 * (1 - petL)
+      const armRz = (-hold * 0.3 - s.reach * 0.1) * (1 - petR)
+      lerpRot(j.armL, 'z', armLz + (rubArmL.z - armLz) * rubK, fastL)
+      lerpRot(j.armR, 'z', armRz + (rubArmR.z - armRz) * rubK, fastR)
       lerpRot(j.axe, 'x', 0)
       lerpRot(j.head, 'x', hold * 0.3 - s.reach * 0.05 + s.petK * 0.12)
     }
@@ -2627,7 +2776,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       s.guest.x - Math.sin(s.guestYaw) * hipBack,
       s.guestY +
         (walking ? Math.abs(Math.sin(s.walkPhase)) * 0.05 : Math.sin(t * 2) * 0.006) -
-        crouch * 0.24 +
+        drop +
         HIP_Y * (1 - Math.cos(bow)) +
         seat * (seatSpots.y - 0.4 + 0.03),
       s.guest.z - Math.cos(s.guestYaw) * hipBack,
@@ -2833,8 +2982,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const rollK = dog.roll * dog.roll * (3 - 2 * dog.roll)
     const paddle = Math.max(0, Math.sin(t * 3.1)) * Math.sin(t * 15) * 0.25 * rollK
     const kick = Math.max(0, Math.sin(t * 1.9) - 0.2) * Math.sin(t * 24) * 0.7 * rollK
+    // (lying, the back legs fold forward along his sides, flat on the ground:
+    // at -1.25 they went 7 cm into it)
     const frontLeg = -1.45 * lie * (1 - rollK) - 1.0 * rollK + 0.5 * sit
-    const backLeg = -1.25 * lie * (1 - rollK) - 0.45 * rollK - 0.95 * sit
+    const backLeg = -1.5 * lie * (1 - rollK) - 0.45 * rollK - 0.95 * sit
     // the leg on the guest's side kicks (it's the one nearest the hand)
     const kickL = dog.rollSide > 0 ? kick : 0
     const kickR = dog.rollSide > 0 ? 0 : kick
@@ -2842,38 +2993,53 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     rx(r.fr, -gait + frontLeg - paddle)
     rx(r.bl, -gait + backLeg + kickL)
     rx(r.br, gait + backLeg + kickR)
-    // splay the legs outwards on his back (+z swings a leg towards his left)
-    rz(r.fl, 0.35 * rollK)
-    rz(r.fr, -0.35 * rollK)
-    rz(r.bl, 0.55 * rollK)
-    rz(r.br, -0.55 * rollK)
+    // splay the legs outwards on his back (+z swings a leg towards his left);
+    // only once he's most of the way over, or the legs underneath swung out
+    // through the ground as he rolled
+    // (and half-way over, the legs on the side he's rolling across tuck in
+    // under him, or they went 9 cm into the ground as he rolled back)
+    const splay = rollK * rollK
+    const tuck = Math.sin(Math.PI * rollK) * 0.7
+    const tuckL = dog.rollSide < 0 ? -tuck : 0
+    const tuckR = dog.rollSide > 0 ? tuck : 0
+    rz(r.fl, 0.35 * splay + tuckL)
+    rz(r.fr, -0.35 * splay + tuckR)
+    rz(r.bl, 0.55 * splay + tuckL)
+    rz(r.br, -0.55 * splay + tuckR)
     const wag = 9 + dog.excitement * 9 + rollK * 6
     r.tail.obj.rotation.y = r.tail.base.y + Math.sin(t * wag) * 0.6 * dog.excitement
     r.head.obj.rotation.x =
       r.head.base.x +
       dog.headDown * 0.75 +
-      (pose.moving ? Math.sin(dog.gait * 2) * 0.05 * pose.stride : Math.sin(t * 1.6) * 0.05 - 0.04)
-    // head lolls from side to side while he squirms
-    r.head.obj.rotation.z = r.head.base.z + Math.sin(t * 2.6 + 1) * 0.3 * rollK
+      (pose.moving
+        ? Math.sin(dog.gait * 2) * 0.05 * pose.stride
+        : Math.sin(t * 1.6) * 0.05 - 0.04) +
+      0.3 * rollK
+    // On his back his head rolls back the other way, onto its side, and lolls
+    // from side to side while he squirms (upside down with the rest of him,
+    // the top of his head went 8 cm into the ground).
+    r.head.obj.rotation.z =
+      r.head.base.z + (-dog.rollSide * 1.0 + Math.sin(t * 2.6 + 1) * 0.2) * rollK
     // Rolling onto his back turns him about his body, not his feet: shift the
     // model so the middle of his body stays put (it sits 0.42 up in the model).
     const squirm = Math.sin(t * 5.2) * 0.14 * rollK
     const roll = dog.rollSide * 2.5 * rollK + squirm
     const bodyY = 0.42 - 0.24 * lie + 0.1 * rollK - 0.06 * sit
     const sideways = 0.42 * Math.sin(roll)
+    // (dipping his front to pick the cow up or drop it turns him about his
+    // middle: lift him by as much, or his front paws went 4 cm into the ground)
+    const dip = dog.headDown * 0.12 * (1 - rollK)
     G.rusty.position.set(
       dog.pos.x + Math.cos(dog.yaw) * sideways,
-      Math.abs(Math.sin(dog.gait)) * 0.06 * pose.stride + bodyY - 0.42 * Math.cos(roll),
+      Math.abs(Math.sin(dog.gait)) * 0.06 * pose.stride +
+        bodyY -
+        0.42 * Math.cos(roll) +
+        Math.abs(Math.sin(dip)) * 0.26,
       dog.pos.z - Math.sin(dog.yaw) * sideways,
     )
     // lean into turns a little, dip the front when lowering the head, sit back
     // on his haunches, and wriggle a little on his back
-    G.rusty.rotation.set(
-      dog.headDown * 0.12 * (1 - rollK) - 0.5 * sit,
-      dog.yaw + Math.sin(t * 2.6) * 0.12 * rollK,
-      roll,
-      'YZX',
-    )
+    G.rusty.rotation.set(dip - 0.5 * sit, dog.yaw + Math.sin(t * 2.6) * 0.12 * rollK, roll, 'YZX')
 
     const c = dog.cow
     G.cow.position.set(c.pos.x, c.pos.y, c.pos.z)
@@ -3111,8 +3277,12 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         : e.armL.obj.rotation.y * (1 - damp(dt, 6))
     follow(e.head, 'x', ep.head, 6)
     follow(e.head, 'y', ep.headTurn, 8)
-    follow(e.legL, 'x', ep.thighL, 12)
-    follow(e.legR, 'x', ep.thighR, 12)
+    // He bends at the hips: the legs swing back against the lean, so his
+    // knees and boots stay down (the whole of him used to tip over stiff
+    // about his feet, lifting his boots off the boards).
+    s.edLean += (ep.lean - s.edLean) * damp(dt, 6)
+    follow(e.legL, 'x', ep.thighL - s.edLean, 12)
+    follow(e.legR, 'x', ep.thighR - s.edLean, 12)
     follow(e.shinL, 'x', ep.shinL, 12)
     follow(e.shinR, 'x', ep.shinR, 12)
     e.board.obj.visible = ed.carrying
@@ -3133,11 +3303,43 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       toastStick.group.rotation.set(pitch - e.armR.obj.rotation.x, 0, m.out > 0.1 ? 0 : t * 1.4)
     }
     e.torso.obj.rotation.x = e.torso.base.x + Math.sin(t * 1.4) * 0.015
-    s.edLean += (ep.lean - s.edLean) * damp(dt, 6)
     s.edY += (ep.y - s.edY) * damp(dt, 10)
-    G.eduard.position.set(ed.pos.x, s.edY, ed.pos.z)
-    // lean in his own frame (turn first, then pitch)
+    // lean in his own frame (turn first, then pitch), about his hips
+    const hipBackEd = HIP_Y * Math.sin(s.edLean)
+    G.eduard.position.set(
+      ed.pos.x - Math.sin(ed.yaw) * hipBackEd,
+      s.edY + HIP_Y * (1 - Math.cos(s.edLean)),
+      ed.pos.z - Math.cos(ed.yaw) * hipBackEd,
+    )
     G.eduard.rotation.set(s.edLean, ed.yaw, 0, 'YXZ')
+    // Laying a board: it goes from under his arm down into its row, turning
+    // to lie along it, and becomes the deck's own board there (it used to
+    // vanish from his side and appear in its row, up to a metre away).
+    const board = e.board.obj
+    const home = (board.userData.home ??= {
+      p: board.position.clone(),
+      q: board.quaternion.clone(),
+      s: board.scale.clone(),
+    }) as { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 }
+    const lay = layAmount(ed)
+    if (lay > 0 && board.parent) {
+      const row = DECK_BOARDS[Math.min(ed.placed, DECK_BOARDS.length - 1)]
+      G.eduard.updateMatrixWorld(true)
+      const to = board.parent.worldToLocal(tmpC.set(row.x, DECK_BOARD_Y, row.z))
+      board.position.lerpVectors(home.p, to, lay)
+      // (lying along the row, whichever way he's turned or leaning)
+      board.quaternion.slerpQuaternions(home.q, board.parent.getWorldQuaternion(tmpQ).invert(), lay)
+      // (and the size of the deck's boards: a little wider, thicker and shorter)
+      board.scale.set(
+        home.s.x * (1 + 0.36 * lay),
+        home.s.y * (1 + 0.3 * lay),
+        home.s.z * (1 - 0.15 * lay),
+      )
+    } else {
+      board.position.copy(home.p)
+      board.quaternion.copy(home.q)
+      board.scale.copy(home.s)
+    }
     EDUARD_BLOCK.x = ed.pos.x
     EDUARD_BLOCK.z = ed.pos.z
     // the boards he's laid stay down; the loose one goes with the first

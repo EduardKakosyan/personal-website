@@ -12,6 +12,7 @@
 // walk over: he's already sitting with the fire going.)
 
 import { FIRE_SEATS, SEAT_Y } from './fire'
+import { legDrop } from './legs'
 import {
   boardSpot,
   DECK_BOARDS,
@@ -56,6 +57,46 @@ const BOARD_TRIP: Activity[] = ['toPile', 'pickup', 'back', 'kneel', 'place']
 const PILE = { x: 4.45, z: -0.5, yaw: Math.PI }
 const SPOT: Vec2 = { x: EDUARD_SPOT.x, z: EDUARD_SPOT.z }
 const WALK_SPEED = 1.3
+/** He slows down over the last stretch of a walk, rather than stopping dead. */
+const WALK_EASE = 0.45
+
+/**
+ * Where the hammer lands, from where he kneels, facing straight ahead: in
+ * front of his knees, off to his right (his right hand holds it). Measured on
+ * the model at the bottom of a strike.
+ */
+const STRIKE = { right: 0.28, ahead: 0.33 }
+const STRIKE_REACH = Math.hypot(STRIKE.right, STRIKE.ahead)
+/** The loose board lying across the open joists before any are laid (cabin-parts.glb). */
+const LOOSE_BOARD_X = 3.0
+
+/**
+ * Which way he faces, kneeling where he is, so the hammer lands on the board
+ * running north–south at `x` (A114: the strikes used to land on the open
+ * joists beside the board he'd just laid, up to 40 cm off it). He turns as
+ * far as he can towards one that's out of reach.
+ */
+export function workYaw(pos: Vec2, x: number) {
+  const along = Math.max(-1, Math.min(1, (x - pos.x) / STRIKE_REACH))
+  return Math.asin(along) + Math.atan2(STRIKE.right, STRIKE.ahead)
+}
+
+/** Where the hammer lands, kneeling at `pos` turned `yaw`. */
+export function strikePoint(pos: Vec2, yaw: number): Vec2 {
+  const c = Math.cos(yaw)
+  const sn = Math.sin(yaw)
+  return {
+    x: pos.x - STRIKE.right * c + STRIKE.ahead * sn,
+    z: pos.z + STRIKE.right * sn + STRIKE.ahead * c,
+  }
+}
+
+/** The board he nails: the last one laid if he can reach it, else the latest one he can. */
+function nailAt(e: { pos: Vec2; placed: number }) {
+  for (let k = e.placed - 1; k >= 0; k--)
+    if (Math.abs(DECK_BOARDS[k].x - e.pos.x) <= STRIKE_REACH) return DECK_BOARDS[k].x
+  return e.placed > 0 ? DECK_BOARDS[e.placed - 1].x : LOOSE_BOARD_X
+}
 
 /** Seconds for the activities that aren't walks. */
 function duration(a: Activity) {
@@ -90,7 +131,9 @@ export function createEduard() {
     step: 0,
     trip: -1,
     pos: { ...SPOT },
-    yaw: EDUARD_SPOT.facing,
+    yaw: workYaw(SPOT, LOOSE_BOARD_X),
+    /** Which way he faces to work on his knees: to lay the next board, or nail the last one. */
+    workYaw: workYaw(SPOT, LOOSE_BOARD_X),
     /** 0 kneeling .. 1 standing */
     stand: 0,
     walkPhase: 0,
@@ -143,9 +186,10 @@ const deckDone = (e: Eduard) => e.placed >= DECK_BOARDS.length
 
 function nextActivity(e: Eduard) {
   if (e.nextTrip && !deckDone(e)) {
+    // (up on his feet first, then off for the board: he used to set off
+    // while still kneeling and slide along on his knees)
     e.nextTrip = false
-    e.trip = 0
-    return begin(e, BOARD_TRIP[0])
+    return begin(e, 'stand')
   }
   e.nextTrip = false
   if (e.trip >= 0) {
@@ -157,10 +201,11 @@ function nextActivity(e: Eduard) {
       e.cheered = true
       return begin(e, 'cheer')
     }
-    // watched: a few strikes to nail it down, then the next board
+    // watched: a few strikes to nail it down (three beats, ending on the
+    // nail), then the next board
     if (e.rush && !deckDone(e)) {
       begin(e, 'hammer')
-      e.length = 2.2
+      e.length = 2.4
       e.nextTrip = true
       return
     }
@@ -251,7 +296,9 @@ function walk(e: Eduard, to: Vec2, dt: number, guest: Vec2) {
     e.walking = false
     return true
   }
-  const stepLen = Math.min(d, WALK_SPEED * dt)
+  // (easing off over the last stretch; the stride keeps pace, so his feet don't slide)
+  const speed = WALK_SPEED * Math.min(1, 0.3 + d / WALK_EASE)
+  const stepLen = Math.min(d, speed * dt)
   const next = { x: e.pos.x + (dx / d) * stepLen, z: e.pos.z + (dz / d) * stepLen }
   const gNow = Math.hypot(e.pos.x - guest.x, e.pos.z - guest.z)
   const gNext = Math.hypot(next.x - guest.x, next.z - guest.z)
@@ -263,7 +310,7 @@ function walk(e: Eduard, to: Vec2, dt: number, guest: Vec2) {
   e.yaw = turnTowards(e.yaw, Math.atan2(dx, dz), 6 * dt)
   e.pos = next
   e.walking = true
-  e.walkPhase += dt * 9
+  e.walkPhase += dt * 9 * (speed / WALK_SPEED)
   return false
 }
 
@@ -319,10 +366,14 @@ export function updateEduard(
       }
       break
     case 'back':
-      // to the next board's spot (beside it on the finished boards)
+      // to the next board's spot (beside it on the finished boards), turning
+      // on his feet to face where it goes before he kneels
       if (walk(e, deckDone(e) ? SPOT : boardSpot(e.placed), dt, ctx.guest)) {
-        e.yaw = turnTowards(e.yaw, EDUARD_SPOT.facing, 5 * dt)
-        if (Math.abs(angleDiff(e.yaw, EDUARD_SPOT.facing)) < 0.1) nextActivity(e)
+        e.workYaw = deckDone(e)
+          ? workYaw(e.pos, nailAt(e))
+          : workYaw(e.pos, DECK_BOARDS[e.placed].x)
+        e.yaw = turnTowards(e.yaw, e.workYaw, 5 * dt)
+        if (Math.abs(angleDiff(e.yaw, e.workYaw)) < 0.1) nextActivity(e)
       }
       break
     case 'look': {
@@ -341,12 +392,16 @@ export function updateEduard(
     // the board leaves his hands and stays down on the deck
     e.carrying = false
     e.placed = Math.min(DECK_BOARDS.length, e.placed + 1)
+    e.workYaw = workYaw(e.pos, nailAt(e))
   }
   if (e.activity === 'cheer') {
     // turn to whoever's watching
     e.yaw = turnTowards(e.yaw, facing(e.pos, ctx.guest), 4 * dt)
   }
   const standing = ['stand', 'toPile', 'pickup', 'back', 'cheer'].includes(e.activity)
+  // On his knees he works facing the board (back round to it after greeting
+  // the guest, or shuffling round to nail the last one he could reach).
+  if (!standing && !e.walking) e.yaw = turnTowards(e.yaw, e.workYaw, 2.5 * dt)
   e.stand += ((standing ? 1 : 0) - e.stand) * damp(dt, 7)
   e.headTurn += (turnGoal - e.headTurn) * damp(dt, 4)
   if (e.timer >= e.length) nextActivity(e)
@@ -376,6 +431,22 @@ export type EduardPose = {
 }
 
 const HALF_PI = Math.PI / 2
+/**
+ * Kneeling, his shins fold back past flat, so his knees and the toes of his
+ * boots both rest on the deck (flat behind him, the model's own pose, the
+ * boots went 10 cm into it).
+ */
+const KNEEL_TUCK = 0.5
+
+/**
+ * Laying a board: 0 while it's under his arm .. 1 down in its row, where it
+ * becomes the deck's own board (the scene moves it between the two).
+ */
+export function layAmount(e: Eduard) {
+  if (e.activity !== 'place' || !e.carrying) return 0
+  const k = Math.max(0, Math.min(1, (e.timer - 0.1) / 0.65))
+  return ease(k)
+}
 
 export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose {
   const p: EduardPose = {
@@ -389,13 +460,25 @@ export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose
     lean: 0,
     thighL: 0,
     thighR: 0,
-    // standing up unfolds the shins from flat-behind to straight down
-    shinL: -HALF_PI * e.stand,
-    shinR: -HALF_PI * e.stand,
+    // standing up unfolds the shins from tucked behind to straight down
+    shinL: -HALF_PI * e.stand + KNEEL_TUCK * (1 - e.stand),
+    shinR: -HALF_PI * e.stand + KNEEL_TUCK * (1 - e.stand),
     snap: 10,
     y: groundHeight(e.pos) - 0.13 * (1 - e.stand),
   }
   if (e.fire) return firePose(p, e, t, greeting)
+  const pose = workPose(p, e, t, greeting)
+  // Down on the boards: the lower of his legs, knee or boot, rests on them
+  // (legs.ts), kneeling, getting up, and mid-stride (a fixed drop left his
+  // boots floating 5 cm up when he stood and walked).
+  pose.y +=
+    0.13 * (1 - e.stand) -
+    legDrop(pose.thighL, HALF_PI + pose.shinL, pose.thighR, HALF_PI + pose.shinR)
+  return pose
+}
+
+/** On the deck and the board trips: his routine, the welcome, and the cheer. */
+function workPose(p: EduardPose, e: Eduard, t: number, greeting: Greeting): EduardPose {
   if (greeting === 'guest') {
     // standing, waving with the free hand (the right one holds the hammer)
     p.armR = 0.9
@@ -416,20 +499,30 @@ export function eduardPose(e: Eduard, t: number, greeting: Greeting): EduardPose
     case 'hammer': {
       // bouts of strikes (a slow lift, a quick hit), then setting the next nail
       const bout = k % 4.6
-      if (bout < 3.4) {
+      if (bout < 3.2) {
         // Each strike lands on the board in front of his knees: he leans in
         // over it, the arm comes down and the wrist flicks the head onto the
         // nail; then up again, the wrist cocked back. (He used to swing at
         // the air beside him.) The other hand steadies the board.
+        // A beat: down hard, speeding up into the nail, a moment on it and a
+        // little bounce off it, then the lift. (It used to turn round in the
+        // air 8 cm above the board, never quite getting there.) Four beats a
+        // bout, so the bout ends on the nail, not half-way up.
         const cycle = (bout * 1.25) % 1
-        const lift = cycle < 0.7 ? cycle / 0.7 : 1 - (cycle - 0.7) / 0.3
-        const up = lift * lift * (3 - 2 * lift)
+        let up = 0
+        if (cycle < 0.14) up = Math.sin((cycle / 0.14) * Math.PI) * 0.06
+        else if (cycle < 0.72) {
+          const l = (cycle - 0.14) / 0.58
+          up = l * l * (3 - 2 * l)
+        } else if (cycle < 0.88) up = 1 - ((cycle - 0.72) / 0.16) ** 2
+        // (the loose board lies on top of the joists, a board's depth higher)
+        const nail = e.placed === 0 ? 0.2 : 0.3
         p.armR = 0.67 - up * 1.45
-        p.wrist = 1.05 - up * 1.5
-        p.lean = 0.3 - up * 0.18
+        p.wrist = 1.25 - up * 1.7
+        p.lean = nail - up * 0.1
         p.armL = -0.7
         p.head = 0.28 - up * 0.1
-        p.snap = 22
+        p.snap = 30
       } else {
         p.armR = 0.55
         p.armL = -0.95 + Math.sin(t * 10) * 0.06

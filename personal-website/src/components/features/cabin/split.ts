@@ -162,7 +162,9 @@ function landingSpot(s: Split, side: number, guestYaw: number, near = LAND_NEAR,
   const taken = s.chunks.map((c) => c.to ?? { x: c.pos.x, z: c.pos.z })
   let best: Vec2 | null = null
   let bestGap = -1
-  for (let k = 0; k < 28; k++) {
+  // (a couple of dozen tries usually; when it's crowded it keeps looking until
+  // something's clear of the rest, or two pieces could land touching)
+  for (let k = 0; k < 120 && (k < 28 || bestGap < LAND_APART); k++) {
     const a = Math.random() * Math.PI * 2
     const r = Math.sqrt(near * near + Math.random() * (far * far - near * near))
     const p = { x: CHOPPING_BLOCK.x + Math.cos(a) * r, z: CHOPPING_BLOCK.z + Math.sin(a) * r }

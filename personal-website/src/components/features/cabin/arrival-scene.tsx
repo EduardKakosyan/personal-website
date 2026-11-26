@@ -13,10 +13,12 @@ import {
   makeGroundMaterial,
   makeSparkleTexture,
   isSmoothLook,
+  registerFigure,
   registerHighlight,
   toFadeable,
   toOwnFade,
   toToon,
+  unregisterFigure,
   unregisterHighlight,
 } from './pixel-look'
 import { InteractPrompt, type PromptInput } from './interact-prompt'
@@ -1147,6 +1149,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     things.forEach(registerHighlight)
     return () => things.forEach(unregisterHighlight)
   }, [p3, cabinParts])
+
+  // The characters, outlined all the way round (pixel-look.tsx).
+  useEffect(() => {
+    const figures = [eduard, hikerOne, hikerTwo, rusty, hugo]
+    figures.forEach(registerFigure)
+    return () => figures.forEach(unregisterFigure)
+  }, [eduard, hikerOne, hikerTwo, rusty, hugo])
 
   // The overlay's direct requests (the HUD's Swing and Done buttons).
   useEffect(() => {

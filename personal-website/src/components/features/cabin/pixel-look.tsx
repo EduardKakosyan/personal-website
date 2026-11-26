@@ -345,6 +345,73 @@ function withMaskMaterials(fn: () => void) {
   return swapped.length > 0
 }
 
+// ------------------------------------------------------------------ characters
+/**
+ * Eduard, the guest, Rusty and HUGO are outlined all the way round, and there's
+ * no line where two pieces of one of them meet.
+ *
+ * Eduard: "my arm is still looking like its been detached from my body". His
+ * arm was joined on; the drawing cut it off. The depth outline only shows where
+ * there's a big drop behind a thing, and he kneels on the deck: his arm is
+ * never much more than half a metre in front of the boards, so from the game's
+ * camera it had no outline while his head did, and in the cabin's shade his
+ * bare arm is the same grey-brown as the boards. It melted into them, and his
+ * hand and hammer seemed to hang beside him on their own. And where his sleeve
+ * met his shoulder the crease pass drew a light seam all the way round, so up
+ * close the arm looked like a separate piece stuck on.
+ *
+ * So each character is drawn into a mask: red says which character, green
+ * which piece of it (each mesh has its own shade). The composite darkens a
+ * character's edge wherever the pixel beside it is something else further
+ * back, and draws no crease between two pieces of the same character. (A
+ * piece's own edges, like the rim of HUGO's bucket, keep theirs.)
+ */
+const figures: THREE.Object3D[] = []
+const figureMaterials = new WeakMap<THREE.Mesh, THREE.MeshBasicMaterial>()
+const FIGURE_LAYER = 2
+/** The characters' shades (red) are steps of 1/32: room for 31 of them. */
+const FIGURE_STEP = 1 / 32
+
+export function registerFigure(obj: THREE.Object3D) {
+  if (!figures.includes(obj)) figures.push(obj)
+}
+
+export function unregisterFigure(obj: THREE.Object3D) {
+  const i = figures.indexOf(obj)
+  if (i >= 0) figures.splice(i, 1)
+}
+
+/** Draw each piece of each character in its own flat shade (like withMaskMaterials), then put them back. */
+function withFigureMaterials(fn: () => void) {
+  const swapped: { mesh: THREE.Mesh; material: THREE.Material | THREE.Material[] }[] = []
+  figures.forEach((obj, i) => {
+    if (!obj.visible) return
+    let piece = 0
+    // (traversed every frame: things put in a hand later, like Eduard's
+    // marshmallow stick, belong to him too)
+    obj.traverse((o) => {
+      const mesh = o as THREE.Mesh
+      if (!mesh.isMesh || !mesh.visible || mesh.userData.noOutline) return
+      let shade = figureMaterials.get(mesh)
+      if (!shade) {
+        shade = new THREE.MeshBasicMaterial({ fog: false, side: THREE.DoubleSide })
+        figureMaterials.set(mesh, shade)
+      }
+      piece += 1
+      shade.color.setRGB((i + 1) * FIGURE_STEP, (piece % 255) / 255, 0)
+      swapped.push({ mesh, material: mesh.material })
+      mesh.material = shade
+      mesh.layers.enable(FIGURE_LAYER)
+    })
+  })
+  if (swapped.length > 0) fn()
+  for (const s of swapped) {
+    s.mesh.material = s.material
+    s.mesh.layers.disable(FIGURE_LAYER)
+  }
+  return swapped.length > 0
+}
+
 /** A tiny pixel star for the sparkles over the easter eggs (nearest-filtered, so it stays crisp). */
 export function makeSparkleTexture() {
   const size = 9
@@ -428,16 +495,27 @@ uniform sampler2D tDepth;
 uniform sampler2D tNormal;
 uniform sampler2D tMask;
 uniform sampler2D tMaskDepth;
+uniform sampler2D tFigure;
+uniform sampler2D tFigureDepth;
 uniform vec2 uRes;
 uniform float uNear;
 uniform float uFar;
 uniform float uOutlines;
+uniform float uFigures;
 uniform float uGlow;
 uniform vec3 uGlowColor;
 varying vec2 vUv;
 
 float depthAt(vec2 uv) {
   return -perspectiveDepthToViewZ(texture2D(tDepth, uv).x, uNear, uFar);
+}
+// which character this pixel shows, and which piece of it (their shades in
+// the mask; 0 = none), if nothing nearer hides it; d is the scene's depth there
+vec2 figureAt(vec2 uv, float d) {
+  vec2 f = texture2D(tFigure, uv).rg;
+  if (f.r < 0.01) return vec2(0.0);
+  float fd = -perspectiveDepthToViewZ(texture2D(tFigureDepth, uv).x, uNear, uFar);
+  return fd <= d + 0.03 + d * 0.012 ? f : vec2(0.0);
 }
 vec3 normalAt(vec2 uv) {
   return texture2D(tNormal, uv).xyz * 2.0 - 1.0;
@@ -470,6 +548,8 @@ void main() {
     vec3 n = normalAt(vUv);
     float depthDiff = 0.0;
     float creases = 0.0;
+    vec2 fig = uFigures > 0.5 ? figureAt(vUv, d) : vec2(0.0);
+    float figEdge = 0.0;
     vec2 offs[4];
     offs[0] = vec2(0.0, 1.0); offs[1] = vec2(0.0, -1.0);
     offs[2] = vec2(1.0, 0.0); offs[3] = vec2(-1.0, 0.0);
@@ -480,9 +560,18 @@ void main() {
       vec3 nn = normalAt(uv);
       float towards = smoothstep(-0.01, 0.01, dot(n - nn, vec3(1.0, 1.0, 1.0)));
       float sameSurface = 1.0 - step(0.15, abs(dn - d));
-      creases += (1.0 - dot(n, nn)) * towards * sameSurface;
+      float seam = 0.0;
+      if (fig.r > 0.0) {
+        vec2 fn = figureAt(uv, dn);
+        float other = step(0.016, abs(fn.r - fig.r));
+        // a character's edge: beside it is something else, further back
+        figEdge = max(figEdge, other * step(d + 0.02, dn));
+        // two pieces of the same character meeting (his sleeve and his shoulder)
+        seam = (1.0 - other) * step(0.002, abs(fn.g - fig.g));
+      }
+      creases += (1.0 - dot(n, nn)) * towards * sameSurface * (1.0 - seam);
     }
-    float silhouette = step(0.3 + d * 0.035, depthDiff);
+    float silhouette = max(step(0.3 + d * 0.035, depthDiff), figEdge);
     float crease = step(0.25, creases) * (1.0 - silhouette);
     // keep the sky and far haze clean
     float near = 1.0 - step(70.0, d);
@@ -515,6 +604,14 @@ function createPixelPass() {
     magFilter: THREE.NearestFilter,
     depthTexture: maskDepth,
   })
+  // the characters, each in its own shade, with their own depth (for their outline)
+  const figureDepth = new THREE.DepthTexture(1, 1)
+  figureDepth.type = THREE.UnsignedIntType
+  const figure = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    depthTexture: figureDepth,
+  })
   const material = new THREE.ShaderMaterial({
     vertexShader: compositeVertex,
     fragmentShader: compositeFragment,
@@ -524,10 +621,13 @@ function createPixelPass() {
       tNormal: { value: normal.texture },
       tMask: { value: mask.texture },
       tMaskDepth: { value: maskDepth },
+      tFigure: { value: figure.texture },
+      tFigureDepth: { value: figureDepth },
       uRes: { value: new THREE.Vector2(1, 1) },
       uNear: { value: 0.5 },
       uFar: { value: 140 },
       uOutlines: { value: 1 },
+      uFigures: { value: 0 },
       uGlow: { value: 0 },
       uGlowColor: { value: new THREE.Color('#ffd25a') },
     },
@@ -553,6 +653,7 @@ function createPixelPass() {
       color.setSize(size.x, size.y)
       normal.setSize(size.x, size.y)
       mask.setSize(size.x, size.y)
+      figure.setSize(size.x, size.y)
     }
     const cam = camera as THREE.PerspectiveCamera
     material.uniforms.uRes.value.copy(size)
@@ -597,6 +698,16 @@ function createPixelPass() {
       gl.clear()
       gl.render(scene, camera)
       scene.overrideMaterial = null
+
+      // The characters alone, each in its own flat shade, for their outline.
+      camera.layers.set(FIGURE_LAYER)
+      gl.setRenderTarget(figure)
+      gl.setClearColor(0x000000, 1)
+      gl.clear()
+      const anyFigure = withFigureMaterials(() => gl.render(scene, camera))
+      camera.layers.mask = layers
+      material.uniforms.uFigures.value = anyFigure ? 1 : 0
+
       scene.background = bg
       scene.fog = fog
       hidden.forEach((o) => (o.visible = true))
@@ -611,6 +722,8 @@ function createPixelPass() {
     normal.dispose()
     mask.dispose()
     maskDepth.dispose()
+    figure.dispose()
+    figureDepth.dispose()
     depthTexture.dispose()
     material.dispose()
     normalMaterial.dispose()

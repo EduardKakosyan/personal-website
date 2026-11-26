@@ -740,6 +740,7 @@ export function ArrivalPreview({
             hugoAskMarker={askMarker}
             hugoTalking={ask.talking}
             hugoAskOpen={ask.open}
+            panelOpen={panel !== null || note !== null || checklistOpen}
             hugoSaying={ask.open ? hugoSaying : null}
             hugoPointsAt={pointsAt}
             onHugoCatchUp={onHugoCatchUp}

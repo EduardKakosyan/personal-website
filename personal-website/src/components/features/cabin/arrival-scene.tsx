@@ -89,6 +89,7 @@ import {
 import { RESUME_SPOTS, type CheckpointAt } from './checkpoint'
 import { createNightFx, createToastingStick } from './fire-fx'
 import { createTeleportFx } from './hugo-teleport'
+import { FairyTrail } from './fairy-trail'
 import {
   arriveAtHole,
   castPose,
@@ -264,6 +265,8 @@ export type ArrivalSceneProps = {
   hugoTalking?: boolean
   /** HUGO's card is open (on a portrait phone the view lifts so the guest and HUGO stay above it). */
   hugoAskOpen?: boolean
+  /** A reading panel, a project note or the checklist is up over the scene (the fairy trail waits). */
+  panelOpen?: boolean
   /** HUGO's answer to the guest's question: said in a bubble over his head, not on the card. */
   hugoSaying?: { key: number; text: string; status: string | null; links?: BubbleLink[] } | null
   /**
@@ -1023,7 +1026,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     fish: createFishing(),
     fishWas: false,
     /** The brook (scene 6): reached yet, HUGO asked to lead there, his point on the way, time free at the woodshed. */
-    brook: { reached: false, asked: pastShed, didShed: pastShed, leadIndex: 0, freeFor: 0 },
+    brook: {
+      reached: false,
+      asked: pastShed,
+      didShed: pastShed,
+      /** Had a go with the axe at the chopping block (the woodshed's second stop). */
+      triedBlock: pastShed,
+      leadIndex: 0,
+      freeFor: 0,
+    },
     /** How far the camera has come round to the brook's view (brook.ts, brookView). */
     brookK: 0,
     /** The tap: seconds since the guest turned it on (-1: off). */
@@ -2655,9 +2666,12 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       callbacks.current.onReachBrook()
     }
     // After the woodshed, HUGO leads the guest on to the brook (brook.ts,
-    // readyForBrook): once they've looked in a box or split the wood and are
-    // free again, or once they've walked off from the woodshed.
-    bk.didShed ||= sp.done || bx.opened.some(Boolean)
+    // readyForBrook): once they've looked in a box and had a go at splitting
+    // (the boxes, then the block, one after the other: the fairy trail leads
+    // to each, trail.ts) and are free again, or once they've walked off from
+    // the woodshed.
+    bk.triedBlock ||= holdsAxe(sp)
+    bk.didShed ||= bk.triedBlock && bx.opened.some(Boolean)
     const shedBusy =
       splitting || bx.want >= 0 || s.vac.phase !== 'idle' || inside || s.sit.phase !== 'off'
     bk.freeFor = shedBusy || s.target ? 0 : bk.freeFor + dt
@@ -3825,6 +3839,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         tapArea(`crate-${i}`, { x: cr.x, y: cr.y + 0.08, z: cr.z }, 0.17, onCrateDown(i)),
       )}
 
+      {/* the fairy trail to the next place on the tour (trail.ts, fairy-trail.tsx) */}
+      <FairyTrail sim={sim} scene={callbacks} look={look} />
       {/* the sparkles over the easter eggs */}
       {EGGS.map(({ id, at }, i) => (
         <sprite

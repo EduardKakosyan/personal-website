@@ -162,10 +162,10 @@ export function brookView(guest: Vec2, portrait = false) {
 /**
  * Whether HUGO should lead the guest on to the brook (A48: "Let's go look at
  * the best thing about this place."). After the woodshed, once the guest has
- * done something there (looked in a box or split the night's wood) and is
- * free again, or has walked off from the woodshed out into the field, the
- * brook's way (walking back to the cabin doesn't count): the agent's pick,
- * for Eduard to confirm.
+ * done what's there (looked in a box and had a go at splitting: the fairy
+ * trail takes them to each, trail.ts) and is free again, or has walked off
+ * from the woodshed out into the field, the brook's way (walking back to the
+ * cabin doesn't count): the agent's pick, for Eduard to confirm.
  */
 export function readyForBrook(o: {
   reachedWoodshed: boolean

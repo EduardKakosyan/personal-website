@@ -88,6 +88,7 @@ import {
 } from './fire'
 import { RESUME_SPOTS, type CheckpointAt } from './checkpoint'
 import { cameraReach } from './forest-edge'
+import { holdCamera, letGo, newFraming, yawFacing } from './camera-framing'
 import { createNightFx, createToastingStick } from './fire-fx'
 import { createTeleportFx } from './hugo-teleport'
 import { FairyTrail } from './fairy-trail'
@@ -384,6 +385,8 @@ const BENCH_BEHIND_ALONG = 2.1
 const BENCH_FILLS_SCREEN = 0.4
 /** A tap on the grass in front of the bench walks the guest at least this far out from it. */
 const BENCH_LEAVE_OUT = 2.5
+/** With the visitor's own camera, the bench's click rules only see to clicks landing this close to it. */
+const BENCH_NEAR = 3.5
 
 const PROMPT_LABELS: Record<PromptId, string> = {
   throw: 'Throw',
@@ -917,8 +920,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     showerFound: false,
     /** Whether the guest has stepped to the end of the workbench this visit. */
     benchStepped: false,
-    /** Which of CAMERA_SPOTS the camera is turned round for (-1: none). */
-    viewSpot: -1,
+    /**
+     * Which of CAMERA_SPOTS the camera is turned round for (-1: none), and
+     * whether that view and the bench's have let go of it (camera-framing.ts).
+     */
+    ...newFraming(),
     /** Which point of LEAD_PATH HUGO is waiting at. */
     leadIndex: 0,
     /** The storm door: how far open (0..1) and what it's doing. */
@@ -1013,6 +1019,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     userZoom: 1,
     /** One of the moments with a camera of its own (they take over from the visitor's). */
     setMoment: false,
+    /** The woodshed's or the shower's view, or the bench's, holds the camera (a turn takes it over). */
+    framed: false,
+    /** The visitor has just taken the camera from one of those: carry on facing the same way. */
+    camTake: false,
     /** Sitting on the bench to watch Eduard finish the deck (A110); k is 0 standing .. 1 seated. */
     sit: {
       phase: 'off' as 'off' | 'walking' | 'sitting' | 'seated' | 'rising',
@@ -1105,6 +1115,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const { camera, size, scene, gl } = useThree()
   /** What a press on the scene does if it turns out to be a tap, not a drag. */
   const tap = useRef<null | (() => void)>(null)
+  /** Starts a press for the camera's drag (the box tags are on top of the scene, not in it). */
+  const pressDown = useRef<null | ((e: PointerEvent) => void)>(null)
   /** The loose halves and logs lying about the block: a mesh per chunk, made from the props' templates. */
   const chunkMeshes = useRef(new Map<Chunk, THREE.Object3D>())
 
@@ -1347,8 +1359,18 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // miss. No click sends them round the back: on a desktop a click on the
     // bench does nothing; a click behind it (or, on a phone, anywhere that
     // isn't a box) steps them back out in front of it. A click in the yard
-    // walks there as usual.
-    if ((s.prompt === 'workbench' || s.box.want >= 0) && !insideCabin(s.guest)) {
+    // walks there as usual. (Once the visitor has turned the camera there, the
+    // bench is small on the screen and this only sees to clicks that land by
+    // it: from some sides the chopping block shows just past the bench, and a
+    // click on it did nothing.)
+    const ownView = !s.framed && !s.setMoment
+    const byTheBench =
+      Math.hypot(e.point.x - BOXES_CENTRE.x, e.point.z - BOXES_CENTRE.z) < BENCH_NEAR
+    if (
+      (s.prompt === 'workbench' || s.box.want >= 0) &&
+      !insideCabin(s.guest) &&
+      (!ownView || byTheBench)
+    ) {
       const rect = gl.domElement.getBoundingClientRect()
       const px = e.nativeEvent.clientX - rect.left
       const py = e.nativeEvent.clientY - rect.top
@@ -1395,11 +1417,12 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
           }
       // (Below the bench on screen is the grass on the guest's side: that
       // always walks them away from it, far enough to leave the bench. On a
-      // phone the bench fills the screen and that strip is all there is.)
-      if (py > y1) {
-        const out0 =
-          (e.point.x - BOXES_CENTRE.x) * BENCH_FRONT.x +
-          (e.point.z - BOXES_CENTRE.z) * BENCH_FRONT.z
+      // phone the bench fills the screen and that strip is all there is.
+      // Once the visitor has turned the camera, below the bench can be the
+      // ground behind it, or off past the woodshed: that's for the rules below.)
+      const out0 =
+        (e.point.x - BOXES_CENTRE.x) * BENCH_FRONT.x + (e.point.z - BOXES_CENTRE.z) * BENCH_FRONT.z
+      if (py > y1 && out0 >= 0) {
         const push = Math.max(0, BENCH_LEAVE_OUT - out0)
         const away = { x: e.point.x + BENCH_FRONT.x * push, z: e.point.z + BENCH_FRONT.z * push }
         tap.current = () => {
@@ -1707,9 +1730,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   // the camera"). Drag anywhere to turn it round the guest (and tilt it a
   // little); the wheel or a pinch zooms. A press that doesn't move is a tap:
   // the scene's handlers above leave what it does in `tap`, and it runs when
-  // the pointer comes up. The moments with a camera of their own (the
-  // woodshed, the shower, the bench, a box, the chopping block, inside the
-  // cabin) take over, and the visitor's turn starts afresh after them.
+  // the pointer comes up. The moments with a camera of their own (a box, the
+  // chopping block, inside the cabin) take over, and the visitor's turn starts
+  // afresh after them. The woodshed's, the shower's and the bench's views hand
+  // the camera over as soon as the visitor turns or zooms it there (Eduard, on
+  // a phone: "you can't control where your camera looks in there").
   useEffect(() => {
     const el = gl.domElement
     const pointers = new Map<number, { x: number; y: number }>()
@@ -1721,15 +1746,27 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       const [a, b] = [...pointers.values()]
       return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
     }
+    const take = () => {
+      const s = sim.current
+      if (!s.framed) return
+      letGo(s)
+      s.framed = false
+      s.camTake = true
+    }
     const turn = (dx: number, dy: number) => {
       const s = sim.current
       if (s.setMoment) return
-      s.camYaw -= dx * 0.005
+      take()
+      // (a screen's width is about a full turn, A109: on a phone too, where at
+      // a computer's rate a swipe across it turned only a third of the way)
+      s.camYaw -= dx * Math.max(0.005, (Math.PI * 2) / Math.max(1, el.clientWidth))
       s.camPitch = Math.max(-0.35, Math.min(0.42, s.camPitch + dy * 0.004))
     }
     const zoomTo = (z: number) => {
       const s = sim.current
-      if (!s.setMoment) s.userZoom = Math.max(0.55, Math.min(1.7, z))
+      if (s.setMoment) return
+      take()
+      s.userZoom = Math.max(0.55, Math.min(1.7, z))
     }
     const down = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
@@ -1781,7 +1818,9 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', up)
     el.addEventListener('wheel', wheel, { passive: false })
+    pressDown.current = down
     return () => {
+      pressDown.current = null
       el.removeEventListener('pointerdown', down, true)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
@@ -3112,7 +3151,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // camera, so he never hides the guest or the room. At the workbench he
     // floats off past the end of it, clear of the boxes; where the camera is
     // turned round (CAMERA_SPOTS), "left" is a different way.
-    const turned = s.viewSpot >= 0 ? CAMERA_SPOTS[s.viewSpot].from : null
+    const turned = s.viewSpot >= 0 && !s.spotLetGo ? CAMERA_SPOTS[s.viewSpot].from : null
     const side =
       bx.want >= 0
         ? // looking in a box: off the guest's other side, out of the camera's line to the box
@@ -3365,13 +3404,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // the opening: a little closer while Rusty runs down the driveway to the guest
     const rustyRunning = !startNearCabin && !resumeAt && !dog.firstDropDone
     // standing at the workbench (the camera looks at its front, below), or looking in a box
-    const atBench = s.prompt === 'workbench' && !s.target
+    const byBench = s.prompt === 'workbench' && !s.target
     const atBox = bx.open >= 0 && bx.phase !== 'walking'
     const chopping = splitting && sp.phase !== 'walking'
     const castingCam = fishing && fi.phase !== 'walking'
     // by the woodshed or the shower, the camera turns round to show it (CAMERA_SPOTS)
-    const spotDist = (i: number) =>
-      Math.hypot(s.guest.x - CAMERA_SPOTS[i].at.x, s.guest.z - CAMERA_SPOTS[i].at.z)
     // (splitting and the boxes have their own cameras; the woodshed spot is right beside both)
     // sitting on the bench: from behind the guest, over their shoulder to the deck
     const sittingNow = s.sit.phase === 'sitting' || s.sit.phase === 'seated'
@@ -3383,15 +3420,17 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // HUGO's call back to the fire: a cut to it for a few seconds
     const fireCut = fr.cut >= 0
     const ownCamera = inside || chopping || atBox || watchingDeck || castingCam || byFire || fireCut
-    if (ownCamera || (s.viewSpot >= 0 && spotDist(s.viewSpot) > CAMERA_SPOTS[s.viewSpot].leave))
-      s.viewSpot = -1
-    if (s.viewSpot < 0 && !ownCamera)
-      s.viewSpot = CAMERA_SPOTS.findIndex((_, i) => spotDist(i) < CAMERA_SPOTS[i].enter)
-    const spot = s.viewSpot >= 0 ? CAMERA_SPOTS[s.viewSpot] : null
+    // The woodshed's and the shower's views and the bench's hold the camera
+    // until the visitor turns it there, or walks off from the bench; then it's
+    // theirs until the guest walks out of range (camera-framing.ts).
+    const held = holdCamera(s, s.guest, { own: ownCamera, atBench: byBench, atBox: bx.want >= 0 })
+    const atBench = held.bench
+    const spot = held.spot >= 0 ? CAMERA_SPOTS[held.spot] : null
     // the moments with a camera of their own take over (and the visitor's
-    // turn starts afresh after them)
-    s.setMoment = ownCamera || atBench || spot !== null
-    if (s.setMoment) {
+    // turn starts afresh after them); a turn takes the set views over
+    s.setMoment = ownCamera
+    s.framed = atBench || spot !== null
+    if (s.setMoment || s.framed) {
       s.camYaw = 0
       s.camPitch = 0
       s.userZoom = 1
@@ -3437,6 +3476,16 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // (where it looks, ahead of the guest: north usually, over the water at the brook)
     const aheadX = bv.ahead.x * bvk
     const aheadZ = -5 + (bv.ahead.z + 5) * bvk
+    // (just taken over from a set view: the everyday camera carries on facing
+    // the way that view faced, and the visitor's turn goes on from there)
+    if (s.camTake) {
+      s.camTake = false
+      if (!s.setMoment)
+        s.camYaw += yawFacing(camera.position, lookAt.current, {
+          x: aheadX - offX,
+          z: aheadZ - offZ,
+        })
+    }
     if (s.camPitch) {
       const h = Math.hypot(offX, offZ)
       const dist = Math.hypot(h, offY)
@@ -3882,14 +3931,23 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       {(prompt === 'workbench' || props.wantBox !== null) &&
         props.boxTags.slice(0, BOX_TAGS.length).map((b, i) => (
           <group key={b.slug} position={[BOX_TAGS[i].x, BOX_TAGS[i].y, BOX_TAGS[i].z]}>
-            <Html zIndexRange={[28, 0]}>
+            {/* (the tag is drawn up and to the left of its anchor, and the box
+            it's drawn from took every press where the tag isn't: on a phone, a
+            dead patch of the bench where a drag didn't turn and a tap did nothing) */}
+            <Html zIndexRange={[28, 0]} style={{ pointerEvents: 'none' }}>
               <button
                 type="button"
                 className={`${styles.boxTag} ${styles.pixel} ${props.wantBox === i ? styles.boxTagOpen : ''}`}
-                // (pointer down, like the prompt, so the tap doesn't also walk the guest)
+                // (pointer down, like the prompt, so the tap doesn't also walk
+                // the guest; the box opens as the pointer comes up, like every
+                // tap (A109), so on a phone, where the tags cover the bench, a
+                // drag that starts on one turns the camera instead)
                 onPointerDown={(e) => {
                   e.stopPropagation()
-                  if (e.button === 0) callbacks.current.onOpenBox(i)
+                  if (e.button !== 0) return
+                  if (!pressDown.current) return callbacks.current.onOpenBox(i)
+                  pressDown.current(e.nativeEvent)
+                  tap.current = () => callbacks.current.onOpenBox(i)
                 }}
                 onClick={(e) => {
                   // keyboard (Enter or Space)

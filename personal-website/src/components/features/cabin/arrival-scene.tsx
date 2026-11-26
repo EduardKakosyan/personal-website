@@ -50,6 +50,7 @@ import {
   swing as swingAxe,
   updateSplit,
   type Chunk,
+  type Split,
 } from './split'
 import type { GoalId, Progress } from './checklist'
 import {
@@ -104,6 +105,7 @@ import {
   startFishing,
   stopFishing,
   updateFishing,
+  type Fishing,
 } from './fishing'
 import { createFishingGear, updateFishingGear } from './fishing-gear'
 import { KNEEL, legDrop } from './legs'
@@ -467,8 +469,32 @@ const PROMPT_LABELS: Record<PromptId, string> = {
   yahtzee: 'Look',
 }
 /** Where the guest stands to use each thing inside (a step back from it, into the room). */
-/** While splitting, ground clicks this close to the block swing; further off, they walk away. */
-const SPLIT_CLICK_REACH = 1.4
+
+/** The rod's in hand (not on the way to the landing, not being put back). */
+function rodHeld(f: Fishing) {
+  return holdsRod(f) && f.phase !== 'putaway'
+}
+
+/**
+ * In one of the mini-games: the axe in hand at the block, or the rod at the
+ * landing, with the game's bar along the bottom. The guest stays put: every
+ * click or tap is the game's, wherever it lands (a swing; a cast, a strike or
+ * a turn of the reel), and the walking keys do nothing. Done, Esc or the
+ * prompt end the game. (Eduard: "instead of splitting wood now you just walk
+ * away! disable movement when in the mini game screen". A click that passed
+ * further than 1.4 m from the block used to put the axe back and walk there
+ * (A124), and the rod the same (A125).)
+ */
+function playingMiniGame(s: { split: Split; fish: Fishing }) {
+  const sp = s.split
+  return (splitActive(sp) && sp.phase !== 'walking' && sp.phase !== 'putback') || rodHeld(s.fish)
+}
+
+/** A press in a mini-game (a click, a tap, E or Space): the swing, or the next step with the rod. */
+function pressMiniGame(s: { split: Split; fish: Fishing }) {
+  if (s.split.phase === 'ready') swingAxe(s.split)
+  else if (rodHeld(s.fish)) pressFishing(s.fish)
+}
 
 /** How close HUGO may float to Eduard (he used to hover right on his head). */
 const HUGO_FROM_EDUARD = 1.1
@@ -1382,29 +1408,9 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
   }
 
-  /** While splitting: does a click's ray pass by the chopping block, the log on it or the guest? */
-  const clickAtBlock = (ray: THREE.Ray) => {
-    const s = sim.current
-    return (
-      ray.distanceToPoint(tmp.set(CHOPPING_BLOCK.x, 0.6, CHOPPING_BLOCK.z)) < SPLIT_CLICK_REACH ||
-      ray.distanceToPoint(tmp.set(s.guest.x, 0.8, s.guest.z)) < 1
-    )
-  }
-
   /** Casting a line: the rod's in hand (not on the way to the landing, not being put back). */
-  const rodInHand = () => {
-    const f = sim.current.fish
-    return holdsRod(f) && f.phase !== 'putaway'
-  }
-  /** ... and does a click's ray pass by the fishing hole, the landing or the guest? */
-  const clickAtHole = (ray: THREE.Ray) => {
-    const s = sim.current
-    return (
-      ray.distanceToPoint(tmp.set(FISHING_HOLE.x, -0.4, FISHING_HOLE.z)) < FISHING_HOLE.r + 1.1 ||
-      ray.distanceToPoint(tmp.set(CAST_SPOT.x, 0.3, CAST_SPOT.z)) < 1.3 ||
-      ray.distanceToPoint(tmp.set(s.guest.x, s.guestY + 0.8, s.guest.z)) < 1
-    )
-  }
+  const rodInHand = () => rodHeld(sim.current.fish)
+  const inMiniGame = () => playingMiniGame(sim.current)
 
   const onGroundDown = (e: ThreeEvent<PointerEvent>) => {
     // Only the main button (or a tap) walks; right-click uses the prompt.
@@ -1413,35 +1419,12 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const s = sim.current
     // (the camera's away at the fire: a click isn't a walk to wherever it's looking)
     if (s.fire.cut >= 0) return
-    // While splitting, a click at the block is a swing; a click further off
-    // puts the axe back and walks there (clicking towards the woodshed used
-    // to swing instead of leaving).
-    // (Eduard: "Click doesn't work for splitting the wood". The splitting
-    // camera is low and side-on, so a click on the log, the axe or the guest
-    // lands on the ground metres behind them and counted as walking away:
-    // what matters is how close the click passes to the block and the guest,
-    // not where its ray ends up on the ground.)
-    if (splitActive(s.split) && clickAtBlock(e.ray)) {
-      // (the swing is a timing game: it goes the moment the button does)
-      if (s.split.phase === 'ready') swingAxe(s.split)
-      return
-    }
-    // Casting a line: a click on the water by the hole casts, strikes or
-    // reels (straight away: the bite is a timing game); further off, the rod
-    // goes away and the guest walks there. A tap on the water by the hole
-    // when not fishing walks to the landing and casts; a tap on the landing
-    // or the stairs walks there (they're below the field, under the ground
-    // that takes the taps).
-    // (Eduard: "click to cast the fishing rod doesn't work either". Only a
-    // click whose ray met the water inside the little circle of the hole
-    // counted; the casting camera is low and side-on, so a click on the
-    // guest, the rod, the bobber or the landing fell outside it, and put the
-    // rod away. Like the axe, it goes by how close the click passes.)
+    // (in a mini-game the press was the game's: see the canvas's own listener below)
+    if (inMiniGame()) return
+    // A tap on the water by the hole walks to the landing and casts; a tap on
+    // the landing or the stairs walks there (they're below the field, under
+    // the ground that takes the taps).
     const onBrook = brookTap(e.ray.origin, e.ray.direction)
-    if (rodInHand() && (onBrook?.hole || clickAtHole(e.ray))) {
-      pressFishing(s.fish)
-      return
-    }
     if (onBrook && !insideCabin(s.guest)) {
       tap.current = () => {
         leaveActivities()
@@ -1713,10 +1696,8 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const s = sim.current
     // from inside the cabin the tap is just a tap (it stays inside)
     if (insideCabin(s.guest)) return
-    // (splitting wood, a click near the block is a swing even with Rusty in
-    // the way; and casting a line, a click by the hole is a cast)
-    if (splitActive(s.split) && clickAtBlock(e.ray)) return
-    if (rodInHand() && clickAtHole(e.ray)) return
+    // (splitting wood or casting a line, a click on him is a swing or a cast)
+    if (inMiniGame()) return
     // the cow at his feet gets the tap when it can be thrown
     const onCow = e.intersections.some((i) => {
       let o: THREE.Object3D | null = i.object
@@ -1737,8 +1718,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const onCowDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
     const s = sim.current
-    if (splitActive(s.split) && clickAtBlock(e.ray)) return
-    if (rodInHand() && clickAtHole(e.ray)) return
+    if (inMiniGame()) return
     if (canThrow(s.dog, s.guest)) {
       e.stopPropagation()
       tap.current = () => {
@@ -1754,18 +1734,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
       const s = sim.current
       // inside, the readables; outside, the door and the block (the door from either side)
       const inside = insideCabin(s.guest)
-      // In the middle of the splitting game a click on the block is a swing
-      // (it used to put the axe back and start the game again).
-      // ... and with the rod in hand, a click on the rail where it leant (or
-      // on the tap beside the stairs) is a cast, a strike or a turn of the reel.
-      if ((id === 'fish' || id === 'tap') && rodInHand() && clickAtHole(e.ray)) {
+      // (in a mini-game a click on the block, the rail or the tap is the
+      // game's, like any other: it used to put the axe back and start again)
+      if (inMiniGame()) {
         e.stopPropagation()
-        pressFishing(s.fish)
-        return
-      }
-      if (id === 'split' && splitActive(s.split) && s.split.phase !== 'walking') {
-        e.stopPropagation()
-        if (s.split.phase === 'ready') swingAxe(s.split)
         return
       }
       if (id !== 'door-in' && id !== 'door-out' && inside !== id in READABLES) return
@@ -1787,7 +1759,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const onFireSeatDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
     const s = sim.current
-    if (s.fire.night < 0.5 || insideCabin(s.guest)) return
+    if (s.fire.night < 0.5 || insideCabin(s.guest) || inMiniGame()) return
     e.stopPropagation()
     tap.current = () => {
       // (already sitting: the choices are up; a click on the chairs does nothing more)
@@ -1802,17 +1774,16 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
   const hugoStop = useRef<HugoStop | null>(null)
   const onHugoDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
-    // (while splitting, a click is a swing; HUGO isn't asked then)
-    if (splitActive(sim.current.split) || !callbacks.current.onTapHugo) return
-    // (nor with the rod in hand: he floats right by the fishing hole, and a click there is a cast)
-    if (rodInHand() && clickAtHole(e.ray)) return
+    // (while splitting or casting, a click is a swing or a cast; HUGO isn't
+    // asked then: he floats right by the block and the fishing hole)
+    if (splitActive(sim.current.split) || inMiniGame() || !callbacks.current.onTapHugo) return
     e.stopPropagation()
     tap.current = () => callbacks.current.onTapHugo?.()
   }
 
   const onCrateDown = (i: number) => (e: ThreeEvent<PointerEvent>) => {
     if (e.nativeEvent.pointerType === 'mouse' && e.nativeEvent.button !== 0) return
-    if (insideCabin(sim.current.guest)) return
+    if (insideCabin(sim.current.guest) || inMiniGame()) return
     e.stopPropagation()
     tap.current = () => callbacks.current.onOpenBox(i)
   }
@@ -1866,6 +1837,10 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
         tap.current = null // (the scene's handler fills it in next, if this lands on something)
         start = { x: e.clientX, y: e.clientY }
         moved = false
+        // In a mini-game a press anywhere on the scene is the game's (the
+        // sky too, where no handler would catch it), the moment the button
+        // goes down: both are timing games. The scene's handlers stand aside.
+        if (playingMiniGame(sim.current)) pressMiniGame(sim.current)
       } else {
         // a second finger: pinching or turning, not a tap
         moved = true
@@ -1965,7 +1940,7 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     }
     if (k.use) {
       k.use = false
-      if (sp.phase === 'ready') swingAxe(sp)
+      if (inMiniGame()) pressMiniGame(s)
       else if (!(holdsRod(s.fish) && pressFishing(s.fish))) runPrompt(null)
     }
     // Through the door the walk is scripted (reach, swing, step through), so
@@ -1981,7 +1956,11 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     const seatedNow =
       s.sit.phase === 'sitting' || s.sit.phase === 'seated' || s.sit.phase === 'rising'
     if (k.moving() && seatedNow) standUp()
-    const keyDir = k.moving() && !routeUsesDoor && !seatedNow ? keyDirection(k, camForward) : null
+    // (in a mini-game the walking keys do nothing: Done or Esc end it)
+    const keyDir =
+      k.moving() && !routeUsesDoor && !seatedNow && !inMiniGame()
+        ? keyDirection(k, camForward)
+        : null
     s.keysWalking = keyDir !== null
 
     // ---------------------------------------------------------- guest
@@ -4154,9 +4133,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
                 onPointerDown={(e) => {
                   e.stopPropagation()
                   if (e.button !== 0) return
-                  if (!pressDown.current) return callbacks.current.onOpenBox(i)
+                  if (!pressDown.current) {
+                    if (!inMiniGame()) callbacks.current.onOpenBox(i)
+                    return
+                  }
                   pressDown.current(e.nativeEvent)
-                  tap.current = () => callbacks.current.onOpenBox(i)
+                  // (in a mini-game the press was a swing or a cast: no box)
+                  if (!inMiniGame()) tap.current = () => callbacks.current.onOpenBox(i)
                 }}
                 onClick={(e) => {
                   // keyboard (Enter or Space)

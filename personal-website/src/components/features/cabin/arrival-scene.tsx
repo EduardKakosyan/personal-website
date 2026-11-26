@@ -666,7 +666,10 @@ function buildRig(g: Groups, guest: string) {
     },
     eduard: {
       armR: node(g.eduard, 'Eduard_ArmR'),
-      armL: node(g.eduard, 'Eduard_ArmL'),
+      // (his left arm has no parts of its own, so the compressor moved its
+      // pivot to the middle of the arm: it swung out of the sleeve at the
+      // shoulder whenever it moved. Back on the shoulder, eduard_model.py.)
+      armL: jointAt(g.eduard, 'Eduard_ArmL', v3(0.26, 0.74, 0)),
       head: node(g.eduard, 'Eduard_Head'),
       torso: node(g.eduard, 'Eduard_Torso'),
       legL: node(g.eduard, 'Eduard_LegL'),
@@ -3724,9 +3727,13 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
               x: CHOPPING_BLOCK.x + (far > 1 ? 0.3 : -0.25),
               z: CHOPPING_BLOCK.z + (far > 1 ? 1.5 : 0.1),
             }
-          : welcoming && dist(ed.pos) < 9
+          : welcoming && dist(ed.pos) < 9 && s.viewSpot < 0
             ? // (only near him: with HUGO talking out at the brook this aimed
-              // the camera half-way back to the deck, and the guest was off the screen)
+              // the camera half-way back to the deck, and the guest was off the screen.
+              // Not by the woodshed or the shower either: their own view used to
+              // win there, and once the visitor turns the camera away from it,
+              // HUGO's line at the woodshed (8 m from the deck) swung the aim
+              // towards Eduard and left the guest off the side of a phone.)
               { x: s.guest.x * 0.55 + ed.pos.x * 0.45, z: s.guest.z * 0.55 + ed.pos.z * 0.45 }
             : {
                 x: s.guest.x + (aheadX * yc + aheadZ * ys) * kz * edgeK,

@@ -169,14 +169,12 @@ export function nearestOnWay(way: Way, p: Vec2) {
 // ------------------------------------------------------------------ when it shows
 
 /**
- * When the lights come out (the agent's pick, for Eduard to confirm): not
- * all the time, but once the guest has stood about or wandered for a few
- * seconds without getting any closer to the next place. A guest who knows
- * where they're going, or is following HUGO, never has them in the way; a
- * guest who's lost gets them within a few seconds. Once out they stay until
- * the guest gets there (or starts doing something), so they don't flicker
- * on and off as the guest turns. `always` (?trail=always) has them out
- * whenever there's somewhere to go, after a moment to settle.
+ * When the lights come out. `always` (the game's default; Eduard: "set
+ * trail to always") has them out whenever there's somewhere to go, after a
+ * moment to settle. Without it (?trail=lost) they wait until the guest has
+ * stood about or wandered for a few seconds without getting any closer to
+ * the next place. Once out they stay until the guest gets there (or starts
+ * doing something), so they don't flicker on and off as the guest turns.
  */
 export type TrailShow = {
   stop: TrailStopId | null

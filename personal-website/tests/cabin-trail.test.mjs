@@ -231,7 +231,7 @@ test('the lights come out once the guest is lost for a few seconds, and stay til
   )
 })
 
-test('with ?trail=always the lights come out after a moment, walking or not', () => {
+test('by default (always) the lights come out after a moment, walking or not', () => {
   const stop = T.TRAIL_STOPS.bench
   const st = T.createShow()
   const far = { x: stop.at.x - 10, z: stop.at.z }

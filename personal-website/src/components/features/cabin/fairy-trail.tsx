@@ -203,14 +203,15 @@ export function FairyTrail({
     },
     [fx],
   )
-  // ?trail=always has them out whenever there's somewhere to go; ?trail=off
-  // switches them off (for comparing).
+  // They're out whenever there's somewhere to go (Eduard: "set trail to
+  // always"). ?trail=lost waits until the guest seems lost instead, and
+  // ?trail=off switches them off (for comparing).
   const [mode] = useState(() => {
     const v =
       typeof window === 'undefined'
         ? null
         : new URLSearchParams(window.location.search).get('trail')
-    return v === 'always' || v === 'off' ? v : 'lost'
+    return v === 'lost' || v === 'off' ? v : 'always'
   })
   const state = useRef({
     show: createShow(),

@@ -87,6 +87,7 @@ import {
   seatStand,
 } from './fire'
 import { RESUME_SPOTS, type CheckpointAt } from './checkpoint'
+import { cameraReach } from './forest-edge'
 import { createNightFx, createToastingStick } from './fire-fx'
 import { createTeleportFx } from './hugo-teleport'
 import { FairyTrail } from './fairy-trail'
@@ -160,7 +161,6 @@ import {
   groundHeight,
   insideCabin,
   blockedStatic,
-  BOUNDS,
   BENCH_SEAT,
   BENCH_STAND,
   DECK_BOARDS,
@@ -3451,26 +3451,15 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
     // Turned round, the camera could end up out in the forest (behind the
     // cabin it sat inside a spruce): keep it over the clearing, coming in
     // closer and looking down more steeply at the edge. (Only once the
-    // visitor has turned it; the everyday view is as it was.)
+    // visitor has turned it; the everyday view is as it was.) The clearing
+    // is the forest's own edge less the reach of its crowns (forest-edge.ts):
+    // the walkable area's edge, which this used, runs under the spruces
+    // north of the grass field.
     let edgeK = 1
     if (Math.abs(s.camYaw) > 0.01) {
-      const b = {
-        x0: BOUNDS.x0 - 0.5,
-        x1: BOUNDS.x1 + 0.5,
-        z0: BOUNDS.z0 - 0.5,
-        z1: BOUNDS.z1 + 0.5,
-      }
-      let k = 1
-      const ox = camOff.x * kz
-      const oz = camOff.z * kz
-      if (s.guest.x + ox < b.x0) k = Math.min(k, (b.x0 - s.guest.x) / ox)
-      if (s.guest.x + ox > b.x1) k = Math.min(k, (b.x1 - s.guest.x) / ox)
-      if (s.guest.z + oz < b.z0) k = Math.min(k, (b.z0 - s.guest.z) / oz)
-      if (s.guest.z + oz > b.z1) k = Math.min(k, (b.z1 - s.guest.z) / oz)
-      k = Math.max(0.3, k)
-      camOff.x *= k
-      camOff.z *= k
-      edgeK = k
+      edgeK = cameraReach(s.guest, { x: camOff.x * kz, z: camOff.z * kz })
+      camOff.x *= edgeK
+      camOff.z *= edgeK
     }
     // During the welcome, aim between the guest and Eduard so both are in view.
     // Inside, aim at the middle of the room so all of it is in view.
@@ -3569,6 +3558,16 @@ function World(props: Omit<ArrivalSceneProps, 'dpr'>) {
                     // of the guest, so the west wall hid whatever was on it.)
                     tmp.set(-s.guest.x * 0.45, offY * kz, s.guest.z + camOff.z * kz)
                   : tmp.set(chopBase.x + camOff.x * kz, offY * kz, chopBase.z + camOff.z * kz)
+    // A spot's camera is kept over the clearing too, like a turned one,
+    // whichever way it looks from and however far out a phone's screen puts
+    // it. (The shower's used to stand among the spruces north of the grass
+    // field, the screen all branches, and the guest couldn't be seen to walk
+    // away.) It comes in towards the guest and looks down more steeply.
+    if (spot && !atBench) {
+      const k = cameraReach(s.guest, { x: camGoal.x - s.guest.x, z: camGoal.z - s.guest.z })
+      camGoal.x = s.guest.x + (camGoal.x - s.guest.x) * k
+      camGoal.z = s.guest.z + (camGoal.z - s.guest.z) * k
+    }
     // (coming back from the cut to the fire, the camera is put straight back
     // where it belongs: it doesn't fly across the field)
     const snapBack = fr.cutOver

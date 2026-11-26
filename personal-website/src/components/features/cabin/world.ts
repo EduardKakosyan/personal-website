@@ -216,8 +216,12 @@ export const WOODSHED_DISTANCE = 4
 export const CAMERA_SPOTS = [
   // the woodshed, from the grass field, facing its open front and the workbench
   { at: WOODSHED, from: { x: 0.819, z: -0.574 }, enter: 4.2, leave: 5.6 },
-  // the outdoor shower, from the east, facing its open side
-  { at: { x: 2.9, z: -4.0 }, from: { x: 0.88, z: -0.47 }, enter: 3.0, leave: 4.2 },
+  // the outdoor shower, from the east-south-east, facing its open side, from
+  // up over the grass field. (It used to look from the east-north-east, which
+  // put the camera out in the spruces north of the field: Eduard, "your
+  // camera goes into a tree so then regardless of how much you click and
+  // where you cant get out".)
+  { at: { x: 2.9, z: -4.0 }, from: { x: 0.9, z: 0.44 }, enter: 3.0, leave: 4.2 },
 ]
 /** HUGO's way from the cabin to the woodshed when he leads the guest there. */
 export const LEAD_PATH: Vec2[] = [

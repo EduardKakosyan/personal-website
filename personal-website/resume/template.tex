@@ -68,6 +68,14 @@
     \end{tabular*}\vspace{-7pt}
 }
 
+% A role on one line, all in the small size: title, organization, one phrase, dates.
+\newcommand{\resumeOneLineRole}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \small\textbf{#1}, \textit{#2}: #3 & \small #4 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
 \newcommand{\resumeProjectHeading}[2]{
     \item
     \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}

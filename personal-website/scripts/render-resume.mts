@@ -15,6 +15,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { profile, resumePdfPath } from '../src/content/profile.ts'
 import type { Profile, Role } from '../src/content/profile.ts'
+import { projects } from '../src/content/projects.ts'
 import { resumeContent } from '../resume/content.ts'
 import type { ResumeContent, ResumeProject, ResumeRole } from '../resume/content.ts'
 import { findHiddenTerms, localHiddenTerms } from './lib/hidden-terms.mts'
@@ -44,9 +45,11 @@ const months = [
   'December',
 ]
 
-const month = (yearMonth: string) => {
+/** '2025-08' → 'August 2025', or 'Aug 2025' when short (May, June and July stay whole). */
+const month = (yearMonth: string, short = false) => {
   const [year, monthNumber] = yearMonth.split('-')
-  return `${months[Number(monthNumber) - 1]} ${year}`
+  const name = months[Number(monthNumber) - 1]
+  return `${short && name.length > 4 ? name.slice(0, 3) : name} ${year}`
 }
 
 /** 'https://www.linkedin.com/in/x' → 'linkedin.com/in/x' */
@@ -54,11 +57,43 @@ const displayUrl = (url: string) => url.replace(/^https:\/\//, '').replace(/^www
 
 const link = (href: string, text: string) => `\\href{${texUrl(href)}}{\\underline{${tex(text)}}}`
 
+/** The site's pages a résumé link may point at. */
+export const resumeLinkRoutes = new Set([
+  '/',
+  '/projects',
+  '/about',
+  '/contact',
+  ...projects.map((project) => `/projects/${project.slug}`),
+])
+
+/** A link to a page on the site; throws for a path the site doesn't serve. */
+function siteLink(path: string, text: string, data: Profile): string {
+  if (!resumeLinkRoutes.has(path)) throw new Error(`The résumé links to "${path}", not a page`)
+  return link(path === '/' ? data.identity.website : `${data.identity.website}${path}`, text)
+}
+
+const linkPattern = /\[([^\]]+)\]\((\/[^)\s]*)\)/g
+
+/** Résumé copy → LaTeX: `[text](/path)` becomes a link to that page, the rest is texCopy. */
+function texRich(copy: string, data: Profile): string {
+  const plain = (text: string) => {
+    if (/\]\(/.test(text)) throw new Error(`Malformed link in: ${copy}`)
+    return texCopy(text, data.metrics, 'resume')
+  }
+  let out = ''
+  let cursor = 0
+  for (const match of copy.matchAll(linkPattern)) {
+    const [token, text, path] = match
+    out += plain(copy.slice(cursor, match.index)) + siteLink(path, text, data)
+    cursor = match.index + token.length
+  }
+  return out + plain(copy.slice(cursor))
+}
+
 function itemList(items: string[], indent: string, data: Profile): string {
-  const metrics = data.metrics
   return [
     `${indent}\\resumeItemListStart`,
-    ...items.map((item) => `${indent}  \\resumeItem{${texCopy(item, metrics, 'resume')}}`),
+    ...items.map((item) => `${indent}  \\resumeItem{${texRich(item, data)}}`),
     `${indent}\\resumeItemListEnd`,
   ].join('\n')
 }
@@ -84,6 +119,18 @@ function header(data: Profile): string {
 function role(copy: ResumeRole, data: Profile): string {
   const facts: Role | undefined = data.roles.find((candidate) => candidate.id === copy.roleId)
   if (!facts) throw new Error(`resume/content.ts names an unknown role "${copy.roleId}"`)
+  const dates = (short = false) =>
+    `${month(facts.start, short)} -- ${facts.end ? month(facts.end, short) : 'Present'}`
+  if (copy.line) {
+    if (copy.bullets?.length || copy.groups?.length) {
+      throw new Error(`Role "${copy.roleId}" has a line, so it can't have bullets too`)
+    }
+    return [
+      `    %--- ${facts.org} ---`,
+      '    \\resumeOneLineRole',
+      `      {${tex(facts.title)}}{${tex(facts.org)}}{${texRich(copy.line, data)}}{${dates(true)}}`,
+    ].join('\n')
+  }
   if (!copy.bullets?.length && !copy.groups?.length) {
     throw new Error(`Role "${copy.roleId}" has no résumé bullets`)
   }
@@ -93,11 +140,10 @@ function role(copy: ResumeRole, data: Profile): string {
   const org = facts.orgUrl
     ? `${tex(facts.org)} $|$ \\emph{${link(facts.orgUrl, displayUrl(facts.orgUrl))}}`
     : tex(facts.org)
-  const dates = `${month(facts.start)} -- ${facts.end ? month(facts.end) : 'Present'}`
   const lines = [
     `    %--- ${facts.org} ---`,
     '    \\resumeSubheading',
-    `      {${title}}{${dates}}`,
+    `      {${title}}{${dates()}}`,
     `      {${org}}{${tex(facts.location)}}`,
   ]
   if (copy.bullets?.length) lines.push(itemList(copy.bullets, '      ', data))
@@ -110,10 +156,13 @@ function role(copy: ResumeRole, data: Profile): string {
 
 function project(copy: ResumeProject, data: Profile): string {
   const award = copy.award ? ` $|$ \\textbf{${tex(copy.award)}}` : ''
-  const description = texCopy(copy.description, data.metrics, 'resume')
+  const description = texRich(copy.description, data)
+  const name = copy.slug
+    ? siteLink(copy.slug === '/' ? '/' : `/projects/${copy.slug}`, copy.name, data)
+    : tex(copy.name)
   return [
     '      \\resumeProjectHeading',
-    `        {\\textbf{${tex(copy.name)}} --- ${description}${award}}{${tex(copy.when)}}`,
+    `        {\\textbf{${name}} --- ${description}${award}}{${tex(copy.when)}}`,
   ].join('\n')
 }
 
@@ -162,7 +211,7 @@ export function renderResume(
 ): string {
   const slots: Record<string, string> = {
     header: header(data),
-    summary: texCopy(content.summary, data.metrics, 'resume'),
+    summary: texRich(content.summary, data),
     experience: content.experience.map((copy) => role(copy, data)).join('\n\n'),
     projects: content.projects.map((copy) => project(copy, data)).join('\n\n'),
     skills: skills(data, content),

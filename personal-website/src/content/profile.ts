@@ -5,7 +5,14 @@ import { z } from 'zod'
 // No `@/` imports: Node scripts (scripts/render-resume.mts) load this file without a bundler.
 
 export type Surface = 'resume' | 'site' | 'github'
-export type MetricId = 'projects' | 'learners' | 'oppsWon'
+export type MetricId =
+  | 'projects'
+  | 'builds'
+  | 'learners'
+  | 'oppsWon'
+  | 'keystoneOps'
+  | 'keystoneTests'
+  | 'keeperSaving'
 
 export interface Metric {
   id: MetricId
@@ -98,7 +105,15 @@ const nonEmpty = z.string().trim().min(1)
 
 const metricSchema = z
   .object({
-    id: z.enum(['projects', 'learners', 'oppsWon']),
+    id: z.enum([
+      'projects',
+      'builds',
+      'learners',
+      'oppsWon',
+      'keystoneOps',
+      'keystoneTests',
+      'keeperSaving',
+    ]),
     value: nonEmpty,
     detail: nonEmpty.optional(),
     label: nonEmpty,
@@ -319,6 +334,14 @@ export const profile: Profile = profileSchema.parse({
       surfaces: ['resume', 'site'],
     },
     {
+      id: 'builds',
+      value: '5',
+      label: 'custom client builds delivered',
+      definition:
+        'Custom software builds for clients that Eduard managed and that were handed over to the client: an RFQ agent for an HVAC firm, a contract-review agent for a recruitment firm, a voice agent that logs sales debriefs, and two RAG assistants. Not counted: an RFP agent that was built but never deployed (the client was acquired), two builds in progress and one that never started. Nothing here claims daily production use. From AI-First Dashboard projects and meeting records, counted 2026-11-27.',
+      surfaces: ['resume'],
+    },
+    {
       id: 'learners',
       value: '226',
       detail: '88% completion',
@@ -334,6 +357,30 @@ export const profile: Profile = profileSchema.parse({
       label: 'sales opportunities won',
       definition:
         'AI-First Dashboard opportunities with owner = Eduard: 18 won of 40 owned; 67% of the 27 decided (won or lost). No dollar value is published. Counted 2026-10-19.',
+      surfaces: ['resume'],
+    },
+    {
+      id: 'keystoneOps',
+      value: '150',
+      label: 'Keystone operations',
+      definition:
+        'Entries in the Keystone capability registry (src/registry.ts) on main: 148 on 2026-11-25. Each one is served to both the web app and Claude over MCP. Copy says “about”.',
+      surfaces: ['resume'],
+    },
+    {
+      id: 'keystoneTests',
+      value: '1,300',
+      label: 'row-level security tests',
+      definition:
+        'Test cases declared under tests/rls in the Keystone repository on main (80 files), which run against a real database to check the row-level rules. Counted from the source on 2026-11-27; parameterised cases run more. Copy says “over”.',
+      surfaces: ['resume'],
+    },
+    {
+      id: 'keeperSaving',
+      value: '$3,000',
+      label: 'a year in notetaker fees',
+      definition:
+        'Eduard’s estimate of the yearly Fireflies renewal (“renews in April for three thousand dollars, I think or so”, AI-First all-hands, 2026-11-02). Keeper replaced it and the Wispr Flow dictation subscription in November 2026; the dictation saving is not counted. Copy says “about”.',
       surfaces: ['resume'],
     },
   ],

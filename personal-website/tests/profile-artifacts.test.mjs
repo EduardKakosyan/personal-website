@@ -118,6 +118,10 @@ const describeTerm = (term, terms) =>
 test('profile parses and every metric has a definition', () => {
   assert.equal(profile.identity.email, 'kakosyaneduard@gmail.com')
   assert.deepEqual(profile.metrics.map((metric) => metric.id).sort(), [
+    'builds',
+    'keeperSaving',
+    'keystoneOps',
+    'keystoneTests',
     'learners',
     'oppsWon',
     'projects',
@@ -183,6 +187,30 @@ test('public copy describes hands-on leadership of a four-person development tea
   }
   assert.equal(resumeContent.skills[0].label, 'AI & LLMs')
   assert.doesNotMatch(resumeTex, /co-op developers|GTM|sales opportunities I owned/)
+})
+
+test('résumé links go to real pages on the site', () => {
+  const site = profile.identity.website
+  const hrefs = [...resumeTex.matchAll(/\\href\{([^}]*)\}/g)]
+    .map((match) => match[1])
+    .filter((href) => href.startsWith(site))
+  // Keystone and Keeper in the bullets, and every selected project's name.
+  assert.ok(hrefs.includes(`${site}/projects/keystone`))
+  assert.ok(hrefs.includes(`${site}/projects/keeper`))
+  for (const project of resumeContent.projects) assert.ok(project.slug, `${project.name} links`)
+  const routes = new Set(['/', ...projects.map((project) => `/projects/${project.slug}`)])
+  for (const href of hrefs) {
+    const path = href.slice(site.length) || '/'
+    assert.ok(routes.has(path), `${href} is not a page on the site`)
+  }
+  assert.doesNotMatch(resumeTex, /\]\(/, 'a [text](/path) link was left unrendered')
+})
+
+test('the teaching role takes one line on the résumé', () => {
+  const teaching = resumeContent.experience.find((role) => role.roleId === 'teaching')
+  assert.ok(teaching.line)
+  assert.equal(teaching.bullets, undefined)
+  assert.match(resumeTex, /\\resumeOneLineRole\s*\{AI Instructor\}/)
 })
 
 test('resume.sha matches sha256(resume.tex)', () => {

@@ -2,6 +2,7 @@
 // src/content/profile.ts; this file holds only the wording the résumé uses.
 // Numbers are never typed here: use {metric:id} or {metric:id.detail} so a count can only
 // appear if profile.ts defines it for the résumé. The résumé names no clients.
+// `[text](/path)` links to a page on the site; the path must be a real route.
 // Run `pnpm resume` after editing.
 
 export interface ResumeGroup {
@@ -14,10 +15,17 @@ export interface ResumeRole {
   roleId: string
   groups?: ResumeGroup[]
   bullets?: string[]
+  /**
+   * Instead of a heading and bullets, the role takes one line: title, organization, this
+   * text and the dates. For a role that should take less space than the main one.
+   */
+  line?: string
 }
 
 export interface ResumeProject {
   name: string
+  /** A `projects[].slug`; the name links to its page, or to the home page for `'/'`. */
+  slug?: string
   /** One line after the name; the heading does not wrap, so keep it short. */
   description: string
   /** Bold, after the description, e.g. '1st Place, Atlantic AI Summit'. */
@@ -46,17 +54,17 @@ export const resumeContent: ResumeContent = {
         {
           label: 'Internal products',
           bullets: [
-            'Architect and lead of Keystone, our operations system: each operation is declared once and served to both the web app and Claude over MCP, under the same row-level permissions (Next.js, Supabase).',
+            'Architect and lead of [Keystone](/projects/keystone), our operations system: about {metric:keystoneOps} operations, each declared once and served to both the web app and Claude over MCP under the same row-level permissions, checked by over {metric:keystoneTests} database tests (Next.js, Supabase).',
             'Ran discovery first: interviewed the leadership team and audited how the old dashboard was used.',
-            'Built Keeper, the meeting-notes and dictation app our team uses in place of two paid subscriptions: speech recognition on each Mac, summaries from an open-weights model on our own DGX Spark (Swift, Python).',
+            'Replaced two paid subscriptions (about {metric:keeperSaving} a year for the notetaker alone) with [Keeper](/projects/keeper), the meeting-notes and dictation app I built for our team: speech recognition on each Mac, summaries from an open-weights model on our own DGX Spark (Swift, Python).',
           ],
         },
         {
           label:
-            'Client engineering: {metric:projects} projects {metric:projects.detail}, spanning AI Accelerator sprints and custom builds',
+            'Client engineering: {metric:projects} projects {metric:projects.detail}, including {metric:builds} custom builds I led to delivery',
           bullets: [
-            'Delivered RFQ, RFP and legal-review triage agents for HVAC, consulting and recruitment firms (Power Automate).',
-            'Led RAG chat platforms grounded in clients’ own content, released only after passing evals (Next.js, pgvector).',
+            'Cut manual first-pass review of RFQs and contracts for HVAC and recruitment firms with triage agents I built to sort, score and flag each document (Power Automate, Copilot Studio).',
+            'Led RAG assistants that answer from clients’ own content with cited sources; retrieval evals run on every build, with LLM-judged baselines before release (Next.js, pgvector).',
             'Leading an on-prem build: a local-model assistant on the client’s own GPU, so the data stays on site.',
           ],
         },
@@ -73,9 +81,7 @@ export const resumeContent: ResumeContent = {
     },
     {
       roleId: 'teaching',
-      bullets: [
-        'Co-taught an agentic AI course for non-CS students at Dalhousie, who built agents with n8n and Bolt.',
-      ],
+      line: 'co-taught agentic AI to non-CS students',
     },
     {
       roleId: 'cargrep',
@@ -87,23 +93,27 @@ export const resumeContent: ResumeContent = {
   projects: [
     {
       name: 'dgx-autonomy',
+      slug: 'dgx-autonomy',
       description:
-        'a local open-weights model builds apps unattended, graded by tests it can’t edit',
+        'a local model built Keeper’s first version unattended, graded by tests it can’t edit',
       when: '2026',
     },
     {
       name: 'lyfe',
+      slug: 'lyfe',
       description:
         'iPhone app and Rust backend for my routines and goals; a model estimates meals, rules decide',
       when: '2026',
     },
     {
       name: 'kakosyaneduard.ca',
+      slug: '/',
       description: 'my site as a small game at my cabin; a model only picks from answers I wrote',
       when: '2026',
     },
     {
       name: 'HealthByte',
+      slug: 'healthbyte',
       description: 'LLM personas reacting to real and fake health news',
       award: '1st Place, Atlantic AI Summit',
       when: 'May 2025',

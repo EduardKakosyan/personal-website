@@ -377,10 +377,11 @@ export const profile: Profile = profileSchema.parse({
     },
     {
       id: 'keeperSaving',
-      value: '$3,000',
+      value: '$3,132',
+      detail: '9 seats at $29 a month',
       label: 'a year in notetaker fees',
       definition:
-        'Eduard’s estimate of the yearly Fireflies renewal (“renews in April for three thousand dollars, I think or so”, AI-First all-hands, 2026-11-02). Keeper replaced it and the Wispr Flow dictation subscription in November 2026; the dictation saving is not counted. Copy says “about”.',
+        'What the Fireflies notetaker costs AI-First a year: $29 a seat a month for 9 seats, times 12 (Eduard, 2026-11-27). The cost grows with each person the company adds. Keeper replaced it and the Wispr Flow dictation subscription in November 2026; the dictation saving is not counted.',
       surfaces: ['resume'],
     },
   ],

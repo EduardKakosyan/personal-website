@@ -56,7 +56,7 @@ export const resumeContent: ResumeContent = {
           bullets: [
             'Architect and lead of [Keystone](/projects/keystone), our operations system: about {metric:keystoneOps} operations, each declared once and served to both the web app and Claude over MCP under the same row-level permissions, checked by over {metric:keystoneTests} database tests (Next.js, Supabase).',
             'Ran discovery first: interviewed the leadership team and audited how the old dashboard was used.',
-            'Replaced two paid subscriptions (about {metric:keeperSaving} a year for the notetaker alone) with [Keeper](/projects/keeper), the meeting-notes and dictation app I built for our team: speech recognition on each Mac, summaries from an open-weights model on our own DGX Spark (Swift, Python).',
+            'Replaced two paid subscriptions (the notetaker alone cost {metric:keeperSaving} a year, {metric:keeperSaving.detail}) with [Keeper](/projects/keeper), the meeting-notes and dictation app I built for our team: speech recognition on each Mac, summaries from an open-weights model on our own DGX Spark (Swift, Python).',
           ],
         },
         {
